@@ -1,0 +1,142 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\CashierShift;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ShiftController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $user = $request->user();
+
+        $activeShift = CashierShift::with('user')
+            ->where('user_id', $user->id)
+            ->where('status', 'open')
+            ->latest('opened_at')
+            ->first();
+
+        $allShifts = CashierShift::with('user')
+            ->latest('opened_at')
+            ->paginate(15);
+
+        $users = User::orderBy('name')->get();
+
+        return Inertia::render('Shifts/Index', [
+            'activeShift' => $activeShift,
+            'shifts' => $allShifts,
+            'users' => $users,
+        ]);
+    }
+
+    public function start(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $existing = CashierShift::where('user_id', $user->id)
+            ->where('status', 'open')
+            ->first();
+
+        if ($existing) {
+            return back()->with('error', 'Anda masih memiliki Shift Kasir yang sedang aktif.');
+        }
+
+        $validated = $request->validate([
+            'starting_cash' => 'required|numeric|min:0',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        CashierShift::create([
+            'user_id' => $user->id,
+            'opened_at' => now(),
+            'starting_cash' => $validated['starting_cash'],
+            'cash_sales' => 0,
+            'non_cash_sales' => 0,
+            'expected_cash' => $validated['starting_cash'],
+            'status' => 'open',
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        return back()->with('success', 'Shift Kasir berhasil dibuka! Selamat bertugas.');
+    }
+
+    public function close(Request $request, CashierShift $shift): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($shift->user_id !== $user->id && ! $user->isManager()) {
+            return back()->with('error', 'Hanya kasir yang bersangkutan atau Manager/Admin yang dapat menutup shift ini.');
+        }
+
+        if ($shift->status === 'closed') {
+            return back()->with('error', 'Shift ini sudah ditutup sebelumnya.');
+        }
+
+        $validated = $request->validate([
+            'closing_cash' => 'required|numeric|min:0',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $closingCash = (float) $validated['closing_cash'];
+        $expectedCash = (float) $shift->expected_cash;
+        $difference = $closingCash - $expectedCash;
+
+        $shift->update([
+            'closed_at' => now(),
+            'closing_cash' => $closingCash,
+            'difference' => $difference,
+            'status' => 'closed',
+            'notes' => ($shift->notes ? $shift->notes . "\n" : '') . ($validated['notes'] ?? ''),
+        ]);
+
+        $diffMsg = $difference == 0
+            ? 'Kas seimbang (tidak ada selisih).'
+            : ($difference > 0
+                ? 'Ada selisih LEBIH: Rp ' . number_format($difference, 0, ',', '.')
+                : 'Ada selisih KURANG: Rp ' . number_format(abs($difference), 0, ',', '.'));
+
+        return back()->with('success', "Shift Kasir berhasil ditutup! {$diffMsg}");
+    }
+
+    public function storeUser(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+            'password' => 'required|string|min:6',
+            'role' => 'required|string|in:admin,kasir,manager,desainer',
+            'phone' => 'nullable|string|max:50',
+        ]);
+
+        User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => $validated['role'],
+            'phone' => $validated['phone'] ?? null,
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        return back()->with('success', "Karyawan {$validated['name']} ({$validated['role']}) berhasil ditambahkan!");
+    }
+
+    public function switchUser(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $targetUser = User::findOrFail($validated['user_id']);
+        Auth::login($targetUser);
+
+        return redirect()->route('pos.index')->with('success', "Beralih akun ke {$targetUser->name} ({$targetUser->role}).");
+    }
+}

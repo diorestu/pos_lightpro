@@ -1,0 +1,69 @@
+<?php
+
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PosController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\RawMaterialController;
+use App\Http\Controllers\ReceiptSettingController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ShiftController;
+use App\Http\Controllers\StockReportController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () {
+    return redirect()->route('login');
+})->name('home');
+
+Route::middleware(['auth'])->group(function () {
+    // 1. Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // 2. Kasir (POS Transaction)
+    Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+    Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
+    Route::post('/pos/quick-customer', [PosController::class, 'quickCustomer'])->name('pos.quick-customer');
+
+    // 3. Riwayat Penjualan (Order History, Cancel, Return, Repay, Status)
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{order}/return', [OrderController::class, 'returnOrder'])->name('orders.return');
+    Route::post('/orders/{order}/payment', [OrderController::class, 'updatePayment'])->name('orders.payment');
+    Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
+
+    // 4. Produk
+    Route::resource('products', ProductController::class)->except(['create', 'edit', 'show']);
+
+    // 5. Kategori Produk
+    Route::resource('categories', CategoryController::class)->except(['create', 'edit', 'show']);
+
+    // 6. Bahan Baku (Raw Materials)
+    Route::resource('raw-materials', RawMaterialController::class)->except(['create', 'edit', 'show']);
+
+    // 7. Pelanggan (Customers)
+    Route::resource('customers', CustomerController::class)->except(['create', 'edit', 'show']);
+
+    // 8. Shift Kasir (Multi Person, Roles, Permissions)
+    Route::get('/shifts', [ShiftController::class, 'index'])->name('shifts.index');
+    Route::post('/shifts/start', [ShiftController::class, 'start'])->name('shifts.start');
+    Route::post('/shifts/{shift}/close', [ShiftController::class, 'close'])->name('shifts.close');
+    Route::post('/shifts/users', [ShiftController::class, 'storeUser'])->name('shifts.users.store');
+    Route::post('/shifts/switch-user', [ShiftController::class, 'switchUser'])->name('shifts.switch-user');
+
+    // 9. Laporan Harian/Mingguan/Bulanan
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export-csv', [ReportController::class, 'exportCsv'])->name('reports.export-csv');
+
+    // 10. Laporan Stok (Tambah / Kurang)
+    Route::get('/stock-reports', [StockReportController::class, 'index'])->name('stock-reports.index');
+    Route::post('/stock-reports/adjust', [StockReportController::class, 'adjust'])->name('stock-reports.adjust');
+
+    // 11. Pengaturan Nota
+    Route::get('/settings/receipt', [ReceiptSettingController::class, 'index'])->name('settings.receipt');
+    Route::put('/settings/receipt', [ReceiptSettingController::class, 'update'])->name('settings.receipt.update');
+});
+
+require __DIR__.'/settings.php';
