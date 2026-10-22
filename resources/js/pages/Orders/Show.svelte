@@ -22,12 +22,14 @@
     import Clock from '@lucide/svelte/icons/clock';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import DollarSign from '@lucide/svelte/icons/dollar-sign';
+    import Eye from '@lucide/svelte/icons/eye';
     import FileText from '@lucide/svelte/icons/file-text';
     import Plus from '@lucide/svelte/icons/plus';
     import Printer from '@lucide/svelte/icons/printer';
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
     import Split from '@lucide/svelte/icons/split';
     import Trash2 from '@lucide/svelte/icons/trash-2';
+    import Usb from '@lucide/svelte/icons/usb';
     import User from '@lucide/svelte/icons/user';
     import AppHead from '@/components/AppHead.svelte';
     import { Badge } from '@/components/ui/badge';
@@ -37,6 +39,8 @@
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    import { toast } from 'svelte-sonner';
+    import { printDirectWebUSB, isWebUSBSupported } from '@/lib/thermal-printer';
 
     interface OrderPaymentItem {
         id: number;
@@ -105,6 +109,10 @@
     let newTermDueDate = $state('');
     let newTermNotes = $state('');
 
+    // Thermal Printer USB & Preview State
+    let isPrintingUSB = $state(false);
+    let showReceiptPreviewModal = $state(false);
+
     const remainingDebt = $derived(
         Math.max(0, order.grand_total - order.paid_amount)
     );
@@ -115,6 +123,22 @@
             currency: 'IDR',
             maximumFractionDigits: 0,
         }).format(amount);
+    }
+
+    async function handlePrintUSB() {
+        isPrintingUSB = true;
+        try {
+            const res = await printDirectWebUSB(order, receiptSettings);
+            if (res.success) {
+                toast.success(res.message);
+            } else {
+                toast.error(res.message);
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Gagal mengirim data ke printer USB.');
+        } finally {
+            isPrintingUSB = false;
+        }
     }
 
     function printReceipt() {
@@ -199,49 +223,87 @@
 
 <AppHead title="Detail Nota #{order.invoice_number}" />
 
-<!-- Print-Only Receipt Thermal View (visible only on @media print) -->
-<div class="hidden print:block print:w-[320px] print:mx-auto print:p-2 print:text-black print:text-xs">
+<!-- Print-Only Receipt Thermal 80mm View (Standard Font & 80mm Paper) -->
+<div class="hidden print:block thermal-receipt-80mm text-black font-sans text-xs">
+    <!-- Store Header -->
     <div class="text-center pb-2 border-b border-dashed border-black">
-        <h2 class="font-bold text-sm uppercase">{receiptSettings.store_name || 'LightPrint Percetakan'}</h2>
-        <p class="text-[10px]">{receiptSettings.tagline || 'Solusi Cetak Cepat & Berkualitas'}</p>
-        <p class="text-[10px]">{receiptSettings.address || 'Jakarta'}</p>
-        <p class="text-[10px]">Telp/WA: {receiptSettings.phone || '-'}</p>
+        <h2 class="font-bold text-sm tracking-tight uppercase">{receiptSettings.store_name || 'LightPrint Percetakan'}</h2>
+        {#if receiptSettings.tagline}
+            <p class="text-[10px] text-neutral-800">{receiptSettings.tagline}</p>
+        {/if}
+        {#if receiptSettings.address}
+            <p class="text-[10px] text-neutral-800">{receiptSettings.address}</p>
+        {/if}
+        {#if receiptSettings.phone}
+            <p class="text-[10px] font-medium text-neutral-800">Telp/WA: {receiptSettings.phone}</p>
+        {/if}
+        {#if receiptSettings.website}
+            <p class="text-[9px] text-neutral-700">{receiptSettings.website}</p>
+        {/if}
     </div>
 
+    <!-- Order Metadata -->
     <div class="py-2 text-[10px] border-b border-dashed border-black space-y-0.5">
-        <div class="flex justify-between">
-            <span>No: {order.invoice_number}</span>
-            <span>{new Date(order.created_at).toLocaleDateString('id-ID')}</span>
+        <div class="flex justify-between font-bold">
+            <span>No. Nota:</span>
+            <span>{order.invoice_number}</span>
         </div>
-        {#if receiptSettings.show_cashier_name}
-            <div>Kasir: {order.user?.name || '-'}</div>
+        <div class="flex justify-between">
+            <span>Tanggal:</span>
+            <span>{new Date(order.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+        {#if receiptSettings.show_cashier_name !== false}
+            <div class="flex justify-between">
+                <span>Kasir:</span>
+                <span>{order.user?.name || '-'}</span>
+            </div>
         {/if}
-        {#if receiptSettings.show_customer_info}
-            <div>Pelanggan: {order.customer_name || 'Umum'}</div>
+        {#if receiptSettings.show_customer_info !== false}
+            <div class="flex justify-between">
+                <span>Pelanggan:</span>
+                <span class="font-semibold">{order.customer_name || 'Pelanggan Umum'}{order.customer_phone ? ` (${order.customer_phone})` : ''}</span>
+            </div>
         {/if}
+        <div class="flex justify-between">
+            <span>Metode / Status:</span>
+            <span class="font-bold uppercase">
+                {order.payment_method} / {order.payment_status === 'paid' ? 'LUNAS' : order.payment_status === 'partial' ? 'DP (PARSIAL)' : 'BELUM BAYAR'}
+            </span>
+        </div>
     </div>
 
-    <div class="py-2 border-b border-dashed border-black space-y-1.5 text-[10px]">
-        {#each order.items as item}
+    <!-- Items List (80mm Width) -->
+    <div class="py-2 border-b border-dashed border-black space-y-2 text-[10px]">
+        {#each order.items as item, idx}
             <div>
-                <div class="font-bold">{item.product_name}</div>
+                <div class="font-bold flex justify-between">
+                    <span>{idx + 1}. {item.product_name}</span>
+                    <span class="font-bold">{formatRupiah(item.subtotal)}</span>
+                </div>
                 {#if item.pricing_type === 'dimension_sqm'}
-                    <div class="text-[9px]">
-                        Ukuran: {item.length}m × {item.width}m ({item.area} m²) × {item.quantity} pcs
+                    <div class="text-[9px] text-neutral-700 pl-2">
+                        Ukuran: {item.length}m × {item.width}m ({item.area} m²) × {item.quantity} pcs @ {formatRupiah(item.unit_price)}
                     </div>
                 {:else}
-                    <div class="text-[9px]">
-                        Qty: {item.quantity} {item.unit} @ {formatRupiah(item.unit_price)}
+                    <div class="text-[9px] text-neutral-700 pl-2">
+                        Qty: {item.quantity} {item.unit || 'pcs'} × @ {formatRupiah(item.unit_price)}
                     </div>
                 {/if}
-                {#if item.finishing_option && item.finishing_option !== 'Standar'}
-                    <div class="text-[9px]">Finishing: {item.finishing_option}</div>
+                {#if item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing'}
+                    <div class="text-[9px] text-neutral-700 pl-2 font-medium">
+                        Finishing: {item.finishing_option}
+                    </div>
                 {/if}
-                <div class="text-right font-bold">{formatRupiah(item.subtotal)}</div>
+                {#if item.design_note}
+                    <div class="text-[9px] italic text-neutral-600 pl-2">
+                        Catatan: {item.design_note}
+                    </div>
+                {/if}
             </div>
         {/each}
     </div>
 
+    <!-- Totals -->
     <div class="py-2 border-b border-dashed border-black space-y-0.5 text-[10px]">
         <div class="flex justify-between">
             <span>Subtotal:</span>
@@ -253,17 +315,34 @@
                 <span>-{formatRupiah(order.discount_amount)}</span>
             </div>
         {/if}
+        {#if order.tax_amount && order.tax_amount > 0}
+            <div class="flex justify-between">
+                <span>PPN / Pajak:</span>
+                <span>{formatRupiah(order.tax_amount)}</span>
+            </div>
+        {/if}
         <div class="flex justify-between font-bold text-xs pt-1 border-t border-black">
             <span>TOTAL:</span>
             <span>{formatRupiah(order.grand_total)}</span>
         </div>
         <div class="flex justify-between">
-            <span>Total Bayar:</span>
-            <span>{formatRupiah(order.paid_amount)}</span>
+            <span>Total Bayar ({order.payment_method.toUpperCase()}):</span>
+            <span class="font-bold">{formatRupiah(order.paid_amount)}</span>
         </div>
+        <div class="flex justify-between">
+            <span>Kembalian:</span>
+            <span>{formatRupiah(order.change_amount)}</span>
+        </div>
+        {#if remainingDebt > 0}
+            <div class="flex justify-between font-bold text-red-600 pt-0.5 border-t border-dotted border-black">
+                <span>Sisa Tagihan / Tempo:</span>
+                <span>{formatRupiah(remainingDebt)}</span>
+            </div>
+        {/if}
+
         {#if order.payments && order.payments.length > 0}
-            <div class="pt-1 border-t border-dotted border-black space-y-0.5">
-                <div class="font-bold text-[9px]">Rincian Termin Pembayaran:</div>
+            <div class="pt-1.5 mt-1 border-t border-dotted border-black space-y-0.5">
+                <div class="font-bold text-[9px]">Rincian Termin / Tahapan Pembayaran:</div>
                 {#each order.payments as p}
                     <div class="flex justify-between text-[9px]">
                         <span>{p.term_name}:</span>
@@ -272,20 +351,14 @@
                 {/each}
             </div>
         {/if}
-        <div class="flex justify-between">
-            <span>Kembalian:</span>
-            <span>{formatRupiah(order.change_amount)}</span>
-        </div>
-        {#if order.payment_status !== 'paid'}
-            <div class="flex justify-between font-bold text-red-600">
-                <span>Sisa Tagihan:</span>
-                <span>{formatRupiah(order.grand_total - order.paid_amount)}</span>
-            </div>
-        {/if}
     </div>
 
-    <div class="pt-3 text-center text-[9px] whitespace-pre-line">
-        {receiptSettings.footer_text || 'Terima kasih telah mencetak di tempat kami!'}
+    <!-- Footer Terms & Cut Area -->
+    <div class="pt-3 pb-6 text-center text-[9px] text-neutral-800 whitespace-pre-line leading-relaxed">
+        {receiptSettings.footer_text || 'Terima kasih telah mencetak di tempat kami!\nPeriksa kembali hasil cetakan Anda.'}
+        <div class="mt-2 text-[8px] text-neutral-500 font-semibold uppercase tracking-wider">
+            *** LIGHTPRINT POS 80MM ***
+        </div>
     </div>
 </div>
 
@@ -321,7 +394,7 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             {#if remainingDebt > 0 && order.order_status !== 'cancelled'}
                 <Button
                     size="sm"
@@ -333,9 +406,29 @@
                 </Button>
             {/if}
 
+            <Button
+                size="sm"
+                variant="outline"
+                class="border-neutral-300 hover:bg-neutral-100 dark:border-neutral-700 font-medium"
+                onclick={() => (showReceiptPreviewModal = true)}
+            >
+                <Eye class="size-4 mr-1.5" />
+                Pratinjau Nota (80mm)
+            </Button>
+
+            <Button
+                size="sm"
+                class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs"
+                disabled={isPrintingUSB}
+                onclick={handlePrintUSB}
+            >
+                <Usb class="size-4 mr-1.5" />
+                {isPrintingUSB ? 'Mengirim ke USB...' : 'Cetak USB Thermal (80mm)'}
+            </Button>
+
             <Button size="sm" variant="outline" onclick={printReceipt}>
                 <Printer class="size-4 mr-1.5" />
-                Cetak Nota Fisik
+                Dialog Cetak
             </Button>
         </div>
     </div>
@@ -854,6 +947,161 @@
             <Button variant="outline" onclick={() => (showAddTermModal = false)}>Batal</Button>
             <Button class="bg-primary" onclick={submitNewTerm} disabled={!newTermName || !newTermAmount}>
                 Simpan Jadwal Termin
+            </Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
+
+<!-- Modal: Pratinjau Nota Thermal USB 80mm -->
+<Dialog open={showReceiptPreviewModal} onOpenChange={(open) => (showReceiptPreviewModal = open)}>
+    <DialogContent class="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+            <DialogTitle class="flex items-center gap-2 text-base">
+                <Printer class="size-5 text-primary" />
+                Pratinjau Nota Thermal (Kertas 80mm)
+            </DialogTitle>
+            <DialogDescription class="text-xs">
+                Format standar untuk printer thermal USB kasir dengan lebar kertas 80mm.
+            </DialogDescription>
+        </DialogHeader>
+
+        <!-- Kertas Thermal 80mm Simulasi -->
+        <div class="my-2 p-4 bg-white text-black rounded-lg border border-neutral-300 shadow-inner font-sans text-xs max-w-[340px] mx-auto select-none">
+            <div class="text-center pb-2 border-b border-dashed border-black">
+                <h3 class="font-bold text-sm uppercase">{receiptSettings.store_name || 'LightPrint Percetakan'}</h3>
+                {#if receiptSettings.tagline}
+                    <p class="text-[10px] text-neutral-700">{receiptSettings.tagline}</p>
+                {/if}
+                {#if receiptSettings.address}
+                    <p class="text-[10px] text-neutral-700">{receiptSettings.address}</p>
+                {/if}
+                {#if receiptSettings.phone}
+                    <p class="text-[10px] font-semibold">Telp/WA: {receiptSettings.phone}</p>
+                {/if}
+                {#if receiptSettings.website}
+                    <p class="text-[9px] text-neutral-600">{receiptSettings.website}</p>
+                {/if}
+            </div>
+
+            <div class="py-2 text-[10px] border-b border-dashed border-black space-y-0.5">
+                <div class="flex justify-between font-bold">
+                    <span>No. Nota:</span>
+                    <span>{order.invoice_number}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Tanggal:</span>
+                    <span>{new Date(order.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                {#if receiptSettings.show_cashier_name !== false}
+                    <div class="flex justify-between">
+                        <span>Kasir:</span>
+                        <span>{order.user?.name || '-'}</span>
+                    </div>
+                {/if}
+                {#if receiptSettings.show_customer_info !== false}
+                    <div class="flex justify-between">
+                        <span>Pelanggan:</span>
+                        <span class="font-semibold">{order.customer_name || 'Pelanggan Umum'}</span>
+                    </div>
+                {/if}
+                <div class="flex justify-between">
+                    <span>Metode / Status:</span>
+                    <span class="font-bold uppercase">
+                        {order.payment_method} / {order.payment_status === 'paid' ? 'LUNAS' : order.payment_status === 'partial' ? 'DP' : 'BELUM'}
+                    </span>
+                </div>
+            </div>
+
+            <div class="py-2 border-b border-dashed border-black space-y-1.5 text-[10px]">
+                {#each order.items as item, idx}
+                    <div>
+                        <div class="font-bold flex justify-between">
+                            <span>{idx + 1}. {item.product_name}</span>
+                            <span>{formatRupiah(item.subtotal)}</span>
+                        </div>
+                        {#if item.pricing_type === 'dimension_sqm'}
+                            <div class="text-[9px] text-neutral-600 pl-2">
+                                {item.length}m × {item.width}m ({item.area} m²) × {item.quantity} @ {formatRupiah(item.unit_price)}
+                            </div>
+                        {:else}
+                            <div class="text-[9px] text-neutral-600 pl-2">
+                                {item.quantity} {item.unit || 'pcs'} × @ {formatRupiah(item.unit_price)}
+                            </div>
+                        {/if}
+                        {#if item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing'}
+                            <div class="text-[9px] text-neutral-700 pl-2">Finishing: {item.finishing_option}</div>
+                        {/if}
+                    </div>
+                {/each}
+            </div>
+
+            <div class="py-2 border-b border-dashed border-black space-y-0.5 text-[10px]">
+                <div class="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>{formatRupiah(order.subtotal)}</span>
+                </div>
+                {#if order.discount_amount > 0}
+                    <div class="flex justify-between">
+                        <span>Diskon:</span>
+                        <span>-{formatRupiah(order.discount_amount)}</span>
+                    </div>
+                {/if}
+                <div class="flex justify-between font-bold text-xs pt-1 border-t border-black">
+                    <span>TOTAL:</span>
+                    <span>{formatRupiah(order.grand_total)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Total Bayar:</span>
+                    <span class="font-bold">{formatRupiah(order.paid_amount)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Kembalian:</span>
+                    <span>{formatRupiah(order.change_amount)}</span>
+                </div>
+                {#if remainingDebt > 0}
+                    <div class="flex justify-between font-bold text-red-600 pt-0.5 border-t border-dotted border-black">
+                        <span>Sisa Tagihan / Tempo:</span>
+                        <span>{formatRupiah(remainingDebt)}</span>
+                    </div>
+                {/if}
+
+                {#if order.payments && order.payments.length > 0}
+                    <div class="pt-1 mt-1 border-t border-dotted border-black space-y-0.5">
+                        <div class="font-bold text-[9px]">Rincian Termin:</div>
+                        {#each order.payments as p}
+                            <div class="flex justify-between text-[9px]">
+                                <span>{p.term_name}:</span>
+                                <span>{formatRupiah(p.status === 'paid' ? p.paid_amount : p.amount)}</span>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+
+            <div class="pt-2 text-center text-[9px] text-neutral-600 whitespace-pre-line leading-relaxed">
+                {receiptSettings.footer_text || 'Terima kasih atas pesanan cetak Anda!'}
+                <div class="mt-1 text-[8px] text-neutral-400 font-semibold tracking-wider">
+                    *** LIGHTPRINT POS 80MM ***
+                </div>
+            </div>
+        </div>
+
+        <DialogFooter class="flex-col sm:flex-row gap-2">
+            <Button variant="outline" size="sm" onclick={() => (showReceiptPreviewModal = false)}>
+                Tutup
+            </Button>
+            <Button variant="outline" size="sm" onclick={printReceipt}>
+                <Printer class="size-4 mr-1.5" />
+                Dialog Browser
+            </Button>
+            <Button
+                size="sm"
+                class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                disabled={isPrintingUSB}
+                onclick={handlePrintUSB}
+            >
+                <Usb class="size-4 mr-1.5" />
+                {isPrintingUSB ? 'Mengirim ke USB...' : 'Cetak USB Thermal (80mm)'}
             </Button>
         </DialogFooter>
     </DialogContent>

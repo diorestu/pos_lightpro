@@ -42,7 +42,7 @@ class ReceiptSetting extends Model
             'email' => 'sales@lightprint.id',
             'website' => 'www.lightprint.id',
             'footer_text' => "1. Harap cek kembali hasil cetakan sebelum meninggalkan counter.\n2. Komplain dilayani maksimal 1x24 jam membawa nota fisik.\n3. File master cetak disimpan maksimal 14 hari.",
-            'paper_size' => '58mm',
+            'paper_size' => '80mm',
             'show_logo' => true,
             'show_cashier_name' => true,
             'show_customer_info' => true,

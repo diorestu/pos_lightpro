@@ -19,6 +19,7 @@
     import Eye from '@lucide/svelte/icons/eye';
     import Printer from '@lucide/svelte/icons/printer';
     import Save from '@lucide/svelte/icons/save';
+    import Usb from '@lucide/svelte/icons/usb';
     import AppHead from '@/components/AppHead.svelte';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
@@ -26,6 +27,8 @@
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import { Textarea } from '@/components/ui/textarea';
+    import { toast } from 'svelte-sonner';
+    import { printDirectWebUSB } from '@/lib/thermal-printer';
 
     interface ReceiptConfig {
         id?: number;
@@ -51,7 +54,7 @@
             email: 'sales@lightprint.id',
             website: 'www.lightprint.id',
             footer_text: "1. Harap cek kembali hasil cetakan sebelum meninggalkan counter.\n2. Komplain dilayani maksimal 1x24 jam dengan membawa nota fisik.\n3. File desain disimpan selama 14 hari kerja.",
-            paper_size: '58mm',
+            paper_size: '80mm',
             show_logo: true,
             show_cashier_name: true,
             show_customer_info: true,
@@ -67,11 +70,12 @@
     let email = $state(settings.email || '');
     let website = $state(settings.website || '');
     let footerText = $state(settings.footer_text || '');
-    let paperSize = $state<'58mm' | '80mm' | 'A5'>(settings.paper_size || '58mm');
+    let paperSize = $state<'58mm' | '80mm' | 'A5'>(settings.paper_size || '80mm');
     let showLogo = $state(settings.show_logo ?? true);
     let showCashierName = $state(settings.show_cashier_name ?? true);
     let showCustomerInfo = $state(settings.show_customer_info ?? true);
     let isSaving = $state(false);
+    let isTestingUSB = $state(false);
 
     function saveSettings() {
         isSaving = true;
@@ -94,6 +98,83 @@
                 onFinish: () => (isSaving = false),
             }
         );
+    }
+
+    const sampleTestOrder = {
+        invoice_number: 'TEST-80MM-001',
+        created_at: new Date().toISOString(),
+        user: { name: 'Siti Kasir' },
+        customer_name: 'Berkah Advertising (VIP)',
+        customer_phone: '081234567890',
+        order_status: 'completed',
+        payment_status: 'paid',
+        payment_method: 'cash',
+        subtotal: 150000,
+        discount_amount: 15000,
+        tax_amount: 0,
+        grand_total: 135000,
+        paid_amount: 150000,
+        change_amount: 15000,
+        items: [
+            {
+                product_name: 'Spanduk Banner Flexi 280g',
+                pricing_type: 'dimension_sqm',
+                length: 3,
+                width: 1,
+                area: 3,
+                quantity: 1,
+                unit_price: 25000,
+                finishing_option: 'Mata Ayam 4 Sudut',
+                subtotal: 75000,
+            },
+            {
+                product_name: 'Stiker Vinyl A3+ Kiss Cut',
+                pricing_type: 'fixed',
+                unit: 'lembar',
+                quantity: 5,
+                unit_price: 15000,
+                finishing_option: 'Kiss Cut',
+                subtotal: 75000,
+            },
+        ],
+        payments: [
+            {
+                term_name: 'Pembayaran Lunas',
+                amount: 135000,
+                paid_amount: 135000,
+                status: 'paid',
+                payment_method: 'cash',
+            },
+        ],
+    };
+
+    async function handleTestUSB() {
+        isTestingUSB = true;
+        try {
+            const currentSettings = {
+                store_name: storeName,
+                tagline: tagline,
+                address: address,
+                phone: phone,
+                email: email,
+                website: website,
+                footer_text: footerText,
+                paper_size: paperSize,
+                show_logo: showLogo,
+                show_cashier_name: showCashierName,
+                show_customer_info: showCustomerInfo,
+            };
+            const res = await printDirectWebUSB(sampleTestOrder, currentSettings);
+            if (res.success) {
+                toast.success(res.message);
+            } else {
+                toast.error(res.message);
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Gagal mengirim data tes ke printer USB.');
+        } finally {
+            isTestingUSB = false;
+        }
     }
 </script>
 
@@ -152,31 +233,36 @@
 
                 <!-- Paper Size Selector -->
                 <div class="space-y-1.5 pt-2 border-t">
-                    <Label class="text-xs font-semibold">Format Ukuran Kertas Nota</Label>
+                    <div class="flex items-center justify-between">
+                        <Label class="text-xs font-semibold">Format Ukuran Kertas Nota</Label>
+                        <Badge variant="outline" class="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                            Standar USB: 80mm
+                        </Badge>
+                    </div>
                     <div class="grid grid-cols-3 gap-2">
                         <button
                             type="button"
-                            onclick={() => (paperSize = '58mm')}
-                            class="p-2.5 rounded-lg border text-left transition-colors {paperSize === '58mm' ? 'border-primary bg-primary/5 text-primary font-bold' : 'bg-background hover:bg-muted text-muted-foreground'}"
+                            onclick={() => (paperSize = '80mm')}
+                            class="p-2.5 rounded-lg border text-left transition-colors relative {paperSize === '80mm' ? 'border-primary bg-primary/5 text-primary font-bold ring-1 ring-primary' : 'bg-background hover:bg-muted text-muted-foreground'}"
                         >
-                            <span class="block text-xs font-bold">58mm Thermal</span>
-                            <span class="text-[10px] block opacity-80">Printer Mini Portable / Bluetooth</span>
+                            <span class="block text-xs font-bold text-foreground">80mm Thermal USB</span>
+                            <span class="text-[10px] block opacity-80 mt-0.5">Printer Kasir POS Standar (Rekomendasi)</span>
                         </button>
                         <button
                             type="button"
-                            onclick={() => (paperSize = '80mm')}
-                            class="p-2.5 rounded-lg border text-left transition-colors {paperSize === '80mm' ? 'border-primary bg-primary/5 text-primary font-bold' : 'bg-background hover:bg-muted text-muted-foreground'}"
+                            onclick={() => (paperSize = '58mm')}
+                            class="p-2.5 rounded-lg border text-left transition-colors {paperSize === '58mm' ? 'border-primary bg-primary/5 text-primary font-bold ring-1 ring-primary' : 'bg-background hover:bg-muted text-muted-foreground'}"
                         >
-                            <span class="block text-xs font-bold">80mm Thermal</span>
-                            <span class="text-[10px] block opacity-80">Printer POS Kasir Standar</span>
+                            <span class="block text-xs font-bold text-foreground">58mm Thermal</span>
+                            <span class="text-[10px] block opacity-80 mt-0.5">Printer Mini Portable / Bluetooth</span>
                         </button>
                         <button
                             type="button"
                             onclick={() => (paperSize = 'A5')}
-                            class="p-2.5 rounded-lg border text-left transition-colors {paperSize === 'A5' ? 'border-primary bg-primary/5 text-primary font-bold' : 'bg-background hover:bg-muted text-muted-foreground'}"
+                            class="p-2.5 rounded-lg border text-left transition-colors {paperSize === 'A5' ? 'border-primary bg-primary/5 text-primary font-bold ring-1 ring-primary' : 'bg-background hover:bg-muted text-muted-foreground'}"
                         >
-                            <span class="block text-xs font-bold">Format A5 / Invoice</span>
-                            <span class="text-[10px] block opacity-80">Faktur Cetak Surat Jalan</span>
+                            <span class="block text-xs font-bold text-foreground">Format A5 / Invoice</span>
+                            <span class="text-[10px] block opacity-80 mt-0.5">Faktur Cetak Surat Jalan</span>
                         </button>
                     </div>
                 </div>
@@ -310,6 +396,25 @@
                             {footerText}
                         </div>
                     {/if}
+                </div>
+
+                <!-- Test Print Section -->
+                <div class="mt-4 pt-3 border-t flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                    <div class="text-[11px] text-muted-foreground">
+                        <span class="font-semibold text-foreground">Tes Perangkat:</span>
+                        Uji coba printer thermal USB dengan format kertas 80mm
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <Button
+                            size="sm"
+                            class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs flex-1 sm:flex-none shadow-xs"
+                            disabled={isTestingUSB}
+                            onclick={handleTestUSB}
+                        >
+                            <Usb class="size-3.5 mr-1.5" />
+                            {isTestingUSB ? 'Mengirim...' : 'Tes Cetak USB (80mm)'}
+                        </Button>
+                    </div>
                 </div>
             </CardContent>
         </Card>

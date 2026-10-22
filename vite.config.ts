@@ -20,8 +20,9 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
             fonts: [
-                bunny('Plus Jakarta Sans', {
-                    weights: [300, 400, 500, 600, 700, 800],
+                bunny('Inter', {
+                    weights: [100, 200, 300, 400, 500, 600, 700, 800, 900],
+                    styles: ['normal', 'italic'],
                 }),
             ],
         }),
