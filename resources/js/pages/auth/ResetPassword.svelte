@@ -1,7 +1,7 @@
 <script module lang="ts">
     export const layout = {
-        title: 'Reset password',
-        description: 'Please enter your new password below',
+        title: 'Atur Ulang Kata Sandi',
+        description: 'Silakan masukkan kata sandi baru Anda di bawah ini',
     };
 </script>
 
@@ -27,7 +27,7 @@
     } = $props();
 </script>
 
-<AppHead title="Reset password" />
+<AppHead title="Atur Ulang Kata Sandi" />
 
 <Form
     {...update.form()}
@@ -37,7 +37,7 @@
     {#snippet children({ errors, processing })}
         <div class="grid gap-6">
             <div class="grid gap-2">
-                <Label for="email">Email</Label>
+                <Label for="email">Alamat Email</Label>
                 <Input
                     id="email"
                     type="email"
@@ -51,26 +51,26 @@
             </div>
 
             <div class="grid gap-2">
-                <Label for="password">Password</Label>
+                <Label for="password">Kata Sandi Baru</Label>
                 <PasswordInput
                     id="password"
                     name="password"
                     autocomplete="new-password"
                     class="mt-1 block w-full"
-                    placeholder="Password"
+                    placeholder="Masukkan kata sandi baru"
                     passwordrules={passwordRules}
                 />
                 <InputError message={errors.password} />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation">Confirm password</Label>
+                <Label for="password_confirmation">Konfirmasi Kata Sandi Baru</Label>
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"
                     autocomplete="new-password"
                     class="mt-1 block w-full"
-                    placeholder="Confirm password"
+                    placeholder="Ulangi kata sandi baru"
                     passwordrules={passwordRules}
                 />
                 <InputError message={errors.password_confirmation} />
@@ -83,7 +83,7 @@
                 data-test="reset-password-button"
             >
                 {#if processing}<Spinner />{/if}
-                Reset password
+                Simpan Kata Sandi Baru
             </Button>
         </div>
     {/snippet}

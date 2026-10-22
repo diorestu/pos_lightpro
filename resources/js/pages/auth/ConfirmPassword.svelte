@@ -1,8 +1,8 @@
 <script module lang="ts">
     export const layout = {
-        title: 'Confirm password',
+        title: 'Konfirmasi Kata Sandi',
         description:
-            'This is a secure area of the application. Please confirm your password before continuing.',
+            'Area ini memerlukan otorisasi keamanan tinggi. Silakan konfirmasi kata sandi Anda sebelum melanjutkan.',
     };
 </script>
 
@@ -22,29 +22,30 @@
     import PasskeyVerify from '@/components/PasskeyVerify.svelte';
 </script>
 
-<AppHead title="Confirm password" />
+<AppHead title="Konfirmasi Kata Sandi" />
 
 <PasskeyVerify
     routes={{
         options: confirmOptions(),
         submit: confirmStore(),
     }}
-    label="Confirm with passkey"
-    loadingLabel="Confirming..."
-    separator="Or confirm with password"
+    label="Konfirmasi dengan Passkey"
+    loadingLabel="Mengonfirmasi..."
+    separator="Atau konfirmasi dengan kata sandi"
 />
 
 <Form {...store.form()} resetOnSuccess>
     {#snippet children({ errors, processing })}
         <div class="space-y-6">
             <div class="grid gap-2">
-                <Label for="password">Password</Label>
+                <Label for="password">Kata Sandi</Label>
                 <PasswordInput
                     id="password"
                     name="password"
                     class="mt-1 block w-full"
                     required
                     autocomplete="current-password"
+                    placeholder="Masukkan kata sandi Anda"
                 />
                 <InputError message={errors.password} />
             </div>
@@ -57,7 +58,7 @@
                     data-test="confirm-password-button"
                 >
                     {#if processing}<Spinner />{/if}
-                    Confirm password
+                    Konfirmasi Kata Sandi
                 </Button>
             </div>
         </div>

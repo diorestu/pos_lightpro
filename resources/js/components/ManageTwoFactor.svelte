@@ -31,22 +31,20 @@
     <div class="space-y-6">
         <Heading
             variant="small"
-            title="Two-factor authentication"
-            description="Manage your two-factor authentication settings"
+            title="Autentikasi Dua Faktor (2FA)"
+            description="Tingkatkan keamanan akun Anda dengan verifikasi dua langkah"
         />
 
         {#if !twoFactorEnabled}
             <div class="flex flex-col items-start justify-start space-y-4">
                 <p class="text-muted-foreground text-sm">
-                    When you enable two-factor authentication, you will be
-                    prompted for a secure pin during login. This pin can be
-                    retrieved from a TOTP-supported application on your phone.
+                    Saat mengaktifkan autentikasi dua faktor, Anda akan diminta memasukkan PIN keamanan saat login. PIN ini dapat diperoleh dari aplikasi authenticator (Google Authenticator / TOTP) di ponsel Anda.
                 </p>
 
                 <div>
                     {#if twoFactorAuth.hasSetupData()}
                         <Button onclick={() => (showSetupModal = true)}>
-                            <ShieldCheck class="size-4" />Continue setup
+                            <ShieldCheck class="size-4" />Lanjutkan Konfigurasi
                         </Button>
                     {:else}
                         <Form
@@ -55,7 +53,7 @@
                         >
                             {#snippet children({ processing })}
                                 <Button type="submit" disabled={processing}>
-                                    Enable 2FA
+                                    Aktifkan 2FA
                                 </Button>
                             {/snippet}
                         </Form>
@@ -65,9 +63,7 @@
         {:else}
             <div class="flex flex-col items-start justify-start space-y-4">
                 <p class="text-muted-foreground text-sm">
-                    You will be prompted for a secure, random pin during login,
-                    which you can retrieve from the TOTP-supported application
-                    on your phone.
+                    Anda akan diminta memasukkan PIN keamanan saat login yang dapat Anda peroleh dari aplikasi authenticator di ponsel Anda.
                 </p>
 
                 <div class="relative inline">
@@ -78,7 +74,7 @@
                                 type="submit"
                                 disabled={processing}
                             >
-                                Disable 2FA
+                                Nonaktifkan 2FA
                             </Button>
                         {/snippet}
                     </Form>

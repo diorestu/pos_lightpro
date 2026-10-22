@@ -61,11 +61,11 @@
 
 {#if !passkeyRegister.isSupported}
     <div class="text-sm text-muted-foreground">
-        Passkeys are not supported in this browser.
+        Passkey tidak didukung pada browser ini.
     </div>
 {:else if !showForm}
     <Button variant="outline" onclick={() => (showForm = true)}>
-        Add passkey
+        Tambah Passkey
     </Button>
 {:else}
     <form
@@ -73,17 +73,17 @@
         class="space-y-4 rounded-lg border border-border bg-muted/50 p-4"
     >
         <div class="grid gap-2">
-            <Label for="passkey-name">Passkey name</Label>
+            <Label for="passkey-name">Nama Passkey / Perangkat</Label>
             <Input
                 id="passkey-name"
                 type="text"
                 bind:value={name}
-                placeholder="e.g., MacBook Pro, iPhone"
+                placeholder="Contoh: MacBook Kantor, iPhone Kasir"
                 class="mt-1 block w-full border-foreground/20"
                 autofocus
             />
             <p class="text-xs text-muted-foreground">
-                A name helps you identify this passkey later.
+                Beri nama perangkat agar memudahkan identifikasi passkey ini di masa mendatang.
             </p>
         </div>
 
@@ -97,11 +97,11 @@
                 disabled={passkeyRegister.isLoading || !name.trim()}
             >
                 {passkeyRegister.isLoading
-                    ? 'Registering...'
-                    : 'Register passkey'}
+                    ? 'Mendaftarkan...'
+                    : 'Daftarkan Passkey'}
             </Button>
             <Button type="button" variant="ghost" onclick={handleCancel}>
-                Cancel
+                Batal
             </Button>
         </div>
     </form>

@@ -1,0 +1,13 @@
+{
+    "Profile updated.": "Profil berhasil diperbarui.",
+    "Password updated.": "Kata sandi berhasil diperbarui.",
+    "These credentials do not match our records.": "Email atau kata sandi yang Anda masukkan salah.",
+    "The provided password does not match your current password.": "Kata sandi saat ini tidak sesuai.",
+    "The provided two factor authentication code was invalid.": "Kode autentikasi dua faktor tidak valid.",
+    "The provided recovery code was invalid.": "Kode pemulihan tidak valid.",
+    "The password is incorrect.": "Kata sandi salah.",
+    "We have emailed your password reset link.": "Kami telah mengirimkan tautan reset kata sandi ke email Anda.",
+    "This password reset token is invalid.": "Token reset kata sandi ini tidak valid.",
+    "Please wait before retrying.": "Silakan tunggu sebelum mencoba lagi.",
+    "A fresh verification link has been sent to your email address.": "Tautan verifikasi baru telah dikirimkan ke alamat email Anda."
+}

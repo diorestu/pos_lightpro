@@ -67,12 +67,12 @@
 
     const rightNavItems: NavItem[] = [
         {
-            title: 'Repository',
+            title: 'Repositori',
             href: 'https://github.com/laravel/svelte-starter-kit',
             icon: Folder,
         },
         {
-            title: 'Documentation',
+            title: 'Dokumentasi',
             href: 'https://laravel.com/docs/starter-kits#svelte',
             icon: BookOpen,
         },
