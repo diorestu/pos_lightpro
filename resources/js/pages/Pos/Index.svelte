@@ -13,6 +13,7 @@
     import { router } from '@inertiajs/svelte';
     import AlertCircle from '@lucide/svelte/icons/alert-circle';
     import Calculator from '@lucide/svelte/icons/calculator';
+    import Calendar from '@lucide/svelte/icons/calendar';
     import Check from '@lucide/svelte/icons/check';
     import Clock from '@lucide/svelte/icons/clock';
     import CreditCard from '@lucide/svelte/icons/credit-card';
@@ -24,6 +25,7 @@
     import QrCode from '@lucide/svelte/icons/qr-code';
     import Search from '@lucide/svelte/icons/search';
     import ShoppingBag from '@lucide/svelte/icons/shopping-bag';
+    import Split from '@lucide/svelte/icons/split';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import UserPlus from '@lucide/svelte/icons/user-plus';
     import Users from '@lucide/svelte/icons/users';
@@ -100,11 +102,42 @@
     let searchQuery = $state('');
     let cart = $state<CartItem[]>([]);
     let selectedCustomerId = $state<number | null>(null);
-    let paymentMethod = $state<'cash' | 'transfer' | 'qris' | 'tempo'>('cash');
+    let paymentMethod = $state<'cash' | 'transfer' | 'qris' | 'split'>('cash');
     let cashPaidInput = $state('');
     let orderNotes = $state('');
     let dueDate = $state('');
     let isSubmitting = $state(false);
+
+    interface PaymentTermItem {
+        id: string;
+        term_name: string;
+        amount: number;
+        payment_method: 'cash' | 'transfer' | 'qris';
+        is_paid: boolean;
+        due_date: string;
+        notes: string;
+    }
+
+    let paymentTerms = $state<PaymentTermItem[]>([
+        {
+            id: '1',
+            term_name: 'Termin 1 (DP Uang Muka)',
+            amount: 0,
+            payment_method: 'cash',
+            is_paid: true,
+            due_date: '',
+            notes: 'Uang Muka (DP)',
+        },
+        {
+            id: '2',
+            term_name: 'Termin 2 (Pelunasan Akhir)',
+            amount: 0,
+            payment_method: 'cash',
+            is_paid: false,
+            due_date: '',
+            notes: 'Pelunasan saat pengambilan barang',
+        },
+    ]);
 
     // Modals
     let showOpenShiftModal = $state(!activeShift);
@@ -151,7 +184,7 @@
     const paidAmount = $derived(
         paymentMethod === 'cash'
             ? (cashPaidInput ? parseFloat(cashPaidInput) : 0)
-            : grandTotal
+            : (paymentMethod === 'split' ? totalPaidTermsNow : grandTotal)
     );
 
     const changeAmount = $derived(
@@ -162,12 +195,113 @@
         grandTotal > paidAmount ? grandTotal - paidAmount : 0
     );
 
+    const totalAllocatedTerms = $derived(
+        paymentTerms.reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
+    );
+
+    const totalPaidTermsNow = $derived(
+        paymentTerms.filter((t) => t.is_paid).reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
+    );
+
+    const termAllocationDiff = $derived(
+        grandTotal - totalAllocatedTerms
+    );
+
     function formatRupiah(amount: number): string {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
             maximumFractionDigits: 0,
         }).format(amount);
+    }
+
+    function initSplitTerms(percent = 50) {
+        paymentMethod = 'split';
+        const dp = Math.round((grandTotal * percent) / 100);
+        const rem = Math.max(0, grandTotal - dp);
+        const d = new Date();
+        d.setDate(d.getDate() + 3);
+        const defaultDue = d.toISOString().split('T')[0];
+
+        paymentTerms = [
+            {
+                id: Math.random().toString(36).substring(2, 9),
+                term_name: `Termin 1 (DP ${percent}%)`,
+                amount: dp,
+                payment_method: 'cash',
+                is_paid: true,
+                due_date: '',
+                notes: 'Uang Muka (DP)',
+            },
+            {
+                id: Math.random().toString(36).substring(2, 9),
+                term_name: 'Termin 2 (Pelunasan Akhir)',
+                amount: rem,
+                payment_method: 'cash',
+                is_paid: false,
+                due_date: defaultDue,
+                notes: 'Pelunasan saat ambil barang',
+            },
+        ];
+    }
+
+    function addPaymentTerm() {
+        const nextIdx = paymentTerms.length + 1;
+        const d = new Date();
+        d.setDate(d.getDate() + (nextIdx * 3));
+        const defaultDue = d.toISOString().split('T')[0];
+        const unallocated = Math.max(0, grandTotal - totalAllocatedTerms);
+
+        paymentTerms = [
+            ...paymentTerms,
+            {
+                id: Math.random().toString(36).substring(2, 9),
+                term_name: `Termin ${nextIdx} (Cicilan / Progress)`,
+                amount: unallocated,
+                payment_method: 'cash',
+                is_paid: false,
+                due_date: defaultDue,
+                notes: '',
+            },
+        ];
+    }
+
+    function removePaymentTerm(id: string) {
+        if (paymentTerms.length <= 2) {
+            alert('Minimal 2 termin untuk Split Payment.');
+            return;
+        }
+        paymentTerms = paymentTerms.filter((t) => t.id !== id);
+    }
+
+    function autoBalanceTerms() {
+        if (paymentTerms.length === 0) return;
+        const sumExceptLast = paymentTerms.slice(0, -1).reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+        paymentTerms[paymentTerms.length - 1].amount = Math.max(0, grandTotal - sumExceptLast);
+    }
+
+    function splitEqually(count: number) {
+        if (count < 2) count = 2;
+        const base = Math.floor(grandTotal / count);
+        const remainder = grandTotal - (base * count);
+
+        const newTerms: PaymentTermItem[] = [];
+        for (let i = 0; i < count; i++) {
+            const isFirst = i === 0;
+            const amt = isFirst ? (base + remainder) : base;
+            const d = new Date();
+            d.setDate(d.getDate() + ((i + 1) * 3));
+            newTerms.push({
+                id: Math.random().toString(36).substring(2, 9),
+                term_name: isFirst ? 'Termin 1 (DP Uang Muka)' : (i === count - 1 ? `Termin ${i + 1} (Pelunasan Akhir)` : `Termin ${i + 1} (Progress Cetak)`),
+                amount: amt,
+                payment_method: 'cash',
+                is_paid: isFirst,
+                due_date: isFirst ? '' : d.toISOString().split('T')[0],
+                notes: isFirst ? 'Uang Muka' : '',
+            });
+        }
+        paymentTerms = newTerms;
     }
 
     // Add product to cart
@@ -227,6 +361,7 @@
         cart = [];
         cashPaidInput = '';
         orderNotes = '';
+        paymentMethod = 'cash';
     }
 
     function setQuickCash(amount: number) {
@@ -244,12 +379,21 @@
             return;
         }
 
-        if (paymentMethod === 'cash' && paidAmount < grandTotal && paymentMethod !== 'tempo') {
+        if (paymentMethod === 'cash' && paidAmount < grandTotal) {
             alert('Jumlah pembayaran tunai kurang dari total pesanan!');
             return;
         }
 
+        if (paymentMethod === 'split') {
+            if (Math.abs(termAllocationDiff) > 1) {
+                alert(`Total alokasi termin (${formatRupiah(totalAllocatedTerms)}) harus sama dengan Grand Total (${formatRupiah(grandTotal)}). Klik tombol 'Sesuaikan Sisa' untuk menyeimbangkan.`);
+                return;
+            }
+        }
+
         isSubmitting = true;
+
+        const isSplit = paymentMethod === 'split';
 
         router.post(
             '/pos',
@@ -277,11 +421,22 @@
                 discount_amount: discountAmount,
                 tax_amount: 0,
                 grand_total: grandTotal,
-                paid_amount: paidAmount,
-                change_amount: changeAmount,
-                payment_method: paymentMethod,
+                paid_amount: isSplit ? totalPaidTermsNow : paidAmount,
+                change_amount: paymentMethod === 'cash' ? changeAmount : 0,
+                payment_method: isSplit ? 'split' : paymentMethod,
+                is_split_payment: isSplit,
+                terms: isSplit
+                    ? paymentTerms.map((t, idx) => ({
+                          term_name: t.term_name || `Termin ${idx + 1}`,
+                          amount: Number(t.amount) || 0,
+                          payment_method: t.payment_method,
+                          is_paid: t.is_paid,
+                          due_date: t.due_date || null,
+                          notes: t.notes || null,
+                      }))
+                    : null,
                 order_status: 'completed',
-                due_date: dueDate || null,
+                due_date: isSplit ? (paymentTerms.find((t) => !t.is_paid && t.due_date)?.due_date || null) : null,
                 notes: orderNotes,
             },
             {
@@ -664,15 +819,15 @@
                         Transfer
                     </button>
                     <button
-                        onclick={() => (paymentMethod = 'tempo')}
-                        class="py-1.5 text-xs font-medium rounded border transition-colors flex flex-col items-center gap-1 {paymentMethod === 'tempo' ? 'bg-amber-600 text-white border-amber-600' : 'bg-background hover:bg-muted text-amber-700'}"
+                        onclick={() => initSplitTerms(50)}
+                        class="py-1.5 text-xs font-medium rounded border transition-colors flex flex-col items-center gap-1 {paymentMethod === 'split' ? 'bg-amber-600 text-white border-amber-600' : 'bg-background hover:bg-muted text-amber-700'}"
                     >
-                        <Clock class="size-3.5" />
-                        DP / Tempo
+                        <Split class="size-3.5" />
+                        Split / Termin
                     </button>
                 </div>
 
-                <!-- Cash input & quick buttons (if cash or tempo) -->
+                <!-- Cash input & quick buttons (if cash) -->
                 {#if paymentMethod === 'cash'}
                     <div class="space-y-1.5 bg-background p-2 rounded-md border">
                         <div class="flex items-center gap-2">
@@ -696,30 +851,155 @@
                             <span class="text-emerald-600 text-sm font-bold">{formatRupiah(changeAmount)}</span>
                         </div>
                     </div>
-                {:else if paymentMethod === 'tempo'}
-                    <div class="space-y-1.5 bg-amber-50/60 dark:bg-amber-950/20 p-2 rounded-md border border-amber-200 text-xs">
-                        <div class="flex items-center gap-2">
-                            <span class="text-amber-800 dark:text-amber-300">Uang Muka (DP):</span>
-                            <Input
-                                type="number"
-                                bind:value={cashPaidInput}
-                                placeholder="0"
-                                class="h-8 text-xs font-bold bg-background"
-                            />
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-amber-800 dark:text-amber-300">Jatuh Tempo:</span>
-                            <Input
-                                type="date"
-                                bind:value={dueDate}
-                                class="h-8 text-xs bg-background"
-                            />
-                        </div>
-                        <div class="flex justify-between items-center font-semibold pt-1 border-t border-amber-200">
-                            <span class="text-amber-800 dark:text-amber-300">Sisa Tagihan (Tempo):</span>
-                            <span class="text-amber-700 dark:text-amber-400 font-bold">
-                                {formatRupiah(Math.max(0, grandTotal - (parseFloat(cashPaidInput) || 0)))}
+                {:else if paymentMethod === 'split'}
+                    <div class="space-y-2 bg-amber-50/50 dark:bg-amber-950/20 p-2.5 rounded-lg border border-amber-200 text-xs">
+                        <!-- Header with Presets & Add -->
+                        <div class="flex items-center justify-between pb-1 border-b border-amber-200/70">
+                            <span class="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1 text-xs">
+                                <Split class="size-3.5 text-amber-600 shrink-0" />
+                                Termin ({paymentTerms.length})
                             </span>
+                            <div class="flex items-center gap-1">
+                                <button
+                                    type="button"
+                                    onclick={() => initSplitTerms(30)}
+                                    class="px-1.5 py-0.5 text-[10px] rounded bg-amber-100 hover:bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100 font-semibold transition-colors"
+                                    title="Set DP 30%"
+                                >
+                                    DP 30%
+                                </button>
+                                <button
+                                    type="button"
+                                    onclick={() => initSplitTerms(50)}
+                                    class="px-1.5 py-0.5 text-[10px] rounded bg-amber-100 hover:bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100 font-semibold transition-colors"
+                                    title="Set DP 50%"
+                                >
+                                    DP 50%
+                                </button>
+                                <button
+                                    type="button"
+                                    onclick={() => splitEqually(3)}
+                                    class="px-1.5 py-0.5 text-[10px] rounded bg-amber-100 hover:bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100 font-semibold transition-colors"
+                                    title="Bagi rata 3 termin"
+                                >
+                                    3 Termin
+                                </button>
+                                <button
+                                    type="button"
+                                    onclick={addPaymentTerm}
+                                    class="px-2 py-0.5 text-[10px] rounded bg-amber-600 hover:bg-amber-700 text-white font-semibold transition-colors flex items-center gap-0.5"
+                                >
+                                    <Plus class="size-3" />
+                                    Termin
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Termin List (Scrollable) -->
+                        <div class="space-y-2 max-h-48 overflow-y-auto pr-0.5">
+                            {#each paymentTerms as term, idx (term.id)}
+                                <div class="p-2 rounded-md bg-background border shadow-2xs space-y-1.5">
+                                    <div class="flex items-center justify-between gap-1">
+                                        <Input
+                                            bind:value={term.term_name}
+                                            placeholder="Nama Termin..."
+                                            class="h-6 text-[11px] font-semibold flex-1 px-1.5 py-0"
+                                        />
+                                        {#if paymentTerms.length > 2}
+                                            <button
+                                                type="button"
+                                                onclick={() => removePaymentTerm(term.id)}
+                                                class="text-destructive hover:bg-destructive/10 p-1 rounded"
+                                                title="Hapus Termin Ini"
+                                            >
+                                                <Trash2 class="size-3" />
+                                            </button>
+                                        {/if}
+                                    </div>
+
+                                    <div class="grid grid-cols-12 gap-1.5 items-center">
+                                        <!-- Amount Input -->
+                                        <div class="col-span-5">
+                                            <Input
+                                                type="number"
+                                                bind:value={term.amount}
+                                                placeholder="0"
+                                                class="h-7 text-xs font-bold px-2"
+                                            />
+                                        </div>
+
+                                        <!-- Payment Method -->
+                                        <div class="col-span-4">
+                                            <select
+                                                bind:value={term.payment_method}
+                                                class="w-full h-7 text-[11px] font-medium rounded border border-input bg-background pl-1.5 pr-6 py-0"
+                                            >
+                                                <option value="cash">Tunai</option>
+                                                <option value="qris">QRIS</option>
+                                                <option value="transfer">Transfer</option>
+                                            </select>
+                                        </div>
+
+                                        <!-- Paid Now Toggle Button -->
+                                        <div class="col-span-3 flex justify-end">
+                                            <button
+                                                type="button"
+                                                onclick={() => (term.is_paid = !term.is_paid)}
+                                                class="h-7 px-1.5 text-[10px] font-bold rounded border transition-colors flex items-center justify-center w-full {term.is_paid ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-muted text-muted-foreground hover:bg-muted/80'}"
+                                                title={term.is_paid ? 'Sudah dibayar saat ini (DP)' : 'Jatuh tempo (belum dibayar)'}
+                                            >
+                                                {term.is_paid ? '✓ Lunas' : 'Tempo'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Due Date (if not paid) -->
+                                    {#if !term.is_paid}
+                                        <div class="flex items-center gap-1.5 pt-0.5 text-[11px] text-muted-foreground">
+                                            <Calendar class="size-3 shrink-0 text-amber-600" />
+                                            <span class="text-[10px] whitespace-nowrap">Jatuh Tempo:</span>
+                                            <Input
+                                                type="date"
+                                                bind:value={term.due_date}
+                                                class="h-6 text-[10px] py-0 px-1.5 bg-background flex-1"
+                                            />
+                                        </div>
+                                    {/if}
+                                </div>
+                            {/each}
+                        </div>
+
+                        <!-- Summary & Balance Check -->
+                        <div class="pt-1 border-t border-amber-200/70 space-y-1">
+                            <div class="flex justify-between items-center text-[11px]">
+                                <span class="text-amber-800 dark:text-amber-300">Dibayar Sekarang (DP):</span>
+                                <span class="font-bold text-emerald-600">{formatRupiah(totalPaidTermsNow)}</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[11px]">
+                                <span class="text-amber-800 dark:text-amber-300">Sisa Belum Dibayar:</span>
+                                <span class="font-bold text-amber-700 dark:text-amber-400">
+                                    {formatRupiah(Math.max(0, grandTotal - totalPaidTermsNow))}
+                                </span>
+                            </div>
+
+                            {#if Math.abs(termAllocationDiff) > 1}
+                                <div class="flex items-center justify-between bg-destructive/10 text-destructive p-1.5 rounded text-[11px] mt-1">
+                                    <span class="font-semibold text-[10px]">
+                                        {termAllocationDiff > 0 ? `Kurang: ${formatRupiah(termAllocationDiff)}` : `Lebih: ${formatRupiah(-termAllocationDiff)}`}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onclick={autoBalanceTerms}
+                                        class="px-2 py-0.5 rounded bg-destructive text-white text-[10px] font-bold hover:bg-destructive/90"
+                                    >
+                                        Sesuaikan Sisa
+                                    </button>
+                                </div>
+                            {:else}
+                                <div class="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold text-center py-0.5 bg-emerald-50 dark:bg-emerald-950/40 rounded border border-emerald-200">
+                                    ✓ Alokasi {paymentTerms.length} termin pas 100% ({formatRupiah(totalAllocatedTerms)})
+                                </div>
+                            {/if}
                         </div>
                     </div>
                 {/if}

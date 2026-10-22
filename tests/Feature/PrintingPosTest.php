@@ -255,4 +255,128 @@ class PrintingPosTest extends TestCase
             'paper_size' => '80mm',
         ]);
     }
+
+    public function test_pos_split_payment_with_multiple_terms(): void
+    {
+        $shift = CashierShift::create([
+            'user_id' => $this->kasir->id,
+            'opened_at' => now(),
+            'starting_cash' => 200000,
+            'expected_cash' => 200000,
+            'status' => 'open',
+        ]);
+
+        $response = $this->actingAs($this->kasir)->post(route('pos.store'), [
+            'customer_name' => 'PT Megah Printing',
+            'items' => [
+                [
+                    'product_id' => $this->productSqm->id,
+                    'product_name' => $this->productSqm->name,
+                    'pricing_type' => 'dimension_sqm',
+                    'unit' => 'm²',
+                    'length' => 6.0,
+                    'width' => 1.0,
+                    'area' => 6.0,
+                    'quantity' => 1,
+                    'unit_price' => 25000,
+                    'subtotal' => 150000,
+                ],
+            ],
+            'subtotal' => 150000,
+            'discount_amount' => 0,
+            'grand_total' => 150000,
+            'paid_amount' => 50000,
+            'payment_method' => 'split',
+            'is_split_payment' => true,
+            'terms' => [
+                [
+                    'term_name' => 'Termin 1 (DP Uang Muka 33%)',
+                    'amount' => 50000,
+                    'payment_method' => 'cash',
+                    'is_paid' => true,
+                    'notes' => 'DP Tunai saat order',
+                ],
+                [
+                    'term_name' => 'Termin 2 (ACC Proof Desain)',
+                    'amount' => 50000,
+                    'payment_method' => 'transfer',
+                    'is_paid' => false,
+                    'due_date' => '2026-10-25',
+                    'notes' => 'Transfer setelah ACC desain',
+                ],
+                [
+                    'term_name' => 'Termin 3 (Pelunasan Ambil Barang)',
+                    'amount' => 50000,
+                    'payment_method' => 'cash',
+                    'is_paid' => false,
+                    'due_date' => '2026-10-30',
+                    'notes' => 'Pelunasan di kasir saat ambil spanduk',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+
+        $order = Order::where('customer_name', 'PT Megah Printing')->first();
+        $this->assertNotNull($order);
+        $this->assertEquals(150000, $order->grand_total);
+        $this->assertEquals(50000, $order->paid_amount);
+        $this->assertEquals('partial', $order->payment_status);
+        $this->assertEquals('split', $order->payment_method);
+
+        // Verify 3 terms created
+        $this->assertCount(3, $order->payments);
+
+        $term1 = $order->payments->where('term_index', 1)->first();
+        $this->assertEquals('paid', $term1->status);
+        $this->assertEquals(50000, $term1->amount);
+        $this->assertEquals(50000, $term1->paid_amount);
+        $this->assertEquals($shift->id, $term1->cashier_shift_id);
+
+        $term2 = $order->payments->where('term_index', 2)->first();
+        $this->assertEquals('pending', $term2->status);
+        $this->assertEquals(50000, $term2->amount);
+        $this->assertEquals(0, $term2->paid_amount);
+        $this->assertEquals('2026-10-25', $term2->due_date->format('Y-m-d'));
+
+        // Verify shift cash was incremented
+        $this->assertEquals(250000, $shift->fresh()->expected_cash);
+
+        // Pay Termin 2
+        $payTerm2Response = $this->actingAs($this->kasir)->post(route('orders.payment', $order->id), [
+            'order_payment_id' => $term2->id,
+            'payment_method' => 'transfer',
+            'amount' => 50000,
+            'notes' => 'Bukti transfer BCA terlampir',
+        ]);
+        $payTerm2Response->assertRedirect();
+
+        $this->assertEquals('paid', $term2->fresh()->status);
+        $this->assertEquals(100000, $order->fresh()->paid_amount);
+        $this->assertEquals('partial', $order->fresh()->payment_status);
+
+        // Pay Termin 3 (Final settlement)
+        $term3 = $order->payments->where('term_index', 3)->first();
+        $payTerm3Response = $this->actingAs($this->kasir)->post(route('orders.payment', $order->id), [
+            'order_payment_id' => $term3->id,
+            'payment_method' => 'cash',
+            'amount' => 50000,
+            'notes' => 'Pelunasan lunas kasir',
+        ]);
+        $payTerm3Response->assertRedirect();
+
+        $this->assertEquals('paid', $term3->fresh()->status);
+        $this->assertEquals(150000, $order->fresh()->paid_amount);
+        $this->assertEquals('paid', $order->fresh()->payment_status);
+
+        // Add a 4th term to test adding terms
+        $addTermResponse = $this->actingAs($this->admin)->post(route('orders.terms.store', $order->id), [
+            'term_name' => 'Termin Tambahan (Packing Kayu Luar Kota)',
+            'amount' => 25000,
+            'due_date' => '2026-11-05',
+            'notes' => 'Biaya tambahan pengiriman',
+        ]);
+        $addTermResponse->assertRedirect();
+        $this->assertCount(4, $order->fresh()->payments);
+    }
 }

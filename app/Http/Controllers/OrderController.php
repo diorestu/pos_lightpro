@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CashierShift;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OrderPayment;
 use App\Models\OrderReturn;
 use App\Models\Product;
 use App\Models\RawMaterial;
@@ -63,7 +66,7 @@ class OrderController extends Controller
 
     public function show(Order $order): Response
     {
-        $order->load(['user', 'customer', 'items.product', 'return.user', 'cancelledByUser']);
+        $order->load(['user', 'customer', 'items.product', 'return.user', 'cancelledByUser', 'payments.user', 'payments.shift']);
         $receiptSettings = ReceiptSetting::getActive();
 
         return Inertia::render('Orders/Show', [
@@ -215,21 +218,133 @@ class OrderController extends Controller
     public function updatePayment(Request $request, Order $order): RedirectResponse
     {
         $validated = $request->validate([
+            'order_payment_id' => 'nullable|exists:order_payments,id',
             'payment_method' => 'required|string|in:cash,transfer,qris',
             'amount' => 'required|numeric|min:1',
             'notes' => 'nullable|string',
         ]);
 
-        $newPaid = $order->paid_amount + (float) $validated['amount'];
-        $newPaymentStatus = $newPaid >= $order->grand_total ? 'paid' : 'partial';
+        $user = $request->user();
+        $payAmt = (float) $validated['amount'];
+        $activeShift = CashierShift::where('user_id', $user->id)
+            ->where('status', 'open')
+            ->latest('opened_at')
+            ->first();
 
-        $order->update([
-            'paid_amount' => $newPaid,
-            'payment_status' => $newPaymentStatus,
-            'notes' => ($order->notes ? $order->notes . "\n" : '') . "Pelunasan Rp " . number_format($validated['amount'], 0, ',', '.') . " via {$validated['payment_method']} pada " . now()->format('d/m/Y H:i'),
+        DB::transaction(function () use ($order, $validated, $user, $payAmt, $activeShift) {
+            if (! empty($validated['order_payment_id'])) {
+                $term = $order->payments()->findOrFail($validated['order_payment_id']);
+                $newTermPaid = (float) $term->paid_amount + $payAmt;
+                $term->update([
+                    'paid_amount' => $newTermPaid,
+                    'status' => $newTermPaid >= (float) $term->amount ? 'paid' : 'partial',
+                    'paid_at' => now(),
+                    'payment_method' => $validated['payment_method'],
+                    'user_id' => $user->id,
+                    'cashier_shift_id' => $activeShift?->id,
+                    'notes' => (! empty($validated['notes']) ? ($term->notes ? $term->notes . ' | ' : '') . $validated['notes'] : $term->notes),
+                ]);
+            } else {
+                // If no specific term was selected, allocate to pending terms or create a payment entry
+                $pendingTerms = $order->payments()->whereIn('status', ['pending', 'partial'])->orderBy('term_index')->get();
+                if ($pendingTerms->isNotEmpty()) {
+                    $remainingToApply = $payAmt;
+                    foreach ($pendingTerms as $term) {
+                        if ($remainingToApply <= 0) {
+                            break;
+                        }
+                        $owed = max(0, (float) $term->amount - (float) $term->paid_amount);
+                        $apply = min($remainingToApply, $owed);
+                        $newT = (float) $term->paid_amount + $apply;
+                        $term->update([
+                            'paid_amount' => $newT,
+                            'status' => $newT >= (float) $term->amount ? 'paid' : 'partial',
+                            'paid_at' => now(),
+                            'payment_method' => $validated['payment_method'],
+                            'user_id' => $user->id,
+                            'cashier_shift_id' => $activeShift?->id,
+                        ]);
+                        $remainingToApply -= $apply;
+                    }
+                } else {
+                    $nextIndex = ($order->payments()->max('term_index') ?? 0) + 1;
+                    OrderPayment::create([
+                        'order_id' => $order->id,
+                        'cashier_shift_id' => $activeShift?->id,
+                        'user_id' => $user->id,
+                        'term_index' => $nextIndex,
+                        'term_name' => "Termin {$nextIndex} (Pelunasan)",
+                        'amount' => $payAmt,
+                        'paid_amount' => $payAmt,
+                        'payment_method' => $validated['payment_method'],
+                        'status' => 'paid',
+                        'paid_at' => now(),
+                        'notes' => $validated['notes'] ?? 'Pelunasan sisa tagihan',
+                    ]);
+                }
+            }
+
+            if ($activeShift) {
+                if ($validated['payment_method'] === 'cash') {
+                    $activeShift->increment('cash_sales', $payAmt);
+                    $activeShift->increment('expected_cash', $payAmt);
+                } else {
+                    $activeShift->increment('non_cash_sales', $payAmt);
+                }
+            }
+
+            $newPaid = $order->paid_amount + $payAmt;
+            $newPaymentStatus = $newPaid >= $order->grand_total ? 'paid' : 'partial';
+
+            $order->update([
+                'paid_amount' => $newPaid,
+                'payment_status' => $newPaymentStatus,
+                'notes' => ($order->notes ? $order->notes . "\n" : '') . "Pembayaran Rp " . number_format($payAmt, 0, ',', '.') . " via {$validated['payment_method']} pada " . now()->format('d/m/Y H:i'),
+            ]);
+        });
+
+        return back()->with('success', "Pembayaran untuk pesanan {$order->invoice_number} berhasil dicatat!");
+    }
+
+    public function storeTerm(Request $request, Order $order): RedirectResponse
+    {
+        $validated = $request->validate([
+            'term_name' => 'required|string|max:100',
+            'amount' => 'required|numeric|min:1',
+            'due_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:255',
         ]);
 
-        return back()->with('success', "Pelunasan pesanan {$order->invoice_number} berhasil dicatat!");
+        $nextIndex = ($order->payments()->max('term_index') ?? 0) + 1;
+
+        OrderPayment::create([
+            'order_id' => $order->id,
+            'term_index' => $nextIndex,
+            'term_name' => $validated['term_name'],
+            'amount' => $validated['amount'],
+            'paid_amount' => 0,
+            'payment_method' => 'cash',
+            'status' => 'pending',
+            'due_date' => $validated['due_date'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        return back()->with('success', "Jadwal termin '{$validated['term_name']}' berhasil ditambahkan ke riwayat pesanan!");
+    }
+
+    public function deleteTerm(Order $order, OrderPayment $payment): RedirectResponse
+    {
+        if ($payment->order_id !== $order->id) {
+            abort(404);
+        }
+
+        if ($payment->status === 'paid' || $payment->paid_amount > 0) {
+            return back()->with('error', 'Termin yang sudah memiliki pembayaran tidak dapat dihapus.');
+        }
+
+        $payment->delete();
+
+        return back()->with('success', 'Termin pembayaran berhasil dihapus.');
     }
 
     public function updateStatus(Request $request, Order $order): RedirectResponse

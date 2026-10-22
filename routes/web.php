@@ -32,6 +32,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     Route::post('/orders/{order}/return', [OrderController::class, 'returnOrder'])->name('orders.return');
     Route::post('/orders/{order}/payment', [OrderController::class, 'updatePayment'])->name('orders.payment');
+    Route::post('/orders/{order}/terms', [OrderController::class, 'storeTerm'])->name('orders.terms.store');
+    Route::delete('/orders/{order}/terms/{payment}', [OrderController::class, 'deleteTerm'])->name('orders.terms.destroy');
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
 
     // 4. Produk

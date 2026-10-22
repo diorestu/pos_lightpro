@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderPayment;
 use App\Models\Product;
 use App\Models\RawMaterial;
 use App\Models\ReceiptSetting;
@@ -90,10 +91,18 @@ class PosController extends Controller
             'grand_total' => 'required|numeric|min:0',
             'paid_amount' => 'required|numeric|min:0',
             'change_amount' => 'nullable|numeric|min:0',
-            'payment_method' => 'required|string|in:cash,transfer,qris,tempo',
+            'payment_method' => 'required|string|in:cash,transfer,qris,tempo,split',
             'order_status' => 'nullable|string|in:pending,processing,ready,completed',
             'due_date' => 'nullable|date',
             'notes' => 'nullable|string',
+            'is_split_payment' => 'nullable|boolean',
+            'terms' => 'nullable|array',
+            'terms.*.term_name' => 'required|string',
+            'terms.*.amount' => 'required|numeric|min:0',
+            'terms.*.payment_method' => 'nullable|string|in:cash,transfer,qris',
+            'terms.*.is_paid' => 'nullable|boolean',
+            'terms.*.due_date' => 'nullable|date',
+            'terms.*.notes' => 'nullable|string',
         ]);
 
         return DB::transaction(function () use ($validated, $user, $activeShift) {
@@ -102,12 +111,20 @@ class PosController extends Controller
             $invoiceNumber = sprintf('INV-%s-%04d', $todayDate, $todayOrderCount);
 
             $grandTotal = (float) $validated['grand_total'];
-            $paidAmount = (float) $validated['paid_amount'];
+            $isSplit = ! empty($validated['is_split_payment']) && ! empty($validated['terms']);
 
-            // Determine payment status
-            $paymentStatus = 'paid';
-            if ($validated['payment_method'] === 'tempo' || $paidAmount < $grandTotal) {
-                $paymentStatus = $paidAmount > 0 ? 'partial' : 'unpaid';
+            if ($isSplit) {
+                $paidAmount = (float) collect($validated['terms'])->where('is_paid', true)->sum('amount');
+                $paymentMethod = 'split';
+                $paymentStatus = $paidAmount >= $grandTotal ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid');
+            } else {
+                $paidAmount = (float) $validated['paid_amount'];
+                $paymentMethod = $validated['payment_method'];
+                // Determine payment status
+                $paymentStatus = 'paid';
+                if ($paymentMethod === 'tempo' || $paidAmount < $grandTotal) {
+                    $paymentStatus = $paidAmount > 0 ? 'partial' : 'unpaid';
+                }
             }
 
             // Customer info
@@ -139,7 +156,7 @@ class PosController extends Controller
                 'grand_total' => $grandTotal,
                 'paid_amount' => $paidAmount,
                 'change_amount' => $validated['change_amount'] ?? 0,
-                'payment_method' => $validated['payment_method'],
+                'payment_method' => $paymentMethod,
                 'payment_status' => $paymentStatus,
                 'order_status' => $orderStatus,
                 'due_date' => $validated['due_date'] ?? null,
@@ -220,13 +237,96 @@ class PosController extends Controller
                 }
             }
 
-            // Update Shift cash / non_cash
-            $receivedNow = min($paidAmount, $grandTotal);
-            if ($validated['payment_method'] === 'cash') {
-                $activeShift->increment('cash_sales', $receivedNow);
-                $activeShift->increment('expected_cash', $receivedNow);
+            // Handle Order Payments & Cashier Shift recording
+            if ($isSplit) {
+                foreach ($validated['terms'] as $idx => $termData) {
+                    $tAmt = (float) $termData['amount'];
+                    $tPaid = ! empty($termData['is_paid']);
+                    $tMethod = $termData['payment_method'] ?? 'cash';
+
+                    if ($tPaid) {
+                        if ($tMethod === 'cash') {
+                            $activeShift->increment('cash_sales', $tAmt);
+                            $activeShift->increment('expected_cash', $tAmt);
+                        } else {
+                            $activeShift->increment('non_cash_sales', $tAmt);
+                        }
+                    }
+
+                    OrderPayment::create([
+                        'order_id' => $order->id,
+                        'cashier_shift_id' => $tPaid ? $activeShift->id : null,
+                        'user_id' => $tPaid ? $user->id : null,
+                        'term_index' => $idx + 1,
+                        'term_name' => $termData['term_name'],
+                        'amount' => $tAmt,
+                        'paid_amount' => $tPaid ? $tAmt : 0,
+                        'payment_method' => $tMethod,
+                        'status' => $tPaid ? 'paid' : 'pending',
+                        'due_date' => $termData['due_date'] ?? null,
+                        'paid_at' => $tPaid ? now() : null,
+                        'notes' => $termData['notes'] ?? null,
+                    ]);
+                }
             } else {
-                $activeShift->increment('non_cash_sales', $receivedNow);
+                $receivedNow = min($paidAmount, $grandTotal);
+                if ($paymentMethod === 'tempo' || $paidAmount < $grandTotal) {
+                    if ($paidAmount > 0) {
+                        OrderPayment::create([
+                            'order_id' => $order->id,
+                            'cashier_shift_id' => $activeShift->id,
+                            'user_id' => $user->id,
+                            'term_index' => 1,
+                            'term_name' => 'Termin 1 (Uang Muka / DP)',
+                            'amount' => $paidAmount,
+                            'paid_amount' => $paidAmount,
+                            'payment_method' => in_array($paymentMethod, ['cash', 'transfer', 'qris']) ? $paymentMethod : 'cash',
+                            'status' => 'paid',
+                            'paid_at' => now(),
+                            'notes' => 'Pembayaran DP saat checkout',
+                        ]);
+                    }
+
+                    $remainingDebt = max(0, $grandTotal - $paidAmount);
+                    if ($remainingDebt > 0) {
+                        OrderPayment::create([
+                            'order_id' => $order->id,
+                            'cashier_shift_id' => null,
+                            'user_id' => null,
+                            'term_index' => $paidAmount > 0 ? 2 : 1,
+                            'term_name' => 'Termin 2 (Pelunasan Sisa Tagihan)',
+                            'amount' => $remainingDebt,
+                            'paid_amount' => 0,
+                            'payment_method' => 'cash',
+                            'status' => 'pending',
+                            'due_date' => $validated['due_date'] ?? null,
+                            'notes' => 'Pelunasan sisa tagihan',
+                        ]);
+                    }
+                } else {
+                    OrderPayment::create([
+                        'order_id' => $order->id,
+                        'cashier_shift_id' => $activeShift->id,
+                        'user_id' => $user->id,
+                        'term_index' => 1,
+                        'term_name' => 'Pembayaran Penuh',
+                        'amount' => $grandTotal,
+                        'paid_amount' => $grandTotal,
+                        'payment_method' => $paymentMethod,
+                        'status' => 'paid',
+                        'paid_at' => now(),
+                        'notes' => 'Lunas saat transaksi',
+                    ]);
+                }
+
+                if ($receivedNow > 0) {
+                    if ($paymentMethod === 'cash') {
+                        $activeShift->increment('cash_sales', $receivedNow);
+                        $activeShift->increment('expected_cash', $receivedNow);
+                    } else {
+                        $activeShift->increment('non_cash_sales', $receivedNow);
+                    }
+                }
             }
 
             return redirect()->route('orders.show', $order->id)->with('success', "Transaksi {$invoiceNumber} berhasil disimpan!");

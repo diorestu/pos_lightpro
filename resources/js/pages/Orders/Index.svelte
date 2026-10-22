@@ -248,6 +248,7 @@
                         <option value="qris">QRIS</option>
                         <option value="transfer">Transfer Bank</option>
                         <option value="tempo">Tempo / DP</option>
+                        <option value="split">Split / Termin</option>
                     </select>
                 </div>
             </div>
