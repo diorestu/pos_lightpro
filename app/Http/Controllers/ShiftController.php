@@ -23,9 +23,11 @@ class ShiftController extends Controller
             ->latest('opened_at')
             ->first();
 
+        $perPage = min(max($request->integer('per_page', 15), 5), 100);
         $allShifts = CashierShift::with('user')
             ->latest('opened_at')
-            ->paginate(15);
+            ->paginate($perPage)
+            ->withQueryString();
 
         $users = User::orderBy('name')->get();
 
@@ -33,6 +35,7 @@ class ShiftController extends Controller
             'activeShift' => $activeShift,
             'shifts' => $allShifts,
             'users' => $users,
+            'filters' => $request->only(['per_page']),
         ]);
     }
 

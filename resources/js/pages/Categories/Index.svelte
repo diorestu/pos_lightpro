@@ -26,9 +26,8 @@
     import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
-    import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    import { DataTable, type ColumnDef, TableCell, TableRow } from '@/components/ui/table';
     import { Textarea } from '@/components/ui/textarea';
-    import { createSortable } from '@/lib/sortable.svelte';
 
     interface CategoryItem {
         id: number;
@@ -44,7 +43,13 @@
         categories: CategoryItem[];
     } = $props();
 
-    const sortable = createSortable(() => categories, 'name', 'asc');
+    const columns: ColumnDef[] = [
+        { key: 'name', label: 'Nama Kategori', sortable: true },
+        { key: 'slug', label: 'Slug URL', sortable: true },
+        { key: 'description', label: 'Keterangan', sortable: true },
+        { key: 'products_count', label: 'Jumlah Produk', align: 'center', sortable: true },
+        { key: 'actions', label: 'Aksi', align: 'right', sortable: false, hideable: false },
+    ];
 
     let showModal = $state(false);
     let editingCategory = $state<CategoryItem | null>(null);
@@ -108,80 +113,67 @@
                 Pengelompokan divisi percetakan (Outdoor Printing, Indoor & Display, Digital Offset A3+, Merchandise, Finishing).
             </p>
         </div>
-        <Button class="bg-primary font-semibold" onclick={openCreate}>
+        <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center" onclick={openCreate}>
             <Plus class="size-4 mr-1.5" />
-            + Tambah Kategori
+            Tambah Kategori
         </Button>
     </div>
 
-    <!-- Table -->
-    <Card class="border shadow-xs">
-        <CardContent class="p-0">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead class="text-xs" sortable sortDirection={sortable.getDirection('name')} onSort={() => sortable.toggleSort('name')}>
-                            Nama Kategori
-                        </TableHead>
-                        <TableHead class="text-xs" sortable sortDirection={sortable.getDirection('slug')} onSort={() => sortable.toggleSort('slug')}>
-                            Slug URL
-                        </TableHead>
-                        <TableHead class="text-xs" sortable sortDirection={sortable.getDirection('description')} onSort={() => sortable.toggleSort('description')}>
-                            Keterangan
-                        </TableHead>
-                        <TableHead class="text-xs text-center" sortable sortDirection={sortable.getDirection('products_count')} onSort={() => sortable.toggleSort('products_count')}>
-                            Jumlah Produk
-                        </TableHead>
-                        <TableHead class="text-xs text-right">Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {#if sortable.sorted.length === 0}
-                        <TableRow>
-                            <TableCell colspan={5} class="text-center py-10 text-muted-foreground text-xs">
-                                Belum ada kategori yang dibuat.
-                            </TableCell>
-                        </TableRow>
-                    {:else}
-                        {#each sortable.sorted as cat}
-                            <TableRow>
-                                <TableCell class="font-bold text-xs text-foreground">
-                                    {cat.name}
-                                </TableCell>
-                                <TableCell class="text-xs text-muted-foreground">
-                                    {cat.slug}
-                                </TableCell>
-                                <TableCell class="text-xs text-muted-foreground">
-                                    {cat.description || '-'}
-                                </TableCell>
-                                <TableCell class="text-xs text-center">
-                                    <Badge variant="secondary" class="font-bold">
-                                        {cat.products_count} Produk
-                                    </Badge>
-                                </TableCell>
-                                <TableCell class="text-xs text-right">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <Button size="sm" variant="ghost" class="h-7 w-7 p-0" onclick={() => openEdit(cat)}>
-                                            <Edit2 class="size-3.5 text-muted-foreground" />
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            class="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
-                                            disabled={cat.products_count > 0}
-                                            onclick={() => deleteCategory(cat)}
-                                        >
-                                            <Trash2 class="size-3.5" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        {/each}
-                    {/if}
-                </TableBody>
-            </Table>
-        </CardContent>
-    </Card>
+    <!-- Reusable DataTable -->
+    <DataTable
+        {columns}
+        data={categories}
+        defaultSortKey="name"
+        defaultSortDir="asc"
+        searchPlaceholder="Cari kategori percetakan..."
+        emptyMessage="Belum ada kategori yang dibuat."
+    >
+        {#snippet rowSnippet({ item: cat, isVisible })}
+            <TableRow class="hover:bg-muted/30 transition-colors">
+                {#if isVisible('name')}
+                    <TableCell class="font-bold text-xs text-foreground">
+                        {cat.name}
+                    </TableCell>
+                {/if}
+                {#if isVisible('slug')}
+                    <TableCell class="text-xs text-muted-foreground">
+                        {cat.slug}
+                    </TableCell>
+                {/if}
+                {#if isVisible('description')}
+                    <TableCell class="text-xs text-muted-foreground">
+                        {cat.description || '-'}
+                    </TableCell>
+                {/if}
+                {#if isVisible('products_count')}
+                    <TableCell class="text-xs text-center">
+                        <Badge variant="secondary" class="font-bold">
+                            {cat.products_count} Produk
+                        </Badge>
+                    </TableCell>
+                {/if}
+                {#if isVisible('actions')}
+                    <TableCell class="text-xs text-right">
+                        <div class="flex items-center justify-end gap-1">
+                            <Button size="sm" variant="ghost" class="h-7 w-7 p-0" onclick={() => openEdit(cat)} title="Ubah Kategori">
+                                <Edit2 class="size-3.5 text-muted-foreground" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                class="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                                disabled={cat.products_count > 0}
+                                onclick={() => deleteCategory(cat)}
+                                title={cat.products_count > 0 ? 'Kategori memiliki produk aktif' : 'Hapus Kategori'}
+                            >
+                                <Trash2 class="size-3.5" />
+                            </Button>
+                        </div>
+                    </TableCell>
+                {/if}
+            </TableRow>
+        {/snippet}
+    </DataTable>
 </div>
 
 <!-- Modal: Tambah/Edit Kategori -->

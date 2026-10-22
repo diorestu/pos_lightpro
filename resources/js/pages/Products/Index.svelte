@@ -28,9 +28,8 @@
     import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
-    import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    import { DataTable, type ColumnDef, TableCell, TableRow } from '@/components/ui/table';
     import { Textarea } from '@/components/ui/textarea';
-    import { createSortable } from '@/lib/sortable.svelte';
 
     interface ProductItem {
         id: number;
@@ -57,7 +56,7 @@
         rawMaterials = [],
         filters = {},
     }: {
-        products: { data: ProductItem[]; links: any[] };
+        products: any;
         categories: any[];
         rawMaterials: any[];
         filters: Record<string, string>;
@@ -69,15 +68,26 @@
     let categoryFilter = $state(filters.category_id || '');
     // svelte-ignore state_referenced_locally
     let pricingTypeFilter = $state(filters.pricing_type || '');
+    // svelte-ignore state_referenced_locally
+    let currentPerPage = $state(filters.per_page ? parseInt(filters.per_page, 10) : 15);
 
     $effect(() => {
         search = filters.search || '';
         categoryFilter = filters.category_id || '';
         pricingTypeFilter = filters.pricing_type || '';
+        currentPerPage = filters.per_page ? parseInt(filters.per_page, 10) : 15;
     });
 
-    // Sorter
-    const sorter = createSortable(() => products.data, 'name', 'asc');
+    const columns: ColumnDef[] = [
+        { key: 'code', label: 'Kode', sortable: true },
+        { key: 'name', label: 'Nama Produk', sortable: true },
+        { key: 'category_id', label: 'Kategori', sortable: true },
+        { key: 'pricing_type', label: 'Skema Harga', sortable: true },
+        { key: 'raw_material', label: 'Bahan Baku Terkait', sortable: false },
+        { key: 'base_price', label: 'Harga Jual', align: 'right', sortable: true },
+        { key: 'cost_price', label: 'HPP Modal', align: 'right', sortable: true },
+        { key: 'actions', label: 'Aksi', align: 'right', sortable: false, hideable: false },
+    ];
 
     // Modal state
     let showModal = $state(false);
@@ -97,13 +107,17 @@
     let formIsStockManaged = $state(false);
     let formDescription = $state('');
 
-    function applyFilter() {
+    function applyFilter(newSearch?: string) {
+        if (newSearch !== undefined) {
+            search = newSearch;
+        }
         router.get(
             '/products',
             {
                 search: search || undefined,
                 category_id: categoryFilter || undefined,
                 pricing_type: pricingTypeFilter || undefined,
+                per_page: currentPerPage,
             },
             { preserveState: true }
         );
@@ -200,28 +214,37 @@
                 Katalog master produk: Spanduk meteran (m²), Stiker A3+, Kartu Nama, Merchandise, dan Banner Display. Klik judul kolom untuk mengurutkan (sortable).
             </p>
         </div>
-        <Button class="bg-primary font-semibold" onclick={openCreate}>
+        <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center" onclick={openCreate}>
             <Plus class="size-4 mr-1.5" />
-            + Tambah Produk Baru
+            Tambah Produk
         </Button>
     </div>
 
-    <!-- Filters -->
-    <Card class="border shadow-2xs">
-        <CardContent class="p-4 flex flex-col sm:flex-row items-center gap-3">
-            <div class="relative flex-1 w-full">
-                <Search class="size-3.5 absolute left-3 top-2.5 text-muted-foreground" />
-                <Input
-                    bind:value={search}
-                    onchange={applyFilter}
-                    placeholder="Cari nama atau kode produk..."
-                    class="h-8 pl-8 text-xs"
-                />
-            </div>
+    <!-- Reusable DataTable with Search, Column Filter, Records Per Page & Pagination in Head Table Card -->
+    <DataTable
+        {columns}
+        data={products}
+        pagination={products}
+        search={search}
+        searchPlaceholder="Cari nama atau kode produk..."
+        onSearch={(val) => applyFilter(val)}
+        perPage={currentPerPage}
+        onPerPageChange={(val) => {
+            currentPerPage = val;
+            applyFilter();
+        }}
+        onPageChange={(_, url) => {
+            if (url) router.get(url, {}, { preserveState: true });
+        }}
+        defaultSortKey="name"
+        defaultSortDir="asc"
+        emptyMessage="Tidak ada produk ditemukan."
+    >
+        {#snippet filtersSnippet()}
             <select
                 bind:value={categoryFilter}
-                onchange={applyFilter}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-48"
+                onchange={() => applyFilter()}
+                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
             >
                 <option value="">Semua Kategori</option>
                 {#each categories as cat}
@@ -230,132 +253,77 @@
             </select>
             <select
                 bind:value={pricingTypeFilter}
-                onchange={applyFilter}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-48"
+                onchange={() => applyFilter()}
+                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
             >
                 <option value="">Semua Skema Harga</option>
-                <option value="dimension_sqm">Meteran (Panjang x Lebar / m²)</option>
-                <option value="fixed">Fixed (Pcs, Box, Rim, Lembar)</option>
+                <option value="dimension_sqm">Meteran (m²)</option>
+                <option value="fixed">Fixed (Pcs/Box)</option>
             </select>
-        </CardContent>
-    </Card>
+        {/snippet}
 
-    <!-- Table -->
-    <Card class="border shadow-xs">
-        <CardContent class="p-0">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'code' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('code')}
-                        >
-                            Kode
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'name' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('name')}
-                        >
-                            Nama Produk
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'category_id' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('category_id')}
-                        >
-                            Kategori
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'pricing_type' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('pricing_type')}
-                        >
-                            Skema Harga
-                        </TableHead>
-                        <TableHead class="text-xs">Bahan Baku Terkait</TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'base_price' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('base_price')}
-                        >
-                            Harga Jual
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'cost_price' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('cost_price')}
-                        >
-                            HPP Modal
-                        </TableHead>
-                        <TableHead class="text-xs text-right">Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {#if sorter.sortedData.length === 0}
-                        <TableRow>
-                            <TableCell colspan={8} class="text-center py-10 text-muted-foreground text-xs">
-                                Tidak ada produk ditemukan.
-                            </TableCell>
-                        </TableRow>
-                    {:else}
-                        {#each sorter.sortedData as p (p.id)}
-                            <TableRow>
-                                <TableCell class="text-xs font-bold text-muted-foreground">{p.code}</TableCell>
-                                <TableCell class="text-xs font-semibold text-foreground">
-                                    {p.name}
-                                    {#if p.description}
-                                        <span class="block text-[11px] text-muted-foreground font-normal line-clamp-1">{p.description}</span>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs">
-                                    <Badge variant="outline" class="text-[10px]">{p.category?.name || '-'}</Badge>
-                                </TableCell>
-                                <TableCell class="text-xs">
-                                    {#if p.pricing_type === 'dimension_sqm'}
-                                        <Badge class="bg-blue-600 hover:bg-blue-600 text-white text-[10px]">
-                                            Meteran (m²)
-                                        </Badge>
-                                    {:else}
-                                        <Badge variant="secondary" class="text-[10px]">
-                                            Fixed ({p.unit})
-                                        </Badge>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs text-muted-foreground">
-                                    {p.raw_material?.name || '-'}
-                                </TableCell>
-                                <TableCell class="text-xs text-right font-bold text-primary">
-                                    {formatRupiah(p.base_price)}
-                                    <span class="text-[10px] text-muted-foreground font-normal">/{p.unit}</span>
-                                </TableCell>
-                                <TableCell class="text-xs text-right text-muted-foreground font-medium">
-                                    {formatRupiah(p.cost_price)}
-                                </TableCell>
-                                <TableCell class="text-xs text-right">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <Button size="sm" variant="ghost" class="h-7 w-7 p-0" onclick={() => openEdit(p)}>
-                                            <Edit2 class="size-3.5 text-muted-foreground" />
-                                        </Button>
-                                        <Button size="sm" variant="ghost" class="h-7 w-7 p-0 text-destructive hover:bg-destructive/10" onclick={() => deleteProduct(p)}>
-                                            <Trash2 class="size-3.5" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        {/each}
-                    {/if}
-                </TableBody>
-            </Table>
-        </CardContent>
-    </Card>
+        {#snippet rowSnippet({ item: p, isVisible })}
+            <TableRow class="hover:bg-muted/30 transition-colors">
+                {#if isVisible('code')}
+                    <TableCell class="text-xs font-bold text-muted-foreground">{p.code}</TableCell>
+                {/if}
+                {#if isVisible('name')}
+                    <TableCell class="text-xs font-semibold text-foreground">
+                        {p.name}
+                        {#if p.description}
+                            <span class="block text-[11px] text-muted-foreground font-normal line-clamp-1">{p.description}</span>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('category_id')}
+                    <TableCell class="text-xs">
+                        <Badge variant="outline" class="text-[10px]">{p.category?.name || '-'}</Badge>
+                    </TableCell>
+                {/if}
+                {#if isVisible('pricing_type')}
+                    <TableCell class="text-xs">
+                        {#if p.pricing_type === 'dimension_sqm'}
+                            <Badge class="bg-blue-600 hover:bg-blue-600 text-white text-[10px]">
+                                Meteran (m²)
+                            </Badge>
+                        {:else}
+                            <Badge variant="secondary" class="text-[10px]">
+                                Fixed ({p.unit})
+                            </Badge>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('raw_material')}
+                    <TableCell class="text-xs text-muted-foreground">
+                        {p.raw_material?.name || '-'}
+                    </TableCell>
+                {/if}
+                {#if isVisible('base_price')}
+                    <TableCell class="text-xs text-right font-bold text-primary">
+                        {formatRupiah(p.base_price)}
+                        <span class="text-[10px] text-muted-foreground font-normal">/{p.unit}</span>
+                    </TableCell>
+                {/if}
+                {#if isVisible('cost_price')}
+                    <TableCell class="text-xs text-right text-muted-foreground font-medium">
+                        {formatRupiah(p.cost_price)}
+                    </TableCell>
+                {/if}
+                {#if isVisible('actions')}
+                    <TableCell class="text-xs text-right">
+                        <div class="flex items-center justify-end gap-1">
+                            <Button size="sm" variant="ghost" class="h-7 w-7 p-0" onclick={() => openEdit(p)} title="Ubah Produk">
+                                <Edit2 class="size-3.5 text-muted-foreground" />
+                            </Button>
+                            <Button size="sm" variant="ghost" class="h-7 w-7 p-0 text-destructive hover:bg-destructive/10" onclick={() => deleteProduct(p)} title="Hapus Produk">
+                                <Trash2 class="size-3.5" />
+                            </Button>
+                        </div>
+                    </TableCell>
+                {/if}
+            </TableRow>
+        {/snippet}
+    </DataTable>
 </div>
 
 <!-- Modal: Tambah / Edit Produk -->
@@ -364,7 +332,7 @@
         <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
                 <Package class="size-5 text-primary" />
-                {editingProduct ? 'Edit Produk Cetak' : 'Tambah Produk Cetak Baru'}
+                {editingProduct ? 'Edit Produk Cetak' : 'Tambah Produk Cetak'}
             </DialogTitle>
             <DialogDescription class="text-xs">
                 Konfigurasi harga per meter (m²) atau fixed per pcs, serta hubungkan bahan baku terkait.

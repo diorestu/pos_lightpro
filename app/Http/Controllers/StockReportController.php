@@ -39,7 +39,8 @@ class StockReportController extends Controller
             $query->whereDate('created_at', '<=', $dateTo);
         }
 
-        $mutations = $query->latest()->paginate(15)->withQueryString();
+        $perPage = min(max($request->integer('per_page', 15), 5), 100);
+        $mutations = $query->latest()->paginate($perPage)->withQueryString();
 
         // Summaries
         $totalIn = StockMutation::where('type', 'in')->sum('quantity');
@@ -56,7 +57,7 @@ class StockReportController extends Controller
             ],
             'rawMaterials' => $rawMaterials,
             'products' => $products,
-            'filters' => $request->only(['item_type', 'type', 'search', 'date_from', 'date_to']),
+            'filters' => $request->only(['item_type', 'type', 'search', 'date_from', 'date_to', 'per_page']),
         ]);
     }
 

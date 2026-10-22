@@ -31,7 +31,8 @@ class ProductController extends Controller
             $query->where('pricing_type', $pricingType);
         }
 
-        $products = $query->orderBy('name')->paginate(15)->withQueryString();
+        $perPage = min(max($request->integer('per_page', 15), 5), 100);
+        $products = $query->orderBy('name')->paginate($perPage)->withQueryString();
         $categories = Category::orderBy('name')->get();
         $rawMaterials = RawMaterial::orderBy('name')->get();
 
@@ -39,7 +40,7 @@ class ProductController extends Controller
             'products' => $products,
             'categories' => $categories,
             'rawMaterials' => $rawMaterials,
-            'filters' => $request->only(['search', 'category_id', 'pricing_type']),
+            'filters' => $request->only(['search', 'category_id', 'pricing_type', 'per_page']),
         ]);
     }
 

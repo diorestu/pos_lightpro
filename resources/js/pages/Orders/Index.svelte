@@ -27,9 +27,8 @@
     import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
-    import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    import { DataTable, type ColumnDef, TableCell, TableRow } from '@/components/ui/table';
     import { Textarea } from '@/components/ui/textarea';
-    import { createSortable } from '@/lib/sortable.svelte';
 
     interface OrderRecord {
         id: number;
@@ -53,7 +52,7 @@
         orders = { data: [], links: [] },
         filters = {},
     }: {
-        orders: { data: OrderRecord[]; links: any[]; current_page: number; last_page: number };
+        orders: any;
         filters: Record<string, string>;
     } = $props();
 
@@ -69,6 +68,8 @@
     let paymentStatus = $state(filters.payment_status || '');
     // svelte-ignore state_referenced_locally
     let paymentMethod = $state(filters.payment_method || '');
+    // svelte-ignore state_referenced_locally
+    let currentPerPage = $state(filters.per_page ? parseInt(filters.per_page, 10) : 15);
 
     $effect(() => {
         search = filters.search || '';
@@ -77,10 +78,19 @@
         orderStatus = filters.order_status || '';
         paymentStatus = filters.payment_status || '';
         paymentMethod = filters.payment_method || '';
+        currentPerPage = filters.per_page ? parseInt(filters.per_page, 10) : 15;
     });
 
-    // Sorter
-    const sorter = createSortable(() => orders.data, 'created_at', 'desc');
+    const columns: ColumnDef[] = [
+        { key: 'invoice_number', label: 'No. Invoice', sortable: true },
+        { key: 'created_at', label: 'Tanggal', sortable: true },
+        { key: 'customer_name', label: 'Pelanggan', sortable: true },
+        { key: 'user_id', label: 'Kasir', sortable: true },
+        { key: 'order_status', label: 'Status Cetak', sortable: false },
+        { key: 'payment_status', label: 'Status Bayar', sortable: false },
+        { key: 'grand_total', label: 'Total Tagihan', align: 'right', sortable: true },
+        { key: 'actions', label: 'Aksi', align: 'right', sortable: false, hideable: false },
+    ];
 
     // Modals
     let showCancelModal = $state(false);
@@ -94,7 +104,10 @@
     let refundAmount = $state('');
     let restoreStockOnReturn = $state(true);
 
-    function applyFilters() {
+    function applyFilters(newSearch?: string) {
+        if (newSearch !== undefined) {
+            search = newSearch;
+        }
         router.get(
             '/orders',
             {
@@ -104,6 +117,7 @@
                 order_status: orderStatus || undefined,
                 payment_status: paymentStatus || undefined,
                 payment_method: paymentMethod || undefined,
+                per_page: currentPerPage,
             },
             { preserveState: true }
         );
@@ -190,65 +204,27 @@
             </p>
         </div>
         <Link href="/pos">
-            <Button class="bg-primary font-semibold">
-                + Buat Transaksi Baru
+            <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center">
+                <Plus class="size-4 mr-1.5" />
+                Transaksi POS
             </Button>
         </Link>
     </div>
 
     <!-- Filters Bar -->
     <Card class="border shadow-2xs">
-        <CardContent class="p-4 space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
-                <!-- Search -->
-                <div class="space-y-1">
-                    <Label class="text-[11px] text-muted-foreground">Cari Nota / Pelanggan</Label>
-                    <div class="relative">
-                        <Search class="size-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
-                        <Input bind:value={search} placeholder="INV-2026..." class="h-8 pl-8 text-xs" />
-                    </div>
-                </div>
-
+        <CardContent class="p-3.5 space-y-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
                 <!-- Date From -->
                 <div class="space-y-1">
                     <Label class="text-[11px] text-muted-foreground">Dari Tanggal</Label>
-                    <Input type="date" bind:value={dateFrom} class="h-8 text-xs" />
+                    <Input type="date" bind:value={dateFrom} class="h-8 text-xs bg-background" />
                 </div>
 
                 <!-- Date To -->
                 <div class="space-y-1">
                     <Label class="text-[11px] text-muted-foreground">Sampai Tanggal</Label>
-                    <Input type="date" bind:value={dateTo} class="h-8 text-xs" />
-                </div>
-
-                <!-- Order Status -->
-                <div class="space-y-1">
-                    <Label class="text-[11px] text-muted-foreground">Status Cetak</Label>
-                    <select
-                        bind:value={orderStatus}
-                        class="h-8 text-xs rounded-md border border-input bg-background px-2 pr-8 w-full"
-                    >
-                        <option value="">Semua Status</option>
-                        <option value="pending">Antrian (Pending)</option>
-                        <option value="processing">Sedang Dicetak</option>
-                        <option value="ready">Siap Diambil</option>
-                        <option value="completed">Selesai</option>
-                        <option value="cancelled">Dibatalkan</option>
-                    </select>
-                </div>
-
-                <!-- Payment Status -->
-                <div class="space-y-1">
-                    <Label class="text-[11px] text-muted-foreground">Status Pembayaran</Label>
-                    <select
-                        bind:value={paymentStatus}
-                        class="h-8 text-xs rounded-md border border-input bg-background px-2 pr-8 w-full"
-                    >
-                        <option value="">Semua Bayar</option>
-                        <option value="paid">Lunas</option>
-                        <option value="partial">DP (Parsial)</option>
-                        <option value="unpaid">Belum Bayar</option>
-                    </select>
+                    <Input type="date" bind:value={dateTo} class="h-8 text-xs bg-background" />
                 </div>
 
                 <!-- Payment Method -->
@@ -256,7 +232,7 @@
                     <Label class="text-[11px] text-muted-foreground">Metode Bayar</Label>
                     <select
                         bind:value={paymentMethod}
-                        class="h-8 text-xs rounded-md border border-input bg-background px-2 pr-8 w-full"
+                        class="h-8 text-xs rounded-md border border-input bg-background px-2 pr-8 w-full cursor-pointer font-medium"
                     >
                         <option value="">Semua Metode</option>
                         <option value="cash">Tunai</option>
@@ -266,193 +242,178 @@
                         <option value="split">Split / Termin</option>
                     </select>
                 </div>
-            </div>
 
-            <div class="flex items-center justify-end gap-2 pt-1 border-t">
-                <Button variant="ghost" size="sm" class="h-7 text-xs text-muted-foreground" onclick={resetFilters}>
-                    Reset Filter
-                </Button>
-                <Button size="sm" class="h-7 text-xs" onclick={applyFilters}>
-                    <Filter class="size-3 mr-1" />
-                    Terapkan Filter
-                </Button>
+                <!-- Actions -->
+                <div class="flex items-end gap-2">
+                    <Button size="sm" class="h-8 text-xs flex-1" onclick={() => applyFilters()}>
+                        <Filter class="size-3 mr-1" />
+                        Terapkan Filter
+                    </Button>
+                    <Button variant="outline" size="sm" class="h-8 text-xs text-muted-foreground" onclick={resetFilters}>
+                        Reset
+                    </Button>
+                </div>
             </div>
         </CardContent>
     </Card>
 
-    <!-- Orders Table with Sortable Columns -->
-    <Card class="border shadow-xs">
-        <CardContent class="p-0">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'invoice_number' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('invoice_number')}
-                        >
-                            No. Invoice
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'created_at' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('created_at')}
-                        >
-                            Tanggal
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'customer_name' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('customer_name')}
-                        >
-                            Pelanggan
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'user_id' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('user_id')}
-                        >
-                            Kasir
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'order_status' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('order_status')}
-                        >
-                            Status Cetak
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'payment_status' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('payment_status')}
-                        >
-                            Pembayaran
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'grand_total' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('grand_total')}
-                        >
-                            Total Nota
-                        </TableHead>
-                        <TableHead class="text-xs text-right">Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {#if sorter.sortedData.length === 0}
-                        <TableRow>
-                            <TableCell colspan={8} class="text-center py-10 text-muted-foreground text-xs">
-                                Tidak ada data penjualan sesuai filter yang dipilih.
-                            </TableCell>
-                        </TableRow>
-                    {:else}
-                        {#each sorter.sortedData as order (order.id)}
-                            <TableRow>
-                                <TableCell class="font-medium text-xs">
-                                    <Link href="/orders/{order.id}" class="hover:underline text-primary font-bold">
-                                        {order.invoice_number}
-                                    </Link>
-                                    {#if order.return}
-                                        <span class="block text-[10px] text-destructive font-semibold">
-                                            (Diretur: {order.return.return_number})
-                                        </span>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs text-muted-foreground">
-                                    {new Date(order.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                </TableCell>
-                                <TableCell class="text-xs">
-                                    <span class="font-medium block text-foreground">{order.customer_name || 'Pelanggan Umum'}</span>
-                                    {#if order.customer_phone && order.customer_phone !== '-'}
-                                        <span class="text-[11px] text-muted-foreground">{order.customer_phone}</span>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs text-muted-foreground">
-                                    {order.user?.name || '-'}
-                                </TableCell>
-                                <TableCell class="text-xs">
-                                    {#if order.order_status === 'completed'}
-                                        <Badge variant="outline" class="bg-emerald-50 text-emerald-700 border-emerald-200">Selesai</Badge>
-                                    {:else if order.order_status === 'processing'}
-                                        <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-200">Proses Cetak</Badge>
-                                    {:else if order.order_status === 'ready'}
-                                        <Badge variant="outline" class="bg-purple-50 text-purple-700 border-purple-200">Siap Ambil</Badge>
-                                    {:else if order.order_status === 'pending'}
-                                        <Badge variant="outline" class="bg-amber-50 text-amber-700 border-amber-200">Antrian</Badge>
-                                    {:else if order.order_status === 'cancelled'}
-                                        <Badge variant="destructive">Batal</Badge>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs">
-                                    <div class="flex items-center gap-1.5">
-                                        {#if order.payment_status === 'paid'}
-                                            <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px]">Lunas</Badge>
-                                        {:else if order.payment_status === 'partial'}
-                                            <Badge variant="secondary" class="bg-amber-100 text-amber-800 text-[10px]">DP / Tempo</Badge>
-                                        {:else}
-                                            <Badge variant="destructive" class="text-[10px]">Belum Bayar</Badge>
-                                        {/if}
-                                        <span class="text-[11px] uppercase text-muted-foreground font-semibold">({order.payment_method})</span>
-                                    </div>
-                                    {#if order.payment_status !== 'paid' && order.order_status !== 'cancelled'}
-                                        <div class="text-[10px] text-amber-700 dark:text-amber-300 mt-0.5 font-medium">
-                                            Sisa: {formatRupiah(order.grand_total - order.paid_amount)}
-                                        </div>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs text-right font-bold text-foreground">
-                                    {formatRupiah(order.grand_total)}
-                                </TableCell>
-                                <TableCell class="text-xs text-right">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <Link href="/orders/{order.id}">
-                                            <Button size="sm" variant="ghost" class="h-7 px-2 text-xs" title="Lihat Detail & Nota">
-                                                <Eye class="size-3.5 mr-1" />
-                                                Detail
-                                            </Button>
-                                        </Link>
+    <!-- Reusable DataTable -->
+    <DataTable
+        {columns}
+        data={orders}
+        pagination={orders}
+        search={search}
+        searchPlaceholder="Cari no invoice, pelanggan, kasir..."
+        onSearch={(val) => applyFilters(val)}
+        perPage={currentPerPage}
+        onPerPageChange={(val) => {
+            currentPerPage = val;
+            applyFilters();
+        }}
+        onPageChange={(_, url) => {
+            if (url) router.get(url, {}, { preserveState: true });
+        }}
+        defaultSortKey="created_at"
+        defaultSortDir="desc"
+        emptyMessage="Tidak ada riwayat transaksi penjualan ditemukan."
+    >
+        {#snippet filtersSnippet()}
+            <select
+                bind:value={orderStatus}
+                onchange={() => applyFilters()}
+                class="h-8 text-xs rounded-md border border-input bg-background px-2 pr-8 w-full sm:w-36 cursor-pointer font-medium"
+            >
+                <option value="">Semua Status Cetak</option>
+                <option value="pending">Antrian (Pending)</option>
+                <option value="processing">Sedang Dicetak</option>
+                <option value="ready">Siap Diambil</option>
+                <option value="completed">Selesai</option>
+                <option value="cancelled">Dibatalkan</option>
+            </select>
+            <select
+                bind:value={paymentStatus}
+                onchange={() => applyFilters()}
+                class="h-8 text-xs rounded-md border border-input bg-background px-2 pr-8 w-full sm:w-36 cursor-pointer font-medium"
+            >
+                <option value="">Semua Status Bayar</option>
+                <option value="paid">Lunas</option>
+                <option value="partial">DP (Parsial)</option>
+                <option value="unpaid">Belum Bayar</option>
+            </select>
+        {/snippet}
 
-                                        {#if order.order_status !== 'cancelled'}
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                class="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 border-destructive/30"
-                                                title="Batalkan Pesanan (Cancel Order)"
-                                                onclick={() => openCancelDialog(order)}
-                                            >
-                                                <XCircle class="size-3.5 mr-1" />
-                                                Batal
-                                            </Button>
+        {#snippet rowSnippet({ item: order, isVisible })}
+            <TableRow class="hover:bg-muted/30 transition-colors">
+                {#if isVisible('invoice_number')}
+                    <TableCell class="font-medium text-xs">
+                        <Link href="/orders/{order.id}" class="hover:underline text-primary font-bold">
+                            {order.invoice_number}
+                        </Link>
+                        {#if order.return}
+                            <span class="block text-[10px] text-destructive font-semibold">
+                                (Diretur: {order.return.return_number})
+                            </span>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('created_at')}
+                    <TableCell class="text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(order.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </TableCell>
+                {/if}
+                {#if isVisible('customer_name')}
+                    <TableCell class="text-xs">
+                        <span class="font-medium block text-foreground">{order.customer_name || 'Pelanggan Umum'}</span>
+                        {#if order.customer_phone && order.customer_phone !== '-'}
+                            <span class="text-[11px] text-muted-foreground">{order.customer_phone}</span>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('user_id')}
+                    <TableCell class="text-xs text-muted-foreground">
+                        {order.user?.name || '-'}
+                    </TableCell>
+                {/if}
+                {#if isVisible('order_status')}
+                    <TableCell class="text-xs">
+                        {#if order.order_status === 'completed'}
+                            <Badge variant="outline" class="bg-emerald-50 text-emerald-700 border-emerald-200">Selesai</Badge>
+                        {:else if order.order_status === 'processing'}
+                            <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-200">Proses Cetak</Badge>
+                        {:else if order.order_status === 'ready'}
+                            <Badge variant="outline" class="bg-purple-50 text-purple-700 border-purple-200">Siap Ambil</Badge>
+                        {:else if order.order_status === 'pending'}
+                            <Badge variant="outline" class="bg-amber-50 text-amber-700 border-amber-200">Antrian</Badge>
+                        {:else if order.order_status === 'cancelled'}
+                            <Badge variant="destructive">Batal</Badge>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('payment_status')}
+                    <TableCell class="text-xs">
+                        <div class="flex items-center gap-1.5">
+                            {#if order.payment_status === 'paid'}
+                                <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px]">Lunas</Badge>
+                            {:else if order.payment_status === 'partial'}
+                                <Badge variant="secondary" class="bg-amber-100 text-amber-800 text-[10px]">DP / Tempo</Badge>
+                            {:else}
+                                <Badge variant="destructive" class="text-[10px]">Belum Bayar</Badge>
+                            {/if}
+                            <span class="text-[11px] uppercase text-muted-foreground font-semibold">({order.payment_method})</span>
+                        </div>
+                        {#if order.payment_status !== 'paid' && order.order_status !== 'cancelled'}
+                            <div class="text-[10px] text-amber-700 dark:text-amber-300 mt-0.5 font-medium">
+                                Sisa: {formatRupiah(order.grand_total - order.paid_amount)}
+                            </div>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('grand_total')}
+                    <TableCell class="text-xs text-right font-bold text-foreground">
+                        {formatRupiah(order.grand_total)}
+                    </TableCell>
+                {/if}
+                {#if isVisible('actions')}
+                    <TableCell class="text-xs text-right">
+                        <div class="flex items-center justify-end gap-1">
+                            <Link href="/orders/{order.id}">
+                                <Button size="sm" variant="ghost" class="h-7 px-2 text-xs" title="Lihat Detail & Nota">
+                                    <Eye class="size-3.5 mr-1" />
+                                    Detail
+                                </Button>
+                            </Link>
 
-                                            {#if !order.return}
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    class="h-7 px-2 text-xs text-amber-700 hover:bg-amber-100 border-amber-300"
-                                                    title="Retur Hasil Cetak"
-                                                    onclick={() => openReturnDialog(order)}
-                                                >
-                                                    <RotateCcw class="size-3.5 mr-1" />
-                                                    Retur
-                                                </Button>
-                                            {/if}
-                                        {/if}
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        {/each}
-                    {/if}
-                </TableBody>
-            </Table>
-        </CardContent>
-    </Card>
+                            {#if order.order_status !== 'cancelled'}
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    class="h-7 px-2 text-xs text-destructive hover:bg-destructive/10 border-destructive/30"
+                                    title="Batalkan Pesanan (Cancel Order)"
+                                    onclick={() => openCancelDialog(order)}
+                                >
+                                    <XCircle class="size-3.5 mr-1" />
+                                    Batal
+                                </Button>
+
+                                {#if !order.return}
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        class="h-7 px-2 text-xs text-amber-700 hover:bg-amber-100 border-amber-300"
+                                        title="Retur Hasil Cetak"
+                                        onclick={() => openReturnDialog(order)}
+                                    >
+                                        <RotateCcw class="size-3.5 mr-1" />
+                                        Retur
+                                    </Button>
+                                {/if}
+                            {/if}
+                        </div>
+                    </TableCell>
+                {/if}
+            </TableRow>
+        {/snippet}
+    </DataTable>
 </div>
 
 <!-- Modal: Cancel Order -->

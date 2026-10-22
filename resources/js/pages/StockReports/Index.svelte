@@ -30,9 +30,8 @@
     import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
-    import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    import { DataTable, type ColumnDef, TableCell, TableRow } from '@/components/ui/table';
     import { Textarea } from '@/components/ui/textarea';
-    import { createSortable } from '@/lib/sortable.svelte';
 
     interface MutationItem {
         id: number;
@@ -56,7 +55,7 @@
         products = [],
         filters = {},
     }: {
-        mutations: { data: MutationItem[]; links: any[] };
+        mutations: any;
         summary: { total_in: number; total_out: number };
         rawMaterials: any[];
         products: any[];
@@ -73,6 +72,8 @@
     let dateFrom = $state(filters.date_from || '');
     // svelte-ignore state_referenced_locally
     let dateTo = $state(filters.date_to || '');
+    // svelte-ignore state_referenced_locally
+    let currentPerPage = $state(filters.per_page ? parseInt(filters.per_page, 10) : 15);
 
     $effect(() => {
         search = filters.search || '';
@@ -80,10 +81,19 @@
         mutationType = filters.type || '';
         dateFrom = filters.date_from || '';
         dateTo = filters.date_to || '';
+        currentPerPage = filters.per_page ? parseInt(filters.per_page, 10) : 15;
     });
 
-    // Sorter
-    const sorter = createSortable(() => mutations.data, 'created_at', 'desc');
+    const columns: ColumnDef[] = [
+        { key: 'created_at', label: 'Tanggal & Waktu', sortable: true },
+        { key: 'item_name', label: 'Nama Barang / Material', sortable: true },
+        { key: 'item_type', label: 'Jenis Barang', sortable: true },
+        { key: 'type', label: 'Tipe Mutasi', sortable: true },
+        { key: 'quantity', label: 'Jumlah Mutasi', align: 'right', sortable: true },
+        { key: 'current_stock', label: 'Perubahan Stok', align: 'center', sortable: true },
+        { key: 'reason', label: 'Keterangan / Alasan', sortable: false },
+        { key: 'user_id', label: 'Petugas', sortable: false },
+    ];
 
     // Modal state
     let showAdjustModal = $state(false);
@@ -93,7 +103,10 @@
     let adjustQty = $state('');
     let adjustReason = $state('');
 
-    function applyFilter() {
+    function applyFilter(newSearch?: string) {
+        if (newSearch !== undefined) {
+            search = newSearch;
+        }
         router.get(
             '/stock-reports',
             {
@@ -102,6 +115,7 @@
                 type: mutationType || undefined,
                 date_from: dateFrom || undefined,
                 date_to: dateTo || undefined,
+                per_page: currentPerPage,
             },
             { preserveState: true }
         );
@@ -148,9 +162,9 @@
             </p>
         </div>
 
-        <Button class="bg-primary font-semibold" onclick={openAdjust}>
+        <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center" onclick={openAdjust}>
             <Sliders class="size-4 mr-1.5" />
-            + Penyesuaian Stok Manual
+            Penyesuaian Stok Manual
         </Button>
     </div>
 
@@ -191,23 +205,31 @@
         </Card>
     </div>
 
-    <!-- Filters Bar -->
-    <Card class="border shadow-2xs">
-        <CardContent class="p-4 flex flex-col md:flex-row items-center gap-3">
-            <div class="relative flex-1 w-full">
-                <Search class="size-3.5 absolute left-3 top-2.5 text-muted-foreground" />
-                <Input
-                    bind:value={search}
-                    onchange={applyFilter}
-                    placeholder="Cari nama barang atau alasan mutasi..."
-                    class="h-8 pl-8 text-xs"
-                />
-            </div>
-
+    <!-- Reusable DataTable with Search, Column Filter, Records Per Page & Pagination in Head Table Card -->
+    <DataTable
+        {columns}
+        data={mutations}
+        pagination={mutations}
+        search={search}
+        searchPlaceholder="Cari nama barang atau alasan mutasi..."
+        onSearch={(val) => applyFilter(val)}
+        perPage={currentPerPage}
+        onPerPageChange={(val) => {
+            currentPerPage = val;
+            applyFilter();
+        }}
+        onPageChange={(_, url) => {
+            if (url) router.get(url, {}, { preserveState: true });
+        }}
+        defaultSortKey="created_at"
+        defaultSortDir="desc"
+        emptyMessage="Tidak ada log mutasi stok sesuai filter yang dipilih."
+    >
+        {#snippet filtersSnippet()}
             <select
                 bind:value={itemType}
-                onchange={applyFilter}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full md:w-44"
+                onchange={() => applyFilter()}
+                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
             >
                 <option value="">Semua Jenis Item</option>
                 <option value="raw_material">Bahan Baku Percetakan</option>
@@ -216,137 +238,82 @@
 
             <select
                 bind:value={mutationType}
-                onchange={applyFilter}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full md:w-44"
+                onchange={() => applyFilter()}
+                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
             >
                 <option value="">Semua Tipe Mutasi</option>
                 <option value="in">Stok Masuk (+)</option>
                 <option value="out">Stok Keluar (-)</option>
                 <option value="adjustment">Stock Opname (=)</option>
             </select>
-        </CardContent>
-    </Card>
+        {/snippet}
 
-    <!-- Mutation Log Table with Sortable Headers -->
-    <Card class="border shadow-xs">
-        <CardContent class="p-0">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'created_at' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('created_at')}
-                        >
-                            Tanggal & Waktu
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'item_name' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('item_name')}
-                        >
-                            Nama Barang / Material
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'item_type' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('item_type')}
-                        >
-                            Jenis Barang
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'type' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('type')}
-                        >
-                            Tipe Mutasi
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'quantity' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('quantity')}
-                        >
-                            Jumlah Mutasi
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-center"
-                            sortable
-                            sortDirection={sorter.sortKey === 'current_stock' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('current_stock')}
-                        >
-                            Perubahan Stok
-                        </TableHead>
-                        <TableHead class="text-xs">Keterangan / Alasan</TableHead>
-                        <TableHead class="text-xs">Petugas</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {#if sorter.sortedData.length === 0}
-                        <TableRow>
-                            <TableCell colspan={8} class="text-center py-10 text-muted-foreground text-xs">
-                                Tidak ada log mutasi stok sesuai filter yang dipilih.
-                            </TableCell>
-                        </TableRow>
-                    {:else}
-                        {#each sorter.sortedData as mut (mut.id)}
-                            <TableRow>
-                                <TableCell class="text-xs text-muted-foreground">
-                                    {new Date(mut.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                </TableCell>
-                                <TableCell class="text-xs font-semibold text-foreground">
-                                    {mut.item_name}
-                                </TableCell>
-                                <TableCell class="text-xs">
-                                    {#if mut.item_type === 'raw_material'}
-                                        <Badge variant="outline" class="text-[10px]">Bahan Baku</Badge>
-                                    {:else}
-                                        <Badge variant="secondary" class="text-[10px]">Produk</Badge>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs">
-                                    {#if mut.type === 'in'}
-                                        <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px] gap-1">
-                                            <ArrowUpRight class="size-3" />
-                                            Masuk
-                                        </Badge>
-                                    {:else if mut.type === 'out'}
-                                        <Badge variant="destructive" class="text-[10px] gap-1">
-                                            <ArrowDownRight class="size-3" />
-                                            Keluar
-                                        </Badge>
-                                    {:else}
-                                        <Badge class="bg-blue-600 hover:bg-blue-600 text-white text-[10px] gap-1">
-                                            <Sliders class="size-3" />
-                                            Opname
-                                        </Badge>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs text-right font-bold {mut.type === 'in' ? 'text-emerald-600' : mut.type === 'out' ? 'text-destructive' : 'text-blue-600'}">
-                                    {mut.type === 'in' ? '+' : mut.type === 'out' ? '-' : ''}{mut.quantity}
-                                </TableCell>
-                                <TableCell class="text-xs text-center">
-                                    <span class="text-muted-foreground">{mut.previous_stock}</span>
-                                    <span class="text-muted-foreground/60 mx-1">&rarr;</span>
-                                    <span class="font-bold text-foreground">{mut.current_stock}</span>
-                                </TableCell>
-                                <TableCell class="text-xs text-muted-foreground">
-                                    {mut.reason}
-                                </TableCell>
-                                <TableCell class="text-xs font-medium">
-                                    {mut.user?.name || '-'}
-                                </TableCell>
-                            </TableRow>
-                        {/each}
-                    {/if}
-                </TableBody>
-            </Table>
-        </CardContent>
-    </Card>
+        {#snippet rowSnippet({ item: mut, isVisible })}
+            <TableRow class="hover:bg-muted/30 transition-colors">
+                {#if isVisible('created_at')}
+                    <TableCell class="text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(mut.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </TableCell>
+                {/if}
+                {#if isVisible('item_name')}
+                    <TableCell class="text-xs font-semibold text-foreground">
+                        {mut.item_name}
+                    </TableCell>
+                {/if}
+                {#if isVisible('item_type')}
+                    <TableCell class="text-xs">
+                        {#if mut.item_type === 'raw_material'}
+                            <Badge variant="outline" class="text-[10px]">Bahan Baku</Badge>
+                        {:else}
+                            <Badge variant="secondary" class="text-[10px]">Produk</Badge>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('type')}
+                    <TableCell class="text-xs">
+                        {#if mut.type === 'in'}
+                            <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px] gap-1">
+                                <ArrowUpRight class="size-3" />
+                                Masuk
+                            </Badge>
+                        {:else if mut.type === 'out'}
+                            <Badge variant="destructive" class="text-[10px] gap-1">
+                                <ArrowDownRight class="size-3" />
+                                Keluar
+                            </Badge>
+                        {:else}
+                            <Badge class="bg-blue-600 hover:bg-blue-600 text-white text-[10px] gap-1">
+                                <Sliders class="size-3" />
+                                Opname
+                            </Badge>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('quantity')}
+                    <TableCell class="text-xs text-right font-bold {mut.type === 'in' ? 'text-emerald-600' : mut.type === 'out' ? 'text-destructive' : 'text-blue-600'}">
+                        {mut.type === 'in' ? '+' : mut.type === 'out' ? '-' : ''}{mut.quantity}
+                    </TableCell>
+                {/if}
+                {#if isVisible('current_stock')}
+                    <TableCell class="text-xs text-center">
+                        <span class="text-muted-foreground">{mut.previous_stock}</span>
+                        <span class="text-muted-foreground/60 mx-1">&rarr;</span>
+                        <span class="font-bold text-foreground">{mut.current_stock}</span>
+                    </TableCell>
+                {/if}
+                {#if isVisible('reason')}
+                    <TableCell class="text-xs text-muted-foreground">
+                        {mut.reason}
+                    </TableCell>
+                {/if}
+                {#if isVisible('user_id')}
+                    <TableCell class="text-xs font-medium">
+                        {mut.user?.name || '-'}
+                    </TableCell>
+                {/if}
+            </TableRow>
+        {/snippet}
+    </DataTable>
 </div>
 
 <!-- Modal: Penyesuaian Stok Manual -->

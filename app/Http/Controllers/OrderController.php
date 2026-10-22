@@ -56,11 +56,12 @@ class OrderController extends Controller
             $query->where('payment_method', $paymentMethod);
         }
 
-        $orders = $query->latest()->paginate(15)->withQueryString();
+        $perPage = min(max($request->integer('per_page', 15), 5), 100);
+        $orders = $query->latest()->paginate($perPage)->withQueryString();
 
         return Inertia::render('Orders/Index', [
             'orders' => $orders,
-            'filters' => $request->only(['search', 'date_from', 'date_to', 'order_status', 'payment_status', 'payment_method']),
+            'filters' => $request->only(['search', 'date_from', 'date_to', 'order_status', 'payment_status', 'payment_method', 'per_page']),
         ]);
     }
 

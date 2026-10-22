@@ -29,9 +29,8 @@
     import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
-    import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    import { DataTable, type ColumnDef, TableCell, TableRow } from '@/components/ui/table';
     import { Textarea } from '@/components/ui/textarea';
-    import { createSortable } from '@/lib/sortable.svelte';
 
     interface RawMaterialItem {
         id: number;
@@ -49,7 +48,7 @@
         rawMaterials = { data: [], links: [] },
         filters = {},
     }: {
-        rawMaterials: { data: RawMaterialItem[]; links: any[] };
+        rawMaterials: any;
         filters: Record<string, any>;
     } = $props();
 
@@ -57,14 +56,25 @@
     let search = $state(filters.search || '');
     // svelte-ignore state_referenced_locally
     let lowStockOnly = $state(filters.low_stock_only === 'true' || filters.low_stock_only === true);
+    // svelte-ignore state_referenced_locally
+    let currentPerPage = $state(filters.per_page ? parseInt(filters.per_page, 10) : 15);
 
     $effect(() => {
         search = filters.search || '';
         lowStockOnly = filters.low_stock_only === 'true' || filters.low_stock_only === true;
+        currentPerPage = filters.per_page ? parseInt(filters.per_page, 10) : 15;
     });
 
-    // Sorter
-    const sorter = createSortable(() => rawMaterials.data, 'name', 'asc');
+    const columns: ColumnDef[] = [
+        { key: 'code', label: 'Kode', sortable: true },
+        { key: 'name', label: 'Nama Bahan Baku', sortable: true },
+        { key: 'unit', label: 'Satuan', sortable: true },
+        { key: 'stock', label: 'Stok Gudang', align: 'right', sortable: true },
+        { key: 'min_stock', label: 'Min. Alert', align: 'right', sortable: true },
+        { key: 'status', label: 'Status Stok', sortable: false },
+        { key: 'cost_price', label: 'Harga Beli Modal', align: 'right', sortable: true },
+        { key: 'actions', label: 'Aksi', align: 'right', sortable: false, hideable: false },
+    ];
 
     // Modal state
     let showModal = $state(false);
@@ -77,12 +87,16 @@
     let formCostPrice = $state('15000');
     let formDescription = $state('');
 
-    function applyFilter() {
+    function applyFilter(newSearch?: string) {
+        if (newSearch !== undefined) {
+            search = newSearch;
+        }
         router.get(
             '/raw-materials',
             {
                 search: search || undefined,
                 low_stock_only: lowStockOnly ? 'true' : undefined,
+                per_page: currentPerPage,
             },
             { preserveState: true }
         );
@@ -168,161 +182,112 @@
                 Stok material roll, lembaran, tinta solvent, albatros, art carton, dan ring mata ayam untuk produksi cetak. Klik judul kolom untuk mengurutkan (sortable).
             </p>
         </div>
-        <Button class="bg-primary font-semibold" onclick={openCreate}>
+        <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center" onclick={openCreate}>
             <Plus class="size-4 mr-1.5" />
-            + Tambah Bahan Baku
+            Tambah Bahan Baku
         </Button>
     </div>
 
-    <!-- Filters -->
-    <Card class="border shadow-2xs">
-        <CardContent class="p-4 flex flex-col sm:flex-row items-center gap-3">
-            <div class="relative flex-1 w-full">
-                <Search class="size-3.5 absolute left-3 top-2.5 text-muted-foreground" />
-                <Input
-                    bind:value={search}
-                    onchange={applyFilter}
-                    placeholder="Cari kode atau nama bahan baku..."
-                    class="h-8 pl-8 text-xs"
-                />
-            </div>
-
-            <div class="flex items-center gap-2 shrink-0">
+    <!-- Reusable DataTable with Search, Column Filter, Records Per Page & Pagination in Head Table Card -->
+    <DataTable
+        {columns}
+        data={rawMaterials}
+        pagination={rawMaterials}
+        search={search}
+        searchPlaceholder="Cari kode atau nama bahan baku..."
+        onSearch={(val) => applyFilter(val)}
+        perPage={currentPerPage}
+        onPerPageChange={(val) => {
+            currentPerPage = val;
+            applyFilter();
+        }}
+        onPageChange={(_, url) => {
+            if (url) router.get(url, {}, { preserveState: true });
+        }}
+        defaultSortKey="name"
+        defaultSortDir="asc"
+        emptyMessage="Tidak ada data bahan baku ditemukan."
+    >
+        {#snippet filtersSnippet()}
+            <label class="flex items-center gap-2 px-2 py-1 text-xs border rounded-md bg-background cursor-pointer hover:bg-muted/40 transition-colors">
                 <input
                     type="checkbox"
-                    id="low_stock_chk"
                     bind:checked={lowStockOnly}
-                    onchange={applyFilter}
-                    class="size-4 rounded border-input"
+                    onchange={() => applyFilter()}
+                    class="size-3.5 rounded border-input text-primary focus:ring-primary"
                 />
-                <Label for="low_stock_chk" class="text-xs font-medium cursor-pointer">
-                    Hanya Stok Menipis (&le; Min Stok)
-                </Label>
-            </div>
-        </CardContent>
-    </Card>
+                <span class="font-medium text-muted-foreground whitespace-nowrap">Hanya Stok Menipis (&le; Min Stok)</span>
+            </label>
+        {/snippet}
 
-    <!-- Table -->
-    <Card class="border shadow-xs">
-        <CardContent class="p-0">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'code' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('code')}
-                        >
-                            Kode
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'name' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('name')}
-                        >
-                            Nama Bahan Baku
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'unit' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('unit')}
-                        >
-                            Satuan
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'stock' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('stock')}
-                        >
-                            Stok Gudang
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'min_stock' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('min_stock')}
-                        >
-                            Min. Alert
-                        </TableHead>
-                        <TableHead class="text-xs">Status Stok</TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'cost_price' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('cost_price')}
-                        >
-                            Harga Beli Modal
-                        </TableHead>
-                        <TableHead class="text-xs text-right">Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {#if sorter.sortedData.length === 0}
-                        <TableRow>
-                            <TableCell colspan={8} class="text-center py-10 text-muted-foreground text-xs">
-                                Tidak ada data bahan baku ditemukan.
-                            </TableCell>
-                        </TableRow>
-                    {:else}
-                        {#each sorter.sortedData as raw (raw.id)}
-                            <TableRow>
-                                <TableCell class="text-xs font-bold text-muted-foreground">{raw.code}</TableCell>
-                                <TableCell class="text-xs font-semibold text-foreground">
-                                    {raw.name}
-                                    {#if raw.description}
-                                        <span class="block text-[11px] text-muted-foreground font-normal line-clamp-1">{raw.description}</span>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs capitalize text-muted-foreground">{raw.unit}</TableCell>
-                                <TableCell class="text-xs text-right font-bold text-foreground">
-                                    {raw.stock} {raw.unit}
-                                </TableCell>
-                                <TableCell class="text-xs text-right text-muted-foreground">
-                                    {raw.min_stock} {raw.unit}
-                                </TableCell>
-                                <TableCell class="text-xs">
-                                    {#if raw.stock <= raw.min_stock}
-                                        <Badge variant="destructive" class="text-[10px] gap-1">
-                                            <AlertTriangle class="size-3" />
-                                            Menipis
-                                        </Badge>
-                                    {:else}
-                                        <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px] gap-1">
-                                            <CheckCircle2 class="size-3" />
-                                            Aman
-                                        </Badge>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs text-right text-foreground font-medium">
-                                    {formatRupiah(raw.cost_price)}
-                                </TableCell>
-                                <TableCell class="text-xs text-right">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <Button size="sm" variant="ghost" class="h-7 w-7 p-0" onclick={() => openEdit(raw)}>
-                                            <Edit2 class="size-3.5 text-muted-foreground" />
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            class="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
-                                            disabled={raw.products_count > 0}
-                                            onclick={() => deleteMaterial(raw)}
-                                        >
-                                            <Trash2 class="size-3.5" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        {/each}
-                    {/if}
-                </TableBody>
-            </Table>
-        </CardContent>
-    </Card>
+        {#snippet rowSnippet({ item: raw, isVisible })}
+            <TableRow class="hover:bg-muted/30 transition-colors">
+                {#if isVisible('code')}
+                    <TableCell class="text-xs font-bold text-muted-foreground">{raw.code}</TableCell>
+                {/if}
+                {#if isVisible('name')}
+                    <TableCell class="text-xs font-semibold text-foreground">
+                        {raw.name}
+                        {#if raw.description}
+                            <span class="block text-[11px] text-muted-foreground font-normal line-clamp-1">{raw.description}</span>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('unit')}
+                    <TableCell class="text-xs capitalize text-muted-foreground">{raw.unit}</TableCell>
+                {/if}
+                {#if isVisible('stock')}
+                    <TableCell class="text-xs text-right font-bold text-foreground">
+                        {raw.stock} {raw.unit}
+                    </TableCell>
+                {/if}
+                {#if isVisible('min_stock')}
+                    <TableCell class="text-xs text-right text-muted-foreground">
+                        {raw.min_stock} {raw.unit}
+                    </TableCell>
+                {/if}
+                {#if isVisible('status')}
+                    <TableCell class="text-xs">
+                        {#if raw.stock <= raw.min_stock}
+                            <Badge variant="destructive" class="text-[10px] gap-1">
+                                <AlertTriangle class="size-3" />
+                                Menipis
+                            </Badge>
+                        {:else}
+                            <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px] gap-1">
+                                <CheckCircle2 class="size-3" />
+                                Aman
+                            </Badge>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('cost_price')}
+                    <TableCell class="text-xs text-right text-foreground font-medium">
+                        {formatRupiah(raw.cost_price)}
+                    </TableCell>
+                {/if}
+                {#if isVisible('actions')}
+                    <TableCell class="text-xs text-right">
+                        <div class="flex items-center justify-end gap-1">
+                            <Button size="sm" variant="ghost" class="h-7 w-7 p-0" onclick={() => openEdit(raw)} title="Ubah Data">
+                                <Edit2 class="size-3.5 text-muted-foreground" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                class="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                                disabled={raw.products_count > 0}
+                                onclick={() => deleteMaterial(raw)}
+                                title={raw.products_count > 0 ? 'Bahan baku terhubung dengan produk' : 'Hapus Bahan Baku'}
+                            >
+                                <Trash2 class="size-3.5" />
+                            </Button>
+                        </div>
+                    </TableCell>
+                {/if}
+            </TableRow>
+        {/snippet}
+    </DataTable>
 </div>
 
 <!-- Modal: Tambah/Edit Bahan Baku -->
@@ -331,7 +296,7 @@
         <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
                 <Boxes class="size-5 text-primary" />
-                {editingMaterial ? 'Edit Bahan Baku' : 'Tambah Bahan Baku Baru'}
+                {editingMaterial ? 'Edit Bahan Baku' : 'Tambah Bahan Baku'}
             </DialogTitle>
             <DialogDescription class="text-xs">
                 Data bahan baku digunakan untuk menghitung sisa stok fisik dan estimasi biaya HPP cetak.

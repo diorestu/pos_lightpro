@@ -31,9 +31,8 @@
     import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
-    import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    import { DataTable, type ColumnDef, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
     import { Textarea } from '@/components/ui/textarea';
-    import { createSortable } from '@/lib/sortable.svelte';
 
     interface ShiftItem {
         id: number;
@@ -64,14 +63,30 @@
         activeShift = null,
         shifts = { data: [], links: [] },
         users = [],
+        filters = {},
     }: {
         activeShift: ShiftItem | null;
-        shifts: { data: ShiftItem[]; links: any[] };
+        shifts: any;
         users: UserItem[];
+        filters?: Record<string, string>;
     } = $props();
 
-    // Sorter for Shift history
-    const sorter = createSortable(() => shifts.data, 'opened_at', 'desc');
+    // svelte-ignore state_referenced_locally
+    let currentPerPage = $state(filters?.per_page ? parseInt(filters.per_page, 10) : 15);
+    $effect(() => {
+        currentPerPage = filters?.per_page ? parseInt(filters.per_page, 10) : 15;
+    });
+
+    const shiftColumns: ColumnDef[] = [
+        { key: 'user_id', label: 'Kasir Bertugas', sortable: false },
+        { key: 'opened_at', label: 'Waktu Buka', sortable: true },
+        { key: 'closed_at', label: 'Waktu Tutup', sortable: true },
+        { key: 'starting_cash', label: 'Modal Awal', align: 'right', sortable: true },
+        { key: 'cash_sales', label: 'Penjualan Tunai', align: 'right', sortable: true },
+        { key: 'closing_cash', label: 'Uang Fisik Aktual', align: 'right', sortable: true },
+        { key: 'difference', label: 'Selisih Kas', align: 'right', sortable: true },
+        { key: 'status', label: 'Status', align: 'center', sortable: false },
+    ];
 
     // Modals
     let showOpenModal = $state(false);
@@ -161,12 +176,12 @@
 
         <div class="flex items-center gap-2">
             {#if !activeShift}
-                <Button class="bg-primary font-semibold" onclick={() => (showOpenModal = true)}>
+                <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center" onclick={() => (showOpenModal = true)}>
                     <Clock class="size-4 mr-1.5" />
-                    Buka Shift Kasir Baru
+                    Buka Shift Kasir
                 </Button>
             {:else}
-                <Button variant="destructive" class="font-semibold" onclick={() => {
+                <Button variant="destructive" class="font-semibold whitespace-nowrap inline-flex items-center" onclick={() => {
                     closePhysicalCash = activeShift ? activeShift.expected_cash.toString() : '';
                     showCloseModal = true;
                 }}>
@@ -240,7 +255,8 @@
                         </p>
                     </div>
                 </div>
-                <Button class="bg-primary font-semibold shrink-0" onclick={() => (showOpenModal = true)}>
+                <Button class="bg-primary font-semibold shrink-0 whitespace-nowrap inline-flex items-center" onclick={() => (showOpenModal = true)}>
+                    <Clock class="size-4 mr-1.5" />
                     Buka Shift Sekarang
                 </Button>
             </CardContent>
@@ -259,7 +275,7 @@
                     Pilih akun petugas kasir yang sedang bertugas di meja kasir.
                 </CardDescription>
             </div>
-            <Button size="sm" variant="outline" class="text-xs" onclick={() => (showAddUserModal = true)}>
+            <Button size="sm" variant="outline" class="text-xs whitespace-nowrap inline-flex items-center" onclick={() => (showAddUserModal = true)}>
                 <Plus class="size-3.5 mr-1" />
                 Tambah Karyawan
             </Button>
@@ -329,107 +345,82 @@
         </CardContent>
     </Card>
 
-    <!-- Shift History Table with Sortable Columns -->
-    <Card class="border shadow-xs">
-        <CardHeader class="pb-3">
-            <CardTitle class="text-sm font-semibold">Riwayat Sesi Shift Kasir</CardTitle>
-            <CardDescription class="text-xs">Catatan rekonsiliasi kas masuk, kas keluar, dan selisih uang fisik per shift. Klik judul kolom untuk mengurutkan.</CardDescription>
-        </CardHeader>
-        <CardContent class="p-0">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead class="text-xs">Kasir Bertugas</TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'opened_at' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('opened_at')}
-                        >
-                            Waktu Buka
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'closed_at' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('closed_at')}
-                        >
-                            Waktu Tutup
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'starting_cash' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('starting_cash')}
-                        >
-                            Modal Awal
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'cash_sales' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('cash_sales')}
-                        >
-                            Penjualan Tunai
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'closing_cash' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('closing_cash')}
-                        >
-                            Uang Fisik Aktual
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'difference' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('difference')}
-                        >
-                            Selisih Kas
-                        </TableHead>
-                        <TableHead class="text-xs text-center">Status</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {#each sorter.sortedData as s (s.id)}
-                        <TableRow>
-                            <TableCell class="text-xs font-semibold">{s.user?.name || '-'}</TableCell>
-                            <TableCell class="text-xs text-muted-foreground">
-                                {new Date(s.opened_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                            </TableCell>
-                            <TableCell class="text-xs text-muted-foreground">
-                                {s.closed_at ? new Date(s.closed_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-'}
-                            </TableCell>
-                            <TableCell class="text-xs text-right">{formatRupiah(s.starting_cash)}</TableCell>
-                            <TableCell class="text-xs text-right text-emerald-600 font-semibold">{formatRupiah(s.cash_sales)}</TableCell>
-                            <TableCell class="text-xs text-right font-bold">
-                                {s.closing_cash !== null ? formatRupiah(s.closing_cash) : '-'}
-                            </TableCell>
-                            <TableCell class="text-xs text-right font-semibold">
-                                {#if s.status === 'open'}
-                                    <span class="text-muted-foreground">-</span>
-                                {:else if s.difference == 0}
-                                    <span class="text-emerald-600">Pas (0)</span>
-                                {:else if s.difference > 0}
-                                    <span class="text-blue-600 font-bold">+{formatRupiah(s.difference)}</span>
-                                {:else}
-                                    <span class="text-destructive font-bold">{formatRupiah(s.difference)}</span>
-                                {/if}
-                            </TableCell>
-                            <TableCell class="text-xs text-center">
-                                {#if s.status === 'open'}
-                                    <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px]">Terbuka</Badge>
-                                {:else}
-                                    <Badge variant="outline" class="text-[10px]">Ditutup</Badge>
-                                {/if}
-                            </TableCell>
-                        </TableRow>
-                    {/each}
-                </TableBody>
-            </Table>
-        </CardContent>
-    </Card>
+    <!-- Shift History Reusable DataTable -->
+    <div class="space-y-2">
+        <div class="px-1">
+            <h3 class="text-sm font-semibold text-foreground">Riwayat Sesi Shift Kasir</h3>
+            <p class="text-xs text-muted-foreground">Catatan rekonsiliasi kas masuk, kas keluar, dan selisih uang fisik per shift kasir.</p>
+        </div>
+
+        <DataTable
+            columns={shiftColumns}
+            data={shifts}
+            pagination={shifts}
+            searchPlaceholder="Cari riwayat shift..."
+            perPage={currentPerPage}
+            onPerPageChange={(val) => {
+                currentPerPage = val;
+                router.get('/shifts', { per_page: val }, { preserveState: true });
+            }}
+            onPageChange={(_, url) => {
+                if (url) router.get(url, {}, { preserveState: true });
+            }}
+            defaultSortKey="opened_at"
+            defaultSortDir="desc"
+            emptyMessage="Belum ada riwayat shift kasir tercatat."
+        >
+            {#snippet rowSnippet({ item: s, isVisible })}
+                <TableRow class="hover:bg-muted/30 transition-colors">
+                    {#if isVisible('user_id')}
+                        <TableCell class="text-xs font-semibold">{s.user?.name || '-'}</TableCell>
+                    {/if}
+                    {#if isVisible('opened_at')}
+                        <TableCell class="text-xs text-muted-foreground whitespace-nowrap">
+                            {new Date(s.opened_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </TableCell>
+                    {/if}
+                    {#if isVisible('closed_at')}
+                        <TableCell class="text-xs text-muted-foreground whitespace-nowrap">
+                            {s.closed_at ? new Date(s.closed_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-'}
+                        </TableCell>
+                    {/if}
+                    {#if isVisible('starting_cash')}
+                        <TableCell class="text-xs text-right">{formatRupiah(s.starting_cash)}</TableCell>
+                    {/if}
+                    {#if isVisible('cash_sales')}
+                        <TableCell class="text-xs text-right text-emerald-600 font-semibold">{formatRupiah(s.cash_sales)}</TableCell>
+                    {/if}
+                    {#if isVisible('closing_cash')}
+                        <TableCell class="text-xs text-right font-bold">
+                            {s.closing_cash !== null ? formatRupiah(s.closing_cash) : '-'}
+                        </TableCell>
+                    {/if}
+                    {#if isVisible('difference')}
+                        <TableCell class="text-xs text-right font-semibold">
+                            {#if s.status === 'open'}
+                                <span class="text-muted-foreground">-</span>
+                            {:else if s.difference == 0}
+                                <span class="text-emerald-600">Pas (0)</span>
+                            {:else if s.difference > 0}
+                                <span class="text-blue-600 font-bold">+{formatRupiah(s.difference)}</span>
+                            {:else}
+                                <span class="text-destructive font-bold">{formatRupiah(s.difference)}</span>
+                            {/if}
+                        </TableCell>
+                    {/if}
+                    {#if isVisible('status')}
+                        <TableCell class="text-xs text-center">
+                            {#if s.status === 'open'}
+                                <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px]">Terbuka</Badge>
+                            {:else}
+                                <Badge variant="outline" class="text-[10px]">Ditutup</Badge>
+                            {/if}
+                        </TableCell>
+                    {/if}
+                </TableRow>
+            {/snippet}
+        </DataTable>
+    </div>
 </div>
 
 <!-- Modal: Buka Shift Kasir -->
@@ -438,7 +429,7 @@
         <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
                 <Clock class="size-5 text-primary" />
-                Buka Shift Kasir Baru
+                Buka Shift Kasir
             </DialogTitle>
             <DialogDescription class="text-xs">
                 Masukkan uang kas kecil awal di laci kasir untuk uang kembalian.

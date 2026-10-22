@@ -622,9 +622,9 @@
                         {/each}
                     </select>
                 </div>
-                <Button size="sm" variant="outline" class="h-8 px-2 text-xs shrink-0" onclick={() => (showNewCustomerModal = true)}>
+                <Button size="sm" variant="outline" class="h-8 px-2 text-xs shrink-0 whitespace-nowrap inline-flex items-center" onclick={() => (showNewCustomerModal = true)}>
                     <UserPlus class="size-3.5 mr-1" />
-                    + Pelanggan
+                    Tambah Pelanggan
                 </Button>
             </div>
 
@@ -1038,7 +1038,7 @@
         <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
                 <Clock class="size-5 text-primary" />
-                Buka Shift Kasir Baru
+                Buka Shift Kasir
             </DialogTitle>
             <DialogDescription class="text-xs">
                 Masukkan modal kas awal di laci kasir sebelum memulai sesi transaksi POS hari ini.
@@ -1076,13 +1076,13 @@
     </DialogContent>
 </Dialog>
 
-<!-- Modal: Tambah Pelanggan Baru Cepat -->
+<!-- Modal: Tambah Pelanggan Cepat -->
 <Dialog open={showNewCustomerModal} onOpenChange={(open) => (showNewCustomerModal = open)}>
     <DialogContent class="sm:max-w-md">
         <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
                 <UserPlus class="size-5 text-primary" />
-                Tambah Pelanggan Baru
+                Tambah Pelanggan
             </DialogTitle>
             <DialogDescription class="text-xs">
                 Data pelanggan tersimpan otomatis untuk diskon khusus dan riwayat order.

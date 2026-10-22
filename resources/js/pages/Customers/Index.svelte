@@ -27,9 +27,8 @@
     import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
-    import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+    import { DataTable, type ColumnDef, TableCell, TableRow } from '@/components/ui/table';
     import { Textarea } from '@/components/ui/textarea';
-    import { createSortable } from '@/lib/sortable.svelte';
 
     interface CustomerItem {
         id: number;
@@ -47,7 +46,7 @@
         customers = { data: [], links: [] },
         filters = {},
     }: {
-        customers: { data: CustomerItem[]; links: any[] };
+        customers: any;
         filters: Record<string, string>;
     } = $props();
 
@@ -55,14 +54,24 @@
     let search = $state(filters.search || '');
     // svelte-ignore state_referenced_locally
     let typeFilter = $state(filters.customer_type || '');
+    // svelte-ignore state_referenced_locally
+    let currentPerPage = $state(filters.per_page ? parseInt(filters.per_page, 10) : 15);
 
     $effect(() => {
         search = filters.search || '';
         typeFilter = filters.customer_type || '';
+        currentPerPage = filters.per_page ? parseInt(filters.per_page, 10) : 15;
     });
 
-    // Sorter
-    const sorter = createSortable(() => customers.data, 'name', 'asc');
+    const columns: ColumnDef[] = [
+        { key: 'name', label: 'Nama Pelanggan', sortable: true },
+        { key: 'phone', label: 'Telepon / WhatsApp', sortable: true },
+        { key: 'customer_type', label: 'Tipe Pelanggan', sortable: true },
+        { key: 'discount_percent', label: 'Diskon Otomatis', align: 'center', sortable: true },
+        { key: 'total_spent', label: 'Total Transaksi', align: 'right', sortable: true },
+        { key: 'orders_count', label: 'Jumlah Order', align: 'center', sortable: true },
+        { key: 'actions', label: 'Aksi', align: 'right', sortable: false, hideable: false },
+    ];
 
     // Modal state
     let showModal = $state(false);
@@ -74,12 +83,16 @@
     let formType = $state<'regular' | 'member' | 'reseller' | 'corporate'>('regular');
     let formDiscount = $state('0');
 
-    function applyFilter() {
+    function applyFilter(newSearch?: string) {
+        if (newSearch !== undefined) {
+            search = newSearch;
+        }
         router.get(
             '/customers',
             {
                 search: search || undefined,
                 customer_type: typeFilter || undefined,
+                per_page: currentPerPage,
             },
             { preserveState: true }
         );
@@ -162,28 +175,37 @@
                 Kelola pelanggan Regular, Member, Reseller Percetakan, dan Instansi/Corporate dengan persentase diskon khusus otomatis. Klik judul kolom untuk mengurutkan (sortable).
             </p>
         </div>
-        <Button class="bg-primary font-semibold" onclick={openCreate}>
+        <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center" onclick={openCreate}>
             <Plus class="size-4 mr-1.5" />
-            + Tambah Pelanggan
+            Tambah Pelanggan
         </Button>
     </div>
 
-    <!-- Filters -->
-    <Card class="border shadow-2xs">
-        <CardContent class="p-4 flex flex-col sm:flex-row items-center gap-3">
-            <div class="relative flex-1 w-full">
-                <Search class="size-3.5 absolute left-3 top-2.5 text-muted-foreground" />
-                <Input
-                    bind:value={search}
-                    onchange={applyFilter}
-                    placeholder="Cari nama, no. telepon/WA, atau email..."
-                    class="h-8 pl-8 text-xs"
-                />
-            </div>
+    <!-- Reusable DataTable with Search, Column Filter, Records Per Page & Pagination in Head Table Card -->
+    <DataTable
+        {columns}
+        data={customers}
+        pagination={customers}
+        search={search}
+        searchPlaceholder="Cari nama, telepon/WA, atau email..."
+        onSearch={(val) => applyFilter(val)}
+        perPage={currentPerPage}
+        onPerPageChange={(val) => {
+            currentPerPage = val;
+            applyFilter();
+        }}
+        onPageChange={(_, url) => {
+            if (url) router.get(url, {}, { preserveState: true });
+        }}
+        defaultSortKey="name"
+        defaultSortDir="asc"
+        emptyMessage="Tidak ada data pelanggan ditemukan."
+    >
+        {#snippet filtersSnippet()}
             <select
                 bind:value={typeFilter}
-                onchange={applyFilter}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-56"
+                onchange={() => applyFilter()}
+                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-48 cursor-pointer font-medium"
             >
                 <option value="">Semua Tipe Pelanggan</option>
                 <option value="regular">Regular (Umum)</option>
@@ -191,130 +213,75 @@
                 <option value="reseller">Reseller Percetakan</option>
                 <option value="corporate">Corporate / Instansi</option>
             </select>
-        </CardContent>
-    </Card>
+        {/snippet}
 
-    <!-- Table with Sortable Columns -->
-    <Card class="border shadow-xs">
-        <CardContent class="p-0">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'name' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('name')}
-                        >
-                            Nama Pelanggan
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'phone' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('phone')}
-                        >
-                            Telepon / WhatsApp
-                        </TableHead>
-                        <TableHead
-                            class="text-xs"
-                            sortable
-                            sortDirection={sorter.sortKey === 'customer_type' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('customer_type')}
-                        >
-                            Tipe Pelanggan
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-center"
-                            sortable
-                            sortDirection={sorter.sortKey === 'discount_percent' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('discount_percent')}
-                        >
-                            Diskon Otomatis
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-right"
-                            sortable
-                            sortDirection={sorter.sortKey === 'total_spent' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('total_spent')}
-                        >
-                            Total Transaksi
-                        </TableHead>
-                        <TableHead
-                            class="text-xs text-center"
-                            sortable
-                            sortDirection={sorter.sortKey === 'orders_count' ? sorter.sortDirection : null}
-                            onSort={() => sorter.toggleSort('orders_count')}
-                        >
-                            Jumlah Order
-                        </TableHead>
-                        <TableHead class="text-xs text-right">Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {#if sorter.sortedData.length === 0}
-                        <TableRow>
-                            <TableCell colspan={7} class="text-center py-10 text-muted-foreground text-xs">
-                                Tidak ada data pelanggan ditemukan.
-                            </TableCell>
-                        </TableRow>
-                    {:else}
-                        {#each sorter.sortedData as c (c.id)}
-                            <TableRow>
-                                <TableCell class="text-xs font-semibold text-foreground">
-                                    {c.name}
-                                    {#if c.address}
-                                        <span class="block text-[11px] text-muted-foreground font-normal line-clamp-1">{c.address}</span>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs text-muted-foreground">
-                                    {c.phone || '-'}
-                                </TableCell>
-                                <TableCell class="text-xs">
-                                    {#if c.customer_type === 'reseller'}
-                                        <Badge class="bg-indigo-600 hover:bg-indigo-600 text-white text-[10px]">Reseller</Badge>
-                                    {:else if c.customer_type === 'corporate'}
-                                        <Badge class="bg-purple-600 hover:bg-purple-600 text-white text-[10px]">Corporate</Badge>
-                                    {:else if c.customer_type === 'member'}
-                                        <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px]">Member</Badge>
-                                    {:else}
-                                        <Badge variant="outline" class="text-[10px]">Regular</Badge>
-                                    {/if}
-                                </TableCell>
-                                <TableCell class="text-xs text-center font-bold text-emerald-600">
-                                    {c.discount_percent > 0 ? `${c.discount_percent}%` : '-'}
-                                </TableCell>
-                                <TableCell class="text-xs text-right font-semibold text-foreground">
-                                    {formatRupiah(c.total_spent)}
-                                </TableCell>
-                                <TableCell class="text-xs text-center">
-                                    <Badge variant="secondary" class="font-bold">
-                                        {c.orders_count} Transaksi
-                                    </Badge>
-                                </TableCell>
-                                <TableCell class="text-xs text-right">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <Button size="sm" variant="ghost" class="h-7 w-7 p-0" onclick={() => openEdit(c)}>
-                                            <Edit2 class="size-3.5 text-muted-foreground" />
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            class="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
-                                            disabled={c.orders_count > 0}
-                                            onclick={() => deleteCustomer(c)}
-                                        >
-                                            <Trash2 class="size-3.5" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        {/each}
-                    {/if}
-                </TableBody>
-            </Table>
-        </CardContent>
-    </Card>
+        {#snippet rowSnippet({ item: c, isVisible })}
+            <TableRow class="hover:bg-muted/30 transition-colors">
+                {#if isVisible('name')}
+                    <TableCell class="text-xs font-semibold text-foreground">
+                        {c.name}
+                        {#if c.address}
+                            <span class="block text-[11px] text-muted-foreground font-normal line-clamp-1">{c.address}</span>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('phone')}
+                    <TableCell class="text-xs text-muted-foreground">
+                        {c.phone || '-'}
+                    </TableCell>
+                {/if}
+                {#if isVisible('customer_type')}
+                    <TableCell class="text-xs">
+                        {#if c.customer_type === 'reseller'}
+                            <Badge class="bg-indigo-600 hover:bg-indigo-600 text-white text-[10px]">Reseller</Badge>
+                        {:else if c.customer_type === 'corporate'}
+                            <Badge class="bg-purple-600 hover:bg-purple-600 text-white text-[10px]">Corporate</Badge>
+                        {:else if c.customer_type === 'member'}
+                            <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px]">Member</Badge>
+                        {:else}
+                            <Badge variant="outline" class="text-[10px]">Regular</Badge>
+                        {/if}
+                    </TableCell>
+                {/if}
+                {#if isVisible('discount_percent')}
+                    <TableCell class="text-xs text-center font-bold text-emerald-600">
+                        {c.discount_percent > 0 ? `${c.discount_percent}%` : '-'}
+                    </TableCell>
+                {/if}
+                {#if isVisible('total_spent')}
+                    <TableCell class="text-xs text-right font-semibold text-foreground">
+                        {formatRupiah(c.total_spent)}
+                    </TableCell>
+                {/if}
+                {#if isVisible('orders_count')}
+                    <TableCell class="text-xs text-center">
+                        <Badge variant="secondary" class="font-bold">
+                            {c.orders_count} Transaksi
+                        </Badge>
+                    </TableCell>
+                {/if}
+                {#if isVisible('actions')}
+                    <TableCell class="text-xs text-right">
+                        <div class="flex items-center justify-end gap-1">
+                            <Button size="sm" variant="ghost" class="h-7 w-7 p-0" onclick={() => openEdit(c)} title="Ubah Data">
+                                <Edit2 class="size-3.5 text-muted-foreground" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                class="h-7 w-7 p-0 text-destructive hover:bg-destructive/10"
+                                disabled={c.orders_count > 0}
+                                onclick={() => deleteCustomer(c)}
+                                title={c.orders_count > 0 ? 'Pelanggan memiliki transaksi aktif' : 'Hapus Pelanggan'}
+                            >
+                                <Trash2 class="size-3.5" />
+                            </Button>
+                        </div>
+                    </TableCell>
+                {/if}
+            </TableRow>
+        {/snippet}
+    </DataTable>
 </div>
 
 <!-- Modal: Tambah/Edit Pelanggan -->
@@ -323,7 +290,7 @@
         <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
                 <Users class="size-5 text-primary" />
-                {editingCustomer ? 'Edit Pelanggan' : 'Tambah Pelanggan Baru'}
+                {editingCustomer ? 'Edit Pelanggan' : 'Tambah Pelanggan'}
             </DialogTitle>
             <DialogDescription class="text-xs">
                 Tentukan tipe pelanggan dan persentase diskon yang langsung teraplikasikan saat kasir memilih nama pelanggan.

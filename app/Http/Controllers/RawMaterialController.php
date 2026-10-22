@@ -26,11 +26,12 @@ class RawMaterialController extends Controller
             $query->whereColumn('stock', '<=', 'min_stock');
         }
 
-        $rawMaterials = $query->orderBy('name')->paginate(15)->withQueryString();
+        $perPage = min(max($request->integer('per_page', 15), 5), 100);
+        $rawMaterials = $query->orderBy('name')->paginate($perPage)->withQueryString();
 
         return Inertia::render('RawMaterials/Index', [
             'rawMaterials' => $rawMaterials,
-            'filters' => $request->only(['search', 'low_stock_only']),
+            'filters' => $request->only(['search', 'low_stock_only', 'per_page']),
         ]);
     }
 

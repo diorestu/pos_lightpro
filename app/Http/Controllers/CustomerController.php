@@ -26,11 +26,12 @@ class CustomerController extends Controller
             $query->where('customer_type', $type);
         }
 
-        $customers = $query->orderBy('name')->paginate(15)->withQueryString();
+        $perPage = min(max($request->integer('per_page', 15), 5), 100);
+        $customers = $query->orderBy('name')->paginate($perPage)->withQueryString();
 
         return Inertia::render('Customers/Index', [
             'customers' => $customers,
-            'filters' => $request->only(['search', 'customer_type']),
+            'filters' => $request->only(['search', 'customer_type', 'per_page']),
         ]);
     }
 
