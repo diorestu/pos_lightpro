@@ -71,8 +71,15 @@
         topProducts: any[];
     } = $props();
 
+    // svelte-ignore state_referenced_locally
     let customStart = $state(startDate);
+    // svelte-ignore state_referenced_locally
     let customEnd = $state(endDate);
+
+    $effect(() => {
+        customStart = startDate;
+        customEnd = endDate;
+    });
 
     const dailyTrendSortable = createSortable(() => dailyTrend, 'date', 'desc');
     const topProductsSortable = createSortable(() => topProducts, 'total_revenue', 'desc');

@@ -140,9 +140,14 @@
     ]);
 
     // Modals
+    // svelte-ignore state_referenced_locally
     let showOpenShiftModal = $state(!activeShift);
     let startingCashInput = $state('200000');
     let shiftNotes = $state('');
+
+    $effect(() => {
+        showOpenShiftModal = !activeShift;
+    });
 
     let showNewCustomerModal = $state(false);
     let newCustName = $state('');

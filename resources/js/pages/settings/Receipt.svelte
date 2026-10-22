@@ -63,19 +63,44 @@
         settings: ReceiptConfig;
     } = $props();
 
+    // svelte-ignore state_referenced_locally
     let storeName = $state(settings.store_name || '');
+    // svelte-ignore state_referenced_locally
     let tagline = $state(settings.tagline || '');
+    // svelte-ignore state_referenced_locally
     let address = $state(settings.address || '');
+    // svelte-ignore state_referenced_locally
     let phone = $state(settings.phone || '');
+    // svelte-ignore state_referenced_locally
     let email = $state(settings.email || '');
+    // svelte-ignore state_referenced_locally
     let website = $state(settings.website || '');
+    // svelte-ignore state_referenced_locally
     let footerText = $state(settings.footer_text || '');
+    // svelte-ignore state_referenced_locally
     let paperSize = $state<'58mm' | '80mm' | 'A5'>(settings.paper_size || '80mm');
+    // svelte-ignore state_referenced_locally
     let showLogo = $state(settings.show_logo ?? true);
+    // svelte-ignore state_referenced_locally
     let showCashierName = $state(settings.show_cashier_name ?? true);
+    // svelte-ignore state_referenced_locally
     let showCustomerInfo = $state(settings.show_customer_info ?? true);
     let isSaving = $state(false);
     let isTestingUSB = $state(false);
+
+    $effect(() => {
+        storeName = settings.store_name || '';
+        tagline = settings.tagline || '';
+        address = settings.address || '';
+        phone = settings.phone || '';
+        email = settings.email || '';
+        website = settings.website || '';
+        footerText = settings.footer_text || '';
+        paperSize = settings.paper_size || '80mm';
+        showLogo = settings.show_logo ?? true;
+        showCashierName = settings.show_cashier_name ?? true;
+        showCustomerInfo = settings.show_customer_info ?? true;
+    });
 
     function saveSettings() {
         isSaving = true;

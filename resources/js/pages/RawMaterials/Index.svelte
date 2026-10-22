@@ -53,8 +53,15 @@
         filters: Record<string, any>;
     } = $props();
 
+    // svelte-ignore state_referenced_locally
     let search = $state(filters.search || '');
+    // svelte-ignore state_referenced_locally
     let lowStockOnly = $state(filters.low_stock_only === 'true' || filters.low_stock_only === true);
+
+    $effect(() => {
+        search = filters.search || '';
+        lowStockOnly = filters.low_stock_only === 'true' || filters.low_stock_only === true;
+    });
 
     // Sorter
     const sorter = createSortable(() => rawMaterials.data, 'name', 'asc');

@@ -51,8 +51,15 @@
         filters: Record<string, string>;
     } = $props();
 
+    // svelte-ignore state_referenced_locally
     let search = $state(filters.search || '');
+    // svelte-ignore state_referenced_locally
     let typeFilter = $state(filters.customer_type || '');
+
+    $effect(() => {
+        search = filters.search || '';
+        typeFilter = filters.customer_type || '';
+    });
 
     // Sorter
     const sorter = createSortable(() => customers.data, 'name', 'asc');

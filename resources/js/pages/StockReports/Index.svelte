@@ -63,11 +63,24 @@
         filters: Record<string, string>;
     } = $props();
 
+    // svelte-ignore state_referenced_locally
     let search = $state(filters.search || '');
+    // svelte-ignore state_referenced_locally
     let itemType = $state(filters.item_type || '');
+    // svelte-ignore state_referenced_locally
     let mutationType = $state(filters.type || '');
+    // svelte-ignore state_referenced_locally
     let dateFrom = $state(filters.date_from || '');
+    // svelte-ignore state_referenced_locally
     let dateTo = $state(filters.date_to || '');
+
+    $effect(() => {
+        search = filters.search || '';
+        itemType = filters.item_type || '';
+        mutationType = filters.type || '';
+        dateFrom = filters.date_from || '';
+        dateTo = filters.date_to || '';
+    });
 
     // Sorter
     const sorter = createSortable(() => mutations.data, 'created_at', 'desc');

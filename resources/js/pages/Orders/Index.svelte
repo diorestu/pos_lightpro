@@ -57,12 +57,27 @@
         filters: Record<string, string>;
     } = $props();
 
+    // svelte-ignore state_referenced_locally
     let search = $state(filters.search || '');
+    // svelte-ignore state_referenced_locally
     let dateFrom = $state(filters.date_from || '');
+    // svelte-ignore state_referenced_locally
     let dateTo = $state(filters.date_to || '');
+    // svelte-ignore state_referenced_locally
     let orderStatus = $state(filters.order_status || '');
+    // svelte-ignore state_referenced_locally
     let paymentStatus = $state(filters.payment_status || '');
+    // svelte-ignore state_referenced_locally
     let paymentMethod = $state(filters.payment_method || '');
+
+    $effect(() => {
+        search = filters.search || '';
+        dateFrom = filters.date_from || '';
+        dateTo = filters.date_to || '';
+        orderStatus = filters.order_status || '';
+        paymentStatus = filters.payment_status || '';
+        paymentMethod = filters.payment_method || '';
+    });
 
     // Sorter
     const sorter = createSortable(() => orders.data, 'created_at', 'desc');

@@ -30,7 +30,7 @@
         rowSnippet?: Snippet<[{ item: any; index: number }]>;
     } = $props();
 
-    const sorter = createSortable(() => data, defaultSortKey, defaultSortDir);
+    const sorter = createSortable(() => data, () => defaultSortKey, () => defaultSortDir);
 </script>
 
 <div class={cn('relative w-full overflow-auto rounded-md border', className)}>

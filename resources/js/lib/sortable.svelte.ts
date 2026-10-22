@@ -1,10 +1,12 @@
 export function createSortable<T>(
     initialDataGetter: () => T[],
-    defaultKey?: string,
-    defaultDir: 'asc' | 'desc' = 'asc'
+    defaultKey?: string | (() => string | undefined | null),
+    defaultDir: 'asc' | 'desc' | (() => 'asc' | 'desc') = 'asc'
 ) {
-    let sortKey = $state<string | null>(defaultKey || null);
-    let sortDirection = $state<'asc' | 'desc' | null>(defaultKey ? defaultDir : null);
+    const initialKey = typeof defaultKey === 'function' ? defaultKey() : defaultKey;
+    const initialDir = typeof defaultDir === 'function' ? defaultDir() : defaultDir;
+    let sortKey = $state<string | null>(initialKey || null);
+    let sortDirection = $state<'asc' | 'desc' | null>(initialKey ? initialDir : null);
 
     function toggleSort(key: string) {
         if (sortKey === key) {

@@ -63,9 +63,18 @@
         filters: Record<string, string>;
     } = $props();
 
+    // svelte-ignore state_referenced_locally
     let search = $state(filters.search || '');
+    // svelte-ignore state_referenced_locally
     let categoryFilter = $state(filters.category_id || '');
+    // svelte-ignore state_referenced_locally
     let pricingTypeFilter = $state(filters.pricing_type || '');
+
+    $effect(() => {
+        search = filters.search || '';
+        categoryFilter = filters.category_id || '';
+        pricingTypeFilter = filters.pricing_type || '';
+    });
 
     // Sorter
     const sorter = createSortable(() => products.data, 'name', 'asc');
