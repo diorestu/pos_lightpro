@@ -22,6 +22,10 @@ export function createSortable<T>(
         }
     }
 
+    function getDirection(key: string): 'asc' | 'desc' | null {
+        return sortKey === key ? sortDirection : null;
+    }
+
     const sortedData = $derived.by(() => {
         const raw = initialDataGetter() || [];
         const list = [...raw];
@@ -61,6 +65,10 @@ export function createSortable<T>(
         get sortedData() {
             return sortedData;
         },
+        get sorted() {
+            return sortedData;
+        },
         toggleSort,
+        getDirection,
     };
 }
