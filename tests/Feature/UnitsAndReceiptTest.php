@@ -45,6 +45,15 @@ class UnitsAndReceiptTest extends TestCase
         $response = $this->actingAs($this->admin)->get('/settings/units');
 
         $response->assertOk();
+        $response->assertInertia(fn ($page) => $page->component('Units/Index'));
+    }
+
+    public function test_admin_can_view_receipt_settings_page(): void
+    {
+        $response = $this->actingAs($this->admin)->get('/settings/receipt');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page->component('ReceiptSettings/Index'));
     }
 
     public function test_cashier_is_restricted_from_settings_units(): void

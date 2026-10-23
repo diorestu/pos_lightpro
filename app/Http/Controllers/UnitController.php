@@ -31,7 +31,7 @@ class UnitController extends Controller
             ];
         });
 
-        return Inertia::render('Settings/Units/Index', [
+        return Inertia::render('Units/Index', [
             'units' => $units,
         ]);
     }

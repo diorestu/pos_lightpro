@@ -15,7 +15,7 @@ class ReceiptSettingController extends Controller
     {
         $settings = ReceiptSetting::getActive();
 
-        return Inertia::render('Settings/Receipt', [
+        return Inertia::render('ReceiptSettings/Index', [
             'settings' => $settings,
         ]);
     }
