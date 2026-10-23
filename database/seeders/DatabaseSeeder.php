@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\RawMaterial;
 use App\Models\ReceiptSetting;
 use App\Models\StockMutation;
+use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -81,7 +82,26 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 2. Receipt Settings
+        // 2. Units of Measurement (Master Satuan)
+        $defaultUnits = [
+            ['name' => 'Pieces', 'symbol' => 'pcs', 'description' => 'Satuan hitungan per buah / item'],
+            ['name' => 'Meter Persegi', 'symbol' => 'm²', 'description' => 'Satuan luas untuk banner, spanduk, sticker'],
+            ['name' => 'Lembar', 'symbol' => 'lbr', 'description' => 'Satuan lembaran kertas / kartu'],
+            ['name' => 'Roll', 'symbol' => 'roll', 'description' => 'Satuan gulungan bahan baku'],
+            ['name' => 'Box', 'symbol' => 'box', 'description' => 'Satuan per kotak / dus'],
+            ['name' => 'Rim', 'symbol' => 'rim', 'description' => 'Satuan kertas cetak (500 lembar)'],
+            ['name' => 'Pack', 'symbol' => 'pack', 'description' => 'Satuan kemasan pack'],
+            ['name' => 'Meter', 'symbol' => 'm', 'description' => 'Satuan panjang'],
+            ['name' => 'Centimeter', 'symbol' => 'cm', 'description' => 'Satuan dimensi sentimeter'],
+            ['name' => 'Kilogram', 'symbol' => 'kg', 'description' => 'Satuan berat kilogram'],
+            ['name' => 'Liter', 'symbol' => 'liter', 'description' => 'Satuan volume cairan tinta'],
+        ];
+
+        foreach ($defaultUnits as $u) {
+            Unit::firstOrCreate(['symbol' => $u['symbol']], $u);
+        }
+
+        // 3. Receipt Settings
         $settings = ReceiptSetting::getActive();
 
         // 3. Categories

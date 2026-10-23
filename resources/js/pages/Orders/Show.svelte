@@ -229,6 +229,15 @@
 <div class="hidden print:block thermal-receipt-80mm text-black font-sans text-xs">
     <!-- Store Header -->
     <div class="text-center pb-2 border-b border-dashed border-black">
+        {#if receiptSettings.show_logo !== false && receiptSettings.logo_url}
+            <div class="flex justify-center mb-1.5">
+                <img
+                    src={receiptSettings.logo_url}
+                    alt="Logo {receiptSettings.store_name || 'Toko'}"
+                    class="receipt-logo max-h-14 max-w-[160px] object-contain filter grayscale contrast-125 mx-auto block"
+                />
+            </div>
+        {/if}
         <h2 class="font-bold text-sm tracking-tight uppercase">{receiptSettings.store_name || 'LightPrint Percetakan'}</h2>
         {#if receiptSettings.tagline}
             <p class="text-[10px] text-neutral-800">{receiptSettings.tagline}</p>
@@ -970,6 +979,15 @@
         <!-- Kertas Thermal 80mm Simulasi -->
         <div class="my-2 p-4 bg-white text-black rounded-lg border border-neutral-300 shadow-inner font-sans text-xs max-w-[340px] mx-auto select-none">
             <div class="text-center pb-2 border-b border-dashed border-black">
+                {#if receiptSettings.show_logo !== false && receiptSettings.logo_url}
+                    <div class="flex justify-center mb-1.5">
+                        <img
+                            src={receiptSettings.logo_url}
+                            alt="Logo {receiptSettings.store_name || 'Toko'}"
+                            class="max-h-12 max-w-[150px] object-contain filter grayscale contrast-125 mx-auto block"
+                        />
+                    </div>
+                {/if}
                 <h3 class="font-bold text-sm uppercase">{receiptSettings.store_name || 'LightPrint Percetakan'}</h3>
                 {#if receiptSettings.tagline}
                     <p class="text-[10px] text-neutral-700">{receiptSettings.tagline}</p>

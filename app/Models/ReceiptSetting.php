@@ -11,6 +11,7 @@ class ReceiptSetting extends Model
 
     protected $fillable = [
         'store_name',
+        'logo_path',
         'tagline',
         'address',
         'phone',
@@ -22,6 +23,15 @@ class ReceiptSetting extends Model
         'show_cashier_name',
         'show_customer_info',
     ];
+
+    protected $appends = [
+        'logo_url',
+    ];
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->logo_path ? asset('storage/' . $this->logo_path) : null;
+    }
 
     protected function casts(): array
     {

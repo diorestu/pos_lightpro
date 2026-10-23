@@ -8,6 +8,7 @@
     import Package from '@lucide/svelte/icons/package';
     import Printer from '@lucide/svelte/icons/printer';
     import Receipt from '@lucide/svelte/icons/receipt';
+    import Ruler from '@lucide/svelte/icons/ruler';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
     import Tags from '@lucide/svelte/icons/tags';
     import Users from '@lucide/svelte/icons/users';
@@ -81,6 +82,7 @@
                   {
                       title: 'Pengaturan',
                       items: [
+                          { title: 'Master Satuan', href: '/settings/units', icon: Ruler },
                           { title: 'Pengaturan Nota', href: '/settings/receipt', icon: Printer },
                       ],
                   },

@@ -17,8 +17,11 @@
     import { router } from '@inertiajs/svelte';
     import Check from '@lucide/svelte/icons/check';
     import Eye from '@lucide/svelte/icons/eye';
+    import ImageIcon from '@lucide/svelte/icons/image';
     import Printer from '@lucide/svelte/icons/printer';
     import Save from '@lucide/svelte/icons/save';
+    import Trash2 from '@lucide/svelte/icons/trash-2';
+    import Upload from '@lucide/svelte/icons/upload';
     import Usb from '@lucide/svelte/icons/usb';
     import AppHead from '@/components/AppHead.svelte';
     import { Badge } from '@/components/ui/badge';
@@ -33,6 +36,8 @@
     interface ReceiptConfig {
         id?: number;
         store_name: string;
+        logo_path?: string | null;
+        logo_url?: string | null;
         tagline: string | null;
         address: string | null;
         phone: string | null;
@@ -48,6 +53,8 @@
     let {
         settings = {
             store_name: 'LightPrint Digital Printing',
+            logo_path: null,
+            logo_url: null,
             tagline: 'Solusi Cetak Cepat, Tajam & Terpercaya',
             address: 'Jl. Percetakan Raya No. 88, Jakarta Pusat',
             phone: '0812-3456-7890',
@@ -85,6 +92,16 @@
     let showCashierName = $state(settings.show_cashier_name ?? true);
     // svelte-ignore state_referenced_locally
     let showCustomerInfo = $state(settings.show_customer_info ?? true);
+    
+    // Logo management states
+    // svelte-ignore state_referenced_locally
+    let currentLogoUrl = $state(settings.logo_url || null);
+    let logoFile = $state<File | null>(null);
+    let logoPreviewUrl = $state<string | null>(null);
+    let removeLogo = $state(false);
+
+    const activeLogoDisplay = $derived(removeLogo ? null : (logoPreviewUrl || currentLogoUrl));
+
     let isSaving = $state(false);
     let isTestingUSB = $state(false);
 
@@ -100,29 +117,59 @@
         showLogo = settings.show_logo ?? true;
         showCashierName = settings.show_cashier_name ?? true;
         showCustomerInfo = settings.show_customer_info ?? true;
+        currentLogoUrl = settings.logo_url || null;
+        logoFile = null;
+        logoPreviewUrl = null;
+        removeLogo = false;
     });
+
+    function handleFileSelect(e: Event) {
+        const input = e.target as HTMLInputElement;
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            if (file.size > 2 * 1024 * 1024) {
+                toast.error('Ukuran logo maksimal 2MB.');
+                return;
+            }
+            logoFile = file;
+            logoPreviewUrl = URL.createObjectURL(file);
+            removeLogo = false;
+        }
+    }
+
+    function handleRemoveLogo() {
+        logoFile = null;
+        logoPreviewUrl = null;
+        currentLogoUrl = null;
+        removeLogo = true;
+    }
 
     function saveSettings() {
         isSaving = true;
-        router.put(
-            '/settings/receipt',
-            {
-                store_name: storeName,
-                tagline: tagline,
-                address: address,
-                phone: phone,
-                email: email,
-                website: website,
-                footer_text: footerText,
-                paper_size: paperSize,
-                show_logo: showLogo,
-                show_cashier_name: showCashierName,
-                show_customer_info: showCustomerInfo,
-            },
-            {
-                onFinish: () => (isSaving = false),
-            }
-        );
+
+        const formData = new FormData();
+        formData.append('_method', 'PUT');
+        formData.append('store_name', storeName);
+        formData.append('tagline', tagline || '');
+        formData.append('address', address || '');
+        formData.append('phone', phone || '');
+        formData.append('email', email || '');
+        formData.append('website', website || '');
+        formData.append('footer_text', footerText || '');
+        formData.append('paper_size', paperSize);
+        formData.append('show_logo', showLogo ? '1' : '0');
+        formData.append('show_cashier_name', showCashierName ? '1' : '0');
+        formData.append('show_customer_info', showCustomerInfo ? '1' : '0');
+
+        if (removeLogo) {
+            formData.append('remove_logo', '1');
+        } else if (logoFile) {
+            formData.append('logo', logoFile);
+        }
+
+        router.post('/settings/receipt', formData, {
+            onFinish: () => (isSaving = false),
+        });
     }
 
     const sampleTestOrder = {
@@ -178,6 +225,7 @@
         try {
             const currentSettings = {
                 store_name: storeName,
+                logo_url: activeLogoDisplay,
                 tagline: tagline,
                 address: address,
                 phone: phone,
@@ -225,6 +273,57 @@
                 <CardDescription class="text-xs">Data ini akan tercetak langsung pada kertas struk belanja pelanggan</CardDescription>
             </CardHeader>
             <CardContent class="space-y-4 text-xs">
+                <!-- Upload Logo Toko Percetakan -->
+                <div class="space-y-1.5 p-3 rounded-lg border bg-muted/20">
+                    <div class="flex items-center justify-between">
+                        <Label class="text-xs font-semibold flex items-center gap-1.5">
+                            <ImageIcon class="size-4 text-primary" />
+                            Logo Percetakan (Struk Thermal)
+                        </Label>
+                        {#if activeLogoDisplay}
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                class="h-6 px-2 text-[11px] text-destructive hover:bg-destructive/10"
+                                onclick={handleRemoveLogo}
+                            >
+                                <Trash2 class="size-3 mr-1" />
+                                Hapus Logo
+                            </Button>
+                        {/if}
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                        {#if activeLogoDisplay}
+                            <div class="p-2 border rounded-md bg-white flex items-center justify-center shrink-0 w-28 h-16 shadow-xs">
+                                <img
+                                    src={activeLogoDisplay}
+                                    alt="Preview Logo"
+                                    class="max-h-12 max-w-[100px] object-contain filter grayscale contrast-125"
+                                />
+                            </div>
+                        {:else}
+                            <div class="border-2 border-dashed border-muted-foreground/30 rounded-md w-28 h-16 flex flex-col items-center justify-center shrink-0 text-muted-foreground bg-muted/10">
+                                <ImageIcon class="size-5 opacity-50 mb-0.5" />
+                                <span class="text-[9px]">Tanpa Logo</span>
+                            </div>
+                        {/if}
+                        <div class="flex-1 space-y-1 w-full">
+                            <input
+                                type="file"
+                                id="receipt_logo"
+                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                onchange={handleFileSelect}
+                                class="block w-full text-xs text-muted-foreground file:mr-2 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 cursor-pointer"
+                            />
+                            <p class="text-[10px] text-muted-foreground leading-tight">
+                                Format PNG/JPG/WebP maks 2MB. Logo otomatis dikonversi ke raster monokrom 1-bit untuk printer thermal 80mm.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="space-y-1">
                         <Label for="s_name">Nama Toko Percetakan *</Label>
@@ -350,6 +449,15 @@
                 <div class="mx-auto bg-white text-black p-4 rounded shadow-md border border-neutral-300 text-[11px] {paperSize === '58mm' ? 'max-w-[270px]' : paperSize === '80mm' ? 'max-w-[340px]' : 'max-w-full'}">
                     {#if showLogo}
                         <div class="text-center pb-2 border-b border-dashed border-neutral-400">
+                            {#if activeLogoDisplay}
+                                <div class="flex justify-center mb-1.5">
+                                    <img
+                                        src={activeLogoDisplay}
+                                        alt="Logo Toko"
+                                        class="max-h-12 max-w-[150px] object-contain filter grayscale contrast-125"
+                                    />
+                                </div>
+                            {/if}
                             <h3 class="font-bold text-sm uppercase tracking-tight">{storeName || 'Nama Toko'}</h3>
                             {#if tagline}
                                 <p class="text-[9px] text-neutral-600">{tagline}</p>

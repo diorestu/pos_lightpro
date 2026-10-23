@@ -54,11 +54,13 @@
         products = { data: [], links: [] },
         categories = [],
         rawMaterials = [],
+        units = [],
         filters = {},
     }: {
         products: any;
         categories: any[];
         rawMaterials: any[];
+        units?: Array<{ id: number; name: string; symbol: string }>;
         filters: Record<string, string>;
     } = $props();
 
@@ -378,7 +380,18 @@
                 </div>
                 <div class="space-y-1">
                     <Label for="p_unit">Satuan Penjualan</Label>
-                    <Input id="p_unit" bind:value={formUnit} placeholder="m², pcs, box, rim" />
+                    {#if units && units.length > 0}
+                        <select id="p_unit" bind:value={formUnit} class="w-full h-9 rounded-md border border-input bg-background px-3 pr-8">
+                            {#each units as u}
+                                <option value={u.symbol}>{u.name} ({u.symbol})</option>
+                            {/each}
+                            {#if !units.some(u => u.symbol === formUnit) && formUnit}
+                                <option value={formUnit}>{formUnit}</option>
+                            {/if}
+                        </select>
+                    {:else}
+                        <Input id="p_unit" bind:value={formUnit} placeholder="m², pcs, box, rim" />
+                    {/if}
                 </div>
             </div>
 

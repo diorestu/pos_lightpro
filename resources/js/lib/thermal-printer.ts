@@ -46,6 +46,7 @@ export interface ReceiptOrderData {
 
 export interface ReceiptSettingsData {
     store_name: string;
+    logo_url?: string | null;
     tagline?: string | null;
     address?: string | null;
     phone?: string | null;
@@ -93,12 +94,105 @@ export function isWebUSBSupported(): boolean {
 }
 
 /**
+ * Konversi URL gambar ke format ESC/POS Raster Bit Image (GS v 0)
+ * Menghasilkan bitmap monokrom terpusat untuk printer thermal 80mm
+ */
+export async function encodeImageToEscPosRaster(imageUrl: string, maxWidth = 384): Promise<number[]> {
+    if (typeof window === 'undefined' || typeof Image === 'undefined') {
+        return [];
+    }
+
+    try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error('Gagal memuat file gambar logo'));
+            img.src = imageUrl;
+        });
+
+        // Hitung dimensi target proporsional
+        let targetWidth = img.naturalWidth || img.width;
+        let targetHeight = img.naturalHeight || img.height;
+
+        if (targetWidth > maxWidth) {
+            const ratio = maxWidth / targetWidth;
+            targetWidth = maxWidth;
+            targetHeight = Math.round(targetHeight * ratio);
+        }
+
+        // Lebar harus kelipatan 8 bit (1 byte)
+        const widthBytes = Math.ceil(targetWidth / 8);
+        const finalWidth = widthBytes * 8;
+        const finalHeight = targetHeight;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = finalWidth;
+        canvas.height = finalHeight;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) return [];
+
+        // Isi latar belakang dengan putih
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, finalWidth, finalHeight);
+
+        // Gambar di tengah kanvas
+        const offsetX = Math.floor((finalWidth - targetWidth) / 2);
+        ctx.drawImage(img, offsetX, 0, targetWidth, targetHeight);
+
+        const imgData = ctx.getImageData(0, 0, finalWidth, finalHeight);
+        const data = imgData.data;
+
+        const rasterBytes: number[] = [];
+
+        // Header GS v 0 m xL xH yL yH
+        // m = 0 (Normal density)
+        const xL = widthBytes & 0xff;
+        const xH = (widthBytes >> 8) & 0xff;
+        const yL = finalHeight & 0xff;
+        const yH = (finalHeight >> 8) & 0xff;
+
+        rasterBytes.push(0x1d, 0x76, 0x30, 0x00, xL, xH, yL, yH);
+
+        for (let y = 0; y < finalHeight; y++) {
+            for (let b = 0; b < widthBytes; b++) {
+                let byteVal = 0;
+                for (let bit = 0; bit < 8; bit++) {
+                    const x = b * 8 + bit;
+                    const idx = (y * finalWidth + x) * 4;
+                    const r = data[idx];
+                    const g = data[idx + 1];
+                    const bVal = data[idx + 2];
+                    const a = data[idx + 3];
+
+                    // Hitung luminance
+                    const lum = 0.299 * r + 0.587 * g + 0.114 * bVal;
+
+                    // Jika opaque dan gelap -> titik hitam (1)
+                    if (a > 128 && lum < 145) {
+                        byteVal |= (1 << (7 - bit));
+                    }
+                }
+                rasterBytes.push(byteVal);
+            }
+        }
+
+        return rasterBytes;
+    } catch {
+        // Fallback anggun jika gambar gagal dikonversi
+        return [];
+    }
+}
+
+/**
  * Buat payload byte ESC/POS untuk kertas 80mm
  */
-export function buildEscPos80mm(
+export async function buildEscPos80mm(
     order: ReceiptOrderData,
     settings: ReceiptSettingsData
-): Uint8Array {
+): Promise<Uint8Array> {
     const encoder = new TextEncoder();
     const bytes: number[] = [];
 
@@ -120,7 +214,17 @@ export function buildEscPos80mm(
     cmd(0x1b, 0x74, 0x00); // ESC t 0 (Character code table: PC437)
     cmd(0x1b, 0x4d, 0x00); // ESC M 0 (Standard Font A - 12x24 dots, 48 cols on 80mm)
 
-    // 2. Header Toko (Center)
+    // 2. Logo Toko (Center) - jika diaktifkan & ada file logo
+    if (settings.show_logo !== false && settings.logo_url) {
+        cmd(0x1b, 0x61, 0x01); // Center alignment
+        const logoRaster = await encodeImageToEscPosRaster(settings.logo_url, 384);
+        if (logoRaster.length > 0) {
+            bytes.push(...logoRaster);
+            write('\n');
+        }
+    }
+
+    // 3. Header Toko (Center)
     cmd(0x1b, 0x61, 0x01); // Center
     cmd(0x1b, 0x45, 0x01); // Bold ON
     cmd(0x1d, 0x21, 0x11); // Double width & height
@@ -322,8 +426,8 @@ export async function printDirectWebUSB(
 
         await device.claimInterface(targetInterfaceNumber);
 
-        // Buat ESC/POS 80mm payload
-        const rawData = buildEscPos80mm(order, settings);
+        // Buat ESC/POS 80mm payload (mendukung logo raster monokrom)
+        const rawData = await buildEscPos80mm(order, settings);
 
         // Kirim data ke endpoint USB
         await device.transferOut(targetEndpointNumber, rawData.buffer);

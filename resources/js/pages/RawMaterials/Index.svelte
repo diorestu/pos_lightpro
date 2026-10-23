@@ -46,9 +46,11 @@
 
     let {
         rawMaterials = { data: [], links: [] },
+        units = [],
         filters = {},
     }: {
         rawMaterials: any;
+        units?: Array<{ id: number; name: string; symbol: string }>;
         filters: Record<string, any>;
     } = $props();
 
@@ -312,12 +314,22 @@
                 <div class="space-y-1">
                     <Label for="r_unit">Satuan Ukuran *</Label>
                     <select id="r_unit" bind:value={formUnit} class="w-full h-9 rounded-md border border-input bg-background px-3 pr-8">
-                        <option value="meter">Meter (Roll Spanduk)</option>
-                        <option value="lembar">Lembar (Plano/A3+)</option>
-                        <option value="roll">Roll Utuh</option>
-                        <option value="pcs">Pcs (Ring Mata Ayam/Stand)</option>
-                        <option value="liter">Liter (Tinta Cetak)</option>
-                        <option value="rim">Rim (Kertas)</option>
+                        {#if units && units.length > 0}
+                            {#each units as u}
+                                <option value={u.symbol}>{u.name} ({u.symbol})</option>
+                            {/each}
+                            {#if !units.some(u => u.symbol === formUnit) && formUnit}
+                                <option value={formUnit}>{formUnit}</option>
+                            {/if}
+                        {:else}
+                            <option value="meter">Meter (Roll Spanduk)</option>
+                            <option value="m²">Meter Persegi (m²)</option>
+                            <option value="lembar">Lembar (Plano/A3+)</option>
+                            <option value="roll">Roll Utuh</option>
+                            <option value="pcs">Pcs (Ring Mata Ayam/Stand)</option>
+                            <option value="liter">Liter (Tinta Cetak)</option>
+                            <option value="rim">Rim (Kertas)</option>
+                        {/if}
                     </select>
                 </div>
             </div>

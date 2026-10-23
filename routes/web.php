@@ -11,6 +11,7 @@ use App\Http\Controllers\ReceiptSettingController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ShiftController;
 use App\Http\Controllers\StockReportController;
+use App\Http\Controllers\UnitController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -63,7 +64,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/stock-reports', [StockReportController::class, 'index'])->name('stock-reports.index');
     Route::post('/stock-reports/adjust', [StockReportController::class, 'adjust'])->name('stock-reports.adjust');
 
-    // 11. Pengaturan Nota
+    // 11. Pengaturan
+    Route::resource('settings/units', UnitController::class)->names('settings.units')->except(['create', 'edit', 'show']);
     Route::get('/settings/receipt', [ReceiptSettingController::class, 'index'])->name('settings.receipt');
     Route::put('/settings/receipt', [ReceiptSettingController::class, 'update'])->name('settings.receipt.update');
 });

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\RawMaterial;
 use App\Models\StockMutation;
+use App\Models\Unit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,9 +29,11 @@ class RawMaterialController extends Controller
 
         $perPage = min(max($request->integer('per_page', 15), 5), 100);
         $rawMaterials = $query->orderBy('name')->paginate($perPage)->withQueryString();
+        $units = Unit::where('is_active', true)->orderBy('name')->get();
 
         return Inertia::render('RawMaterials/Index', [
             'rawMaterials' => $rawMaterials,
+            'units' => $units,
             'filters' => $request->only(['search', 'low_stock_only', 'per_page']),
         ]);
     }

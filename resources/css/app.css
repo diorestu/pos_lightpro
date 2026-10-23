@@ -198,23 +198,38 @@
 @media print {
     @page {
         size: 80mm auto;
-        margin: 0mm;
+        margin: 0;
     }
     html, body {
         background: #ffffff !important;
         color: #000000 !important;
         margin: 0 !important;
         padding: 0 !important;
+        width: 100% !important;
     }
     .thermal-receipt-80mm {
-        width: 80mm !important;
-        max-width: 80mm !important;
-        min-width: 80mm !important;
+        /* Lebar printable area fisik 72mm dengan margin kiri & kanan simetris 4mm (total lebar 80mm) */
+        width: 72mm !important;
+        max-width: 72mm !important;
+        min-width: 72mm !important;
         box-sizing: border-box !important;
-        padding: 3mm 4mm !important;
-        margin: 0 auto !important;
+        padding: 2mm 1mm !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
         background: #ffffff !important;
         color: #000000 !important;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+    .thermal-receipt-80mm img.receipt-logo {
+        display: block !important;
+        max-height: 54px !important;
+        max-width: 180px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        margin-bottom: 6px !important;
+        object-fit: contain !important;
+        filter: grayscale(100%) contrast(160%) !important;
     }
 }

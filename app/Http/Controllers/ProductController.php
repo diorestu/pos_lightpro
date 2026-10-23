@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\RawMaterial;
+use App\Models\Unit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -35,11 +36,13 @@ class ProductController extends Controller
         $products = $query->orderBy('name')->paginate($perPage)->withQueryString();
         $categories = Category::orderBy('name')->get();
         $rawMaterials = RawMaterial::orderBy('name')->get();
+        $units = Unit::where('is_active', true)->orderBy('name')->get();
 
         return Inertia::render('Products/Index', [
             'products' => $products,
             'categories' => $categories,
             'rawMaterials' => $rawMaterials,
+            'units' => $units,
             'filters' => $request->only(['search', 'category_id', 'pricing_type', 'per_page']),
         ]);
     }

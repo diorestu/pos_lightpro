@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ReceiptSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -33,11 +34,29 @@ class ReceiptSettingController extends Controller
             'show_logo' => 'boolean',
             'show_cashier_name' => 'boolean',
             'show_customer_info' => 'boolean',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'remove_logo' => 'nullable|boolean',
         ]);
 
         $settings = ReceiptSetting::getActive();
+
+        if ($request->boolean('remove_logo')) {
+            if ($settings->logo_path && Storage::disk('public')->exists($settings->logo_path)) {
+                Storage::disk('public')->delete($settings->logo_path);
+            }
+            $validated['logo_path'] = null;
+        } elseif ($request->hasFile('logo')) {
+            if ($settings->logo_path && Storage::disk('public')->exists($settings->logo_path)) {
+                Storage::disk('public')->delete($settings->logo_path);
+            }
+            $path = $request->file('logo')->store('receipt_logos', 'public');
+            $validated['logo_path'] = $path;
+        }
+
+        unset($validated['logo'], $validated['remove_logo']);
+
         $settings->update($validated);
 
-        return back()->with('success', 'Pengaturan nota percetakan berhasil diperbarui!');
+        return back()->with('success', 'Pengaturan nota percetakan & logo berhasil diperbarui!');
     }
 }
