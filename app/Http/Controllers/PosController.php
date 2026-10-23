@@ -15,6 +15,7 @@ use App\Models\StockMutation;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -67,6 +68,7 @@ class PosController extends Controller
         }
 
         $validated = $request->validate([
+            'client_token' => 'nullable|string|max:100',
             'customer_id' => 'nullable|exists:customers,id',
             'customer_name' => 'nullable|string|max:255',
             'customer_phone' => 'nullable|string|max:50',
@@ -105,10 +107,40 @@ class PosController extends Controller
             'terms.*.notes' => 'nullable|string',
         ]);
 
-        return DB::transaction(function () use ($validated, $user, $activeShift) {
-            $todayDate = date('Ymd');
-            $todayOrderCount = Order::whereDate('created_at', Carbon::today())->count() + 1;
-            $invoiceNumber = sprintf('INV-%s-%04d', $todayDate, $todayOrderCount);
+        $clientToken = $validated['client_token'] ?? null;
+        $cartHash = md5($user->id . '_' . json_encode($validated['items']) . '_' . $validated['grand_total'] . '_' . ($clientToken ?? ''));
+        $dedupCacheKey = "pos_order_dedup_{$cartHash}";
+
+        if (Cache::has($dedupCacheKey)) {
+            $existingOrderId = Cache::get($dedupCacheKey);
+            $existingOrder = Order::find($existingOrderId);
+            if ($existingOrder) {
+                return redirect()->route('orders.show', $existingOrder->id)
+                    ->with('info', "Transaksi ini telah diproses sebelumnya (Nota: {$existingOrder->invoice_number}).");
+            }
+        }
+
+        $lockKey = "pos_checkout_user_{$user->id}";
+        $lock = Cache::lock($lockKey, 10);
+
+        if (! $lock->get()) {
+            return back()->with('error', 'Transaksi sedang diproses. Mohon tunggu...');
+        }
+
+        try {
+            return DB::transaction(function () use ($validated, $user, $activeShift, $dedupCacheKey) {
+                $todayDate = date('Ymd');
+                $latestOrderToday = Order::where('invoice_number', 'LIKE', "INV-{$todayDate}-%")
+                    ->orderByDesc('id')
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($latestOrderToday && preg_match('/INV-\d+-(\d+)/', $latestOrderToday->invoice_number, $matches)) {
+                    $nextSeq = intval($matches[1]) + 1;
+                } else {
+                    $nextSeq = 1;
+                }
+                $invoiceNumber = sprintf('INV-%s-%04d', $todayDate, $nextSeq);
 
             $grandTotal = (float) $validated['grand_total'];
             $isSplit = ! empty($validated['is_split_payment']) && ! empty($validated['terms']);
@@ -329,8 +361,13 @@ class PosController extends Controller
                 }
             }
 
-            return redirect()->route('orders.show', $order->id)->with('success', "Transaksi {$invoiceNumber} berhasil disimpan!");
-        });
+                Cache::put($dedupCacheKey, $order->id, now()->addMinutes(5));
+
+                return redirect()->route('orders.show', $order->id)->with('success', "Transaksi {$invoiceNumber} berhasil disimpan!");
+            });
+        } finally {
+            $lock->release();
+        }
     }
 
     public function quickCustomer(Request $request): RedirectResponse

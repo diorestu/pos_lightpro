@@ -19,6 +19,7 @@
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import DollarSign from '@lucide/svelte/icons/dollar-sign';
     import FileText from '@lucide/svelte/icons/file-text';
+    import LoaderCircle from '@lucide/svelte/icons/loader-circle';
     import Minus from '@lucide/svelte/icons/minus';
     import Plus from '@lucide/svelte/icons/plus';
     import Printer from '@lucide/svelte/icons/printer';
@@ -374,6 +375,8 @@
     }
 
     function submitOrder() {
+        if (isSubmitting) return;
+
         if (!activeShift) {
             showOpenShiftModal = true;
             return;
@@ -397,12 +400,16 @@
         }
 
         isSubmitting = true;
+        const clientToken = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : (Date.now() + '-' + Math.random().toString(36).substring(2));
 
         const isSplit = paymentMethod === 'split';
 
         router.post(
             '/pos',
             {
+                client_token: clientToken,
                 customer_id: selectedCustomerId,
                 customer_name: selectedCustomer?.name || 'Pelanggan Umum',
                 customer_phone: selectedCustomer?.phone || '-',
@@ -567,17 +574,7 @@
                                 onclick={() => addToCart(p)}
                                 class="flex flex-col text-left p-3 rounded-xl border bg-card hover:border-primary/60 hover:shadow-sm transition-all group relative overflow-hidden"
                             >
-                                {#if p.pricing_type === 'dimension_sqm'}
-                                    <span class="absolute top-2 right-2 text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 px-1.5 py-0.5 rounded">
-                                        Meteran (m²)
-                                    </span>
-                                {:else}
-                                    <span class="absolute top-2 right-2 text-[10px] font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                                        {p.unit}
-                                    </span>
-                                {/if}
-
-                                <span class="text-xs font-semibold text-foreground line-clamp-2 mt-4 group-hover:text-primary transition-colors">
+                                <span class="text-xs font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
                                     {p.name}
                                 </span>
                                 <span class="text-[11px] text-muted-foreground mt-0.5">
@@ -640,21 +637,58 @@
                     </div>
                 {:else}
                     {#each cart as item, index (item.temp_id)}
-                        <div class="p-3 rounded-lg border bg-background/80 shadow-2xs space-y-2 relative">
-                            <button
-                                onclick={() => removeItem(index)}
-                                class="absolute top-2.5 right-2.5 text-muted-foreground hover:text-destructive transition-colors p-1"
-                                title="Hapus Item"
-                            >
-                                <Trash2 class="size-3.5" />
-                            </button>
-
-                            <!-- Item Title & Price -->
-                            <div class="pr-6">
-                                <span class="font-semibold text-xs text-foreground block">{item.product_name}</span>
-                                <span class="text-[11px] text-muted-foreground">
-                                    Harga Dasar: {formatRupiah(item.base_price)} / {item.unit}
+                        <div class="p-3 rounded-lg border bg-background/80 shadow-2xs space-y-2">
+                            <!-- Top Row: Item Title & Quantity + Delete button -->
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="font-semibold text-xs text-foreground truncate flex-1" title={item.product_name}>
+                                    {item.product_name}
                                 </span>
+
+                                <!-- Input quantity di sebelah tombol delete item -->
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <div class="flex items-center border border-input rounded bg-background h-7">
+                                        <button
+                                            type="button"
+                                            onclick={() => {
+                                                if (item.quantity > 1) {
+                                                    item.quantity -= 1;
+                                                    updateItemCalculation(item);
+                                                }
+                                            }}
+                                            class="px-1.5 h-full flex items-center justify-center text-muted-foreground hover:bg-muted rounded-l"
+                                            title="Kurangi"
+                                        >
+                                            <Minus class="size-3" />
+                                        </button>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            bind:value={item.quantity}
+                                            oninput={() => updateItemCalculation(item)}
+                                            class="w-10 text-center text-xs font-semibold focus:outline-none bg-transparent"
+                                        />
+                                        <button
+                                            type="button"
+                                            onclick={() => {
+                                                item.quantity += 1;
+                                                updateItemCalculation(item);
+                                            }}
+                                            class="px-1.5 h-full flex items-center justify-center text-muted-foreground hover:bg-muted rounded-r"
+                                            title="Tambah"
+                                        >
+                                            <Plus class="size-3" />
+                                        </button>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onclick={() => removeItem(index)}
+                                        class="size-7 inline-flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+                                        title="Hapus Item"
+                                    >
+                                        <Trash2 class="size-3.5" />
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Dimension Inputs for Meteran (Spanduk/Banner) -->
@@ -732,38 +766,8 @@
                                 </div>
                             {/if}
 
-                            <!-- Quantity & Design Note Row -->
-                            <div class="flex items-center gap-2 pt-1">
-                                <div class="flex items-center border rounded bg-background">
-                                    <button
-                                        onclick={() => {
-                                            if (item.quantity > 1) {
-                                                item.quantity -= 1;
-                                                updateItemCalculation(item);
-                                            }
-                                        }}
-                                        class="px-2 py-1 text-muted-foreground hover:bg-muted"
-                                    >
-                                        <Minus class="size-3" />
-                                    </button>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        bind:value={item.quantity}
-                                        oninput={() => updateItemCalculation(item)}
-                                        class="w-12 text-center text-xs font-semibold focus:outline-none"
-                                    />
-                                    <button
-                                        onclick={() => {
-                                            item.quantity += 1;
-                                            updateItemCalculation(item);
-                                        }}
-                                        class="px-2 py-1 text-muted-foreground hover:bg-muted"
-                                    >
-                                        <Plus class="size-3" />
-                                    </button>
-                                </div>
-
+                            <!-- Catatan Desain & Subtotal -->
+                            <div class="flex items-center gap-2 pt-0.5">
                                 <input
                                     type="text"
                                     bind:value={item.design_note}
@@ -1020,6 +1024,7 @@
                         disabled={cart.length === 0 || isSubmitting}
                     >
                         {#if isSubmitting}
+                            <LoaderCircle class="size-4 mr-1.5 animate-spin" />
                             Memproses Transaksi...
                         {:else}
                             <Check class="size-4 mr-1.5" />

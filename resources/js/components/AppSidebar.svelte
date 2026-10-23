@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Link } from '@inertiajs/svelte';
+    import { Link, page } from '@inertiajs/svelte';
     import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
     import BarChart3 from '@lucide/svelte/icons/bar-chart-3';
     import Boxes from '@lucide/svelte/icons/boxes';
@@ -34,45 +34,58 @@
     } = $props();
 
     const url = currentUrlState();
+    const user = $derived(page.props.auth?.user);
+    const isKasir = $derived(user?.role === 'kasir');
 
-    const menuGroups = [
-        {
-            title: 'Transaksi',
-            items: [
-                { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-                { title: 'Kasir (POS)', href: '/pos', icon: ShoppingCart },
-                { title: 'Riwayat Penjualan', href: '/orders', icon: Receipt },
-            ],
-        },
-        {
-            title: 'Katalog & Bahan',
-            items: [
-                { title: 'Produk Percetakan', href: '/products', icon: Package },
-                { title: 'Kategori Produk', href: '/categories', icon: Tags },
-                { title: 'Bahan Baku', href: '/raw-materials', icon: Boxes },
-                { title: 'Pelanggan', href: '/customers', icon: Users },
-            ],
-        },
-        {
-            title: 'Operasional',
-            items: [
-                { title: 'Shift Kasir', href: '/shifts', icon: Clock },
-            ],
-        },
-        {
-            title: 'Laporan',
-            items: [
-                { title: 'Laporan Penjualan', href: '/reports', icon: BarChart3 },
-                { title: 'Laporan Stok (In/Out)', href: '/stock-reports', icon: ArrowUpDown },
-            ],
-        },
-        {
-            title: 'Pengaturan',
-            items: [
-                { title: 'Pengaturan Nota', href: '/settings/receipt', icon: Printer },
-            ],
-        },
-    ];
+    const menuGroups = $derived(
+        isKasir
+            ? [
+                  {
+                      title: 'Operasional Kasir',
+                      items: [
+                          { title: 'Kasir (POS)', href: '/pos', icon: ShoppingCart },
+                      ],
+                  },
+              ]
+            : [
+                  {
+                      title: 'Transaksi',
+                      items: [
+                          { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+                          { title: 'Kasir (POS)', href: '/pos', icon: ShoppingCart },
+                          { title: 'Riwayat Penjualan', href: '/orders', icon: Receipt },
+                      ],
+                  },
+                  {
+                      title: 'Katalog & Bahan',
+                      items: [
+                          { title: 'Produk Percetakan', href: '/products', icon: Package },
+                          { title: 'Kategori Produk', href: '/categories', icon: Tags },
+                          { title: 'Bahan Baku', href: '/raw-materials', icon: Boxes },
+                          { title: 'Pelanggan', href: '/customers', icon: Users },
+                      ],
+                  },
+                  {
+                      title: 'Operasional',
+                      items: [
+                          { title: 'Shift Kasir', href: '/shifts', icon: Clock },
+                      ],
+                  },
+                  {
+                      title: 'Laporan',
+                      items: [
+                          { title: 'Laporan Penjualan', href: '/reports', icon: BarChart3 },
+                          { title: 'Laporan Stok (In/Out)', href: '/stock-reports', icon: ArrowUpDown },
+                      ],
+                  },
+                  {
+                      title: 'Pengaturan',
+                      items: [
+                          { title: 'Pengaturan Nota', href: '/settings/receipt', icon: Printer },
+                      ],
+                  },
+              ]
+    );
 </script>
 
 <Sidebar collapsible="icon" variant="inset">
@@ -83,7 +96,7 @@
                     {#snippet children(props)}
                         <Link
                             {...props}
-                            href="/dashboard"
+                            href={isKasir ? '/pos' : '/dashboard'}
                             class={props.class}
                         >
                             <AppLogo />

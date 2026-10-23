@@ -14,8 +14,12 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): mixed
     {
+        if ($request->user() && $request->user()->role === 'kasir') {
+            return redirect()->route('pos.index');
+        }
+
         $today = Carbon::today();
         $startOfWeek = Carbon::now()->startOfWeek();
         $startOfMonth = Carbon::now()->startOfMonth();

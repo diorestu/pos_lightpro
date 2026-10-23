@@ -14,7 +14,7 @@
 </script>
 
 <script lang="ts">
-    import { Link, router } from '@inertiajs/svelte';
+    import { Link, page, router } from '@inertiajs/svelte';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import ArrowLeft from '@lucide/svelte/icons/arrow-left';
     import Calendar from '@lucide/svelte/icons/calendar';
@@ -94,6 +94,8 @@
         order: OrderDetail;
         receiptSettings: any;
     } = $props();
+
+    const isKasir = $derived(page.props.auth?.user?.role === 'kasir');
 
     // Settle payment modal
     let showPayModal = $state(false);
@@ -367,10 +369,10 @@
     <!-- Back & Actions Top Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
         <div class="flex items-center gap-3">
-            <Link href="/orders">
+            <Link href={isKasir ? '/pos' : '/orders'}>
                 <Button variant="outline" size="sm" class="h-8">
                     <ArrowLeft class="size-4 mr-1" />
-                    Kembali
+                    {isKasir ? 'Kembali ke Kasir (POS)' : 'Kembali'}
                 </Button>
             </Link>
             <div>

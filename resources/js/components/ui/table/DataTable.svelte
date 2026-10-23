@@ -7,13 +7,11 @@
     import { Input } from '@/components/ui/input';
     import Search from '@lucide/svelte/icons/search';
     import X from '@lucide/svelte/icons/x';
-    import Columns3 from '@lucide/svelte/icons/columns-3';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Download from '@lucide/svelte/icons/download';
     import Inbox from '@lucide/svelte/icons/inbox';
-    import Check from '@lucide/svelte/icons/check';
 
     export interface ColumnDef<T = any> {
         key: string;
@@ -44,7 +42,6 @@
         searchPlaceholder = 'Cari data...',
         onSearch,
         filtersSnippet,
-        showColumnFilter = true,
         showPerPage = true,
         perPage = 15,
         perPageOptions = [10, 15, 25, 50, 100],
@@ -68,7 +65,6 @@
         searchPlaceholder?: string;
         onSearch?: (value: string) => void;
         filtersSnippet?: Snippet;
-        showColumnFilter?: boolean;
         showPerPage?: boolean;
         perPage?: number;
         perPageOptions?: number[];
@@ -138,42 +134,7 @@
         return visibleColumnsMap[key] ?? true;
     }
 
-    function toggleColumn(key: string) {
-        visibleColumnsMap[key] = !isVisible(key);
-    }
-
-    function showAllColumns() {
-        columns.forEach((c) => {
-            visibleColumnsMap[c.key] = true;
-        });
-    }
-
-    function hideOptionalColumns() {
-        columns.forEach((c) => {
-            if (c.hideable !== false) {
-                visibleColumnsMap[c.key] = false;
-            }
-        });
-    }
-
     const activeColumns = $derived(columns.filter((c) => isVisible(c.key)));
-
-    // Column dropdown open state & outside click
-    let showColumnDropdown = $state(false);
-    let dropdownContainerRef = $state<HTMLDivElement | null>(null);
-
-    function handleClickOutside(event: MouseEvent) {
-        if (dropdownContainerRef && !dropdownContainerRef.contains(event.target as Node)) {
-            showColumnDropdown = false;
-        }
-    }
-
-    $effect(() => {
-        if (showColumnDropdown) {
-            document.addEventListener('mousedown', handleClickOutside);
-            return () => document.removeEventListener('mousedown', handleClickOutside);
-        }
-    });
 
     // Client-side pagination state (when not server-paginated)
     let clientPage = $state(1);
@@ -405,73 +366,10 @@
             {/if}
         </div>
 
-        <!-- Sisi Kanan: Filter Kolom, View Record Per Page & Pagination -->
+        <!-- Sisi Kanan: View Record Per Page & Pagination -->
         <div class="flex flex-wrap items-center justify-end gap-3 shrink-0">
             {#if headerRightSnippet}
                 {@render headerRightSnippet()}
-            {/if}
-
-            <!-- Filter Kolom Toggle Dropdown -->
-            {#if showColumnFilter && columns.length > 0}
-                <div class="relative" bind:this={dropdownContainerRef}>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        class="h-9 gap-1.5 text-xs sm:text-sm font-medium rounded-xl"
-                        onclick={() => (showColumnDropdown = !showColumnDropdown)}
-                    >
-                        <Columns3 class="size-4 text-muted-foreground" />
-                        <span>Kolom</span>
-                        <ChevronDown class="size-3.5 opacity-60 ml-0.5" />
-                    </Button>
-
-                    {#if showColumnDropdown}
-                        <div class="absolute right-0 top-full mt-1.5 w-52 rounded-xl border bg-popover text-popover-foreground shadow-lg z-50 p-2 animate-in fade-in-0 zoom-in-95">
-                            <div class="text-[11px] font-semibold text-muted-foreground px-2 py-1 uppercase tracking-wider">
-                                Atur Kolom Tabel
-                            </div>
-                            <div class="max-h-60 overflow-y-auto space-y-1 py-1">
-                                {#each columns as col}
-                                    <label
-                                        class={cn(
-                                            'flex items-center gap-2 px-2 py-1 text-xs rounded cursor-pointer select-none transition-colors hover:bg-accent',
-                                            col.hideable === false && 'opacity-60 cursor-not-allowed'
-                                        )}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={isVisible(col.key)}
-                                            disabled={col.hideable === false}
-                                            onchange={() => toggleColumn(col.key)}
-                                            class="rounded border-input text-primary focus:ring-primary size-3.5"
-                                        />
-                                        <span class="truncate flex-1">{col.label}</span>
-                                        {#if isVisible(col.key)}
-                                            <Check class="size-3 text-primary shrink-0" />
-                                        {/if}
-                                    </label>
-                                {/each}
-                            </div>
-                            <div class="border-t pt-1.5 mt-1 flex items-center justify-between gap-1 px-1">
-                                <button
-                                    type="button"
-                                    onclick={showAllColumns}
-                                    class="text-[11px] text-primary hover:underline font-medium"
-                                >
-                                    Semua
-                                </button>
-                                <button
-                                    type="button"
-                                    onclick={hideOptionalColumns}
-                                    class="text-[11px] text-muted-foreground hover:underline"
-                                >
-                                    Sembunyikan
-                                </button>
-                            </div>
-                        </div>
-                    {/if}
-                </div>
             {/if}
 
             <!-- View Record Per Page & Pagination (Screenshot specification) -->

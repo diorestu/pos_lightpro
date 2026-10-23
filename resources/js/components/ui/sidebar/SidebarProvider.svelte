@@ -15,7 +15,7 @@
     } from './context';
 
     let {
-        defaultOpen = true,
+        defaultOpen = false,
         class: className = '',
         children,
     }: {
@@ -26,8 +26,11 @@
 
     const initialOpen = () => {
         if (typeof document === 'undefined') return defaultOpen;
-        const hasCookie = document.cookie.includes(`${SIDEBAR_COOKIE_NAME}=false`);
-        return hasCookie ? false : defaultOpen;
+        const match = document.cookie.match(new RegExp('(^|;\\s*)' + SIDEBAR_COOKIE_NAME + '=([^;]*)'));
+        if (match) {
+            return match[2] === 'true';
+        }
+        return defaultOpen;
     };
 
     const open = writable(initialOpen());
