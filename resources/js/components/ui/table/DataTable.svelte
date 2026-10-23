@@ -284,13 +284,13 @@
                         <select
                             value={selectedPerPage}
                             onchange={(e) => handlePerPageChange(Number(e.currentTarget.value))}
-                            class="h-9 appearance-none rounded-xl border border-input bg-background pl-3.5 pr-8 text-sm font-medium text-foreground shadow-2xs hover:bg-accent/40 focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+                            class="h-9 appearance-none rounded-xl border border-input bg-background pl-3.5 pr-9 text-sm font-medium text-foreground shadow-2xs hover:bg-accent/40 focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer !bg-none"
                         >
                             {#each perPageOptions as opt}
                                 <option value={opt}>{opt}</option>
                             {/each}
                         </select>
-                        <ChevronDown class="pointer-events-none absolute right-2.5 size-4 opacity-50 text-foreground" />
+                        <ChevronDown class="pointer-events-none absolute right-3.5 size-4 opacity-50 text-foreground" />
                     </div>
                 </div>
             {/if}

@@ -28,7 +28,7 @@
 	{...restProps}
 >
 	{@render children?.()}
-	<span class="pr-2.5 pl-1.5 flex items-center shrink-0">
-		<ChevronDownIcon class="size-4 opacity-50" />
+	<span class="pr-2 pl-1.5 flex items-center shrink-0">
+		<ChevronDownIcon class="size-4 opacity-50 mr-1" />
 	</span>
 </SelectPrimitive.Trigger>
