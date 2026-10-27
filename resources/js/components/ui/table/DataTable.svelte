@@ -1,3 +1,15 @@
+<script module lang="ts">
+    export interface ColumnDef<T = any> {
+        key: string;
+        label: string;
+        sortable?: boolean;
+        align?: 'left' | 'center' | 'right';
+        class?: string;
+        hideable?: boolean;
+        visible?: boolean;
+    }
+</script>
+
 <script lang="ts">
     import type { Snippet } from 'svelte';
     import { cn } from '@/lib/utils';
@@ -12,16 +24,6 @@
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Download from '@lucide/svelte/icons/download';
     import Inbox from '@lucide/svelte/icons/inbox';
-
-    export interface ColumnDef<T = any> {
-        key: string;
-        label: string;
-        sortable?: boolean;
-        align?: 'left' | 'center' | 'right';
-        class?: string;
-        hideable?: boolean;
-        visible?: boolean;
-    }
 
     interface PaginationMeta {
         current_page?: number;
@@ -201,12 +203,12 @@
             : Math.min(clientPage * selectedPerPage, totalRecords)
     );
 
-    const displayedData = $derived.by(() => {
+    const displayedData = $derived.by<any[]>(() => {
         if (isServerPaginated) {
-            return sorter.sortedData;
+            return sorter.sortedData as any[];
         }
         const start = (clientPage - 1) * selectedPerPage;
-        return sorter.sortedData.slice(start, start + selectedPerPage);
+        return (sorter.sortedData as any[]).slice(start, start + selectedPerPage);
     });
 
     function goToPage(page: number, url?: string | null) {

@@ -187,6 +187,14 @@
 
     const grandTotal = $derived(Math.round(Math.max(0, cartSubtotal - discountAmount)));
 
+    const totalAllocatedTerms = $derived(
+        Math.round(paymentTerms.reduce((sum, t) => sum + (Number(t.amount) || 0), 0))
+    );
+
+    const totalPaidTermsNow = $derived(
+        Math.round(paymentTerms.filter((t) => t.is_paid).reduce((sum, t) => sum + (Number(t.amount) || 0), 0))
+    );
+
     const paidAmount = $derived(
         paymentMethod === 'cash'
             ? (cashPaidInput ? Math.round(parseFloat(cashPaidInput) || 0) : 0)
@@ -199,14 +207,6 @@
 
     const remainingDebt = $derived(
         grandTotal > paidAmount ? Math.round(grandTotal - paidAmount) : 0
-    );
-
-    const totalAllocatedTerms = $derived(
-        Math.round(paymentTerms.reduce((sum, t) => sum + (Number(t.amount) || 0), 0))
-    );
-
-    const totalPaidTermsNow = $derived(
-        Math.round(paymentTerms.filter((t) => t.is_paid).reduce((sum, t) => sum + (Number(t.amount) || 0), 0))
     );
 
     const termAllocationDiff = $derived(

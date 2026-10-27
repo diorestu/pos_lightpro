@@ -16,6 +16,7 @@
     import Clock from '@lucide/svelte/icons/clock';
     import Eye from '@lucide/svelte/icons/eye';
     import Filter from '@lucide/svelte/icons/filter';
+    import Plus from '@lucide/svelte/icons/plus';
     import Printer from '@lucide/svelte/icons/printer';
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
     import Search from '@lucide/svelte/icons/search';

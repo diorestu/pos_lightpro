@@ -104,7 +104,7 @@
 
     function deleteUnit(unit: UnitItem) {
         if (unit.products_count > 0 || unit.raw_materials_count > 0) {
-            const usageParts = [];
+            const usageParts: string[] = [];
             if (unit.products_count > 0) usageParts.push(`${unit.products_count} produk`);
             if (unit.raw_materials_count > 0) usageParts.push(`${unit.raw_materials_count} bahan baku`);
             alert(`Satuan "${unit.name}" (${unit.symbol}) masih digunakan oleh ${usageParts.join(' dan ')}. Hapus atau alihkan produk/bahan baku terlebih dahulu.`);

@@ -386,7 +386,7 @@ export async function printDirectWebUSB(
         };
     }
 
-    let device: USBDevice | null = null;
+    let device: any = null;
 
     try {
         // Minta akses perangkat USB dari dialog browser

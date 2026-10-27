@@ -379,4 +379,15 @@ class PrintingPosTest extends TestCase
         $addTermResponse->assertRedirect();
         $this->assertCount(4, $order->fresh()->payments);
     }
+
+    public function test_admin_can_view_orders_index_page(): void
+    {
+        $response = $this->actingAs($this->admin)->get('/orders');
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page->component('Orders/Index')
+            ->has('orders')
+            ->has('filters')
+        );
+    }
 }
