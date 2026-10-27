@@ -25,6 +25,7 @@
     import ShieldCheck from '@lucide/svelte/icons/shield-check';
     import UserCheck from '@lucide/svelte/icons/user-check';
     import Users from '@lucide/svelte/icons/users';
+    import Trash2 from '@lucide/svelte/icons/trash-2';
     import { toast } from 'svelte-sonner';
     import AppHead from '@/components/AppHead.svelte';
     import InputError from '@/components/InputError.svelte';
@@ -60,6 +61,15 @@
         role: string;
         phone: string | null;
         is_active: boolean;
+        orders_count?: number;
+        shifts_count?: number;
+        stock_mutations_count?: number;
+        order_returns_count?: number;
+        payments_count?: number;
+        has_data?: boolean;
+        total_data?: number;
+        is_current_user?: boolean;
+        can_delete?: boolean;
     }
 
     let {
@@ -163,7 +173,6 @@
                     newUserPassword = '';
                     newUserPhone = '';
                     userErrors = {};
-                    toast.success('Karyawan baru berhasil ditambahkan!');
                 },
                 onError: (errs) => {
                     userErrors = errs;
@@ -177,6 +186,29 @@
                 },
             }
         );
+    }
+
+    let deletingUserId = $state<number | null>(null);
+
+    function deleteUser(u: UserItem) {
+        if (u.is_current_user) {
+            toast.error('Tidak dapat menghapus akun yang sedang Anda gunakan.');
+            return;
+        }
+
+        if (u.has_data) {
+            toast.error(`Karyawan "${u.name}" memiliki riwayat data (${u.total_data ?? 0} catatan) dan tidak dapat dihapus.`);
+            return;
+        }
+
+        if (confirm(`Yakin ingin menghapus akun karyawan "${u.name}" (${u.email})? Tindakan ini tidak dapat dibatalkan.`)) {
+            deletingUserId = u.id;
+            router.delete(`/shifts/users/${u.id}`, {
+                onFinish: () => {
+                    deletingUserId = null;
+                },
+            });
+        }
     }
 
     function quickSwitchUser(userId: number) {
@@ -324,7 +356,12 @@
                                 <span class="size-7 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">
                                     {u.name.substring(0, 2).toUpperCase()}
                                 </span>
-                                {u.name}
+                                <span>{u.name}</span>
+                                {#if u.is_current_user}
+                                    <Badge variant="outline" class="text-[9px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20">
+                                        Anda
+                                    </Badge>
+                                {/if}
                             </TableCell>
                             <TableCell class="text-xs text-muted-foreground">{u.email}</TableCell>
                             <TableCell class="text-xs">
@@ -353,15 +390,43 @@
                                 <Badge variant="outline" class="bg-emerald-50 text-emerald-700 text-[10px]">Aktif</Badge>
                             </TableCell>
                             <TableCell class="text-xs text-right">
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    class="h-7 px-2.5 text-xs font-semibold"
-                                    onclick={() => quickSwitchUser(u.id)}
-                                >
-                                    <UserCheck class="size-3 mr-1 text-primary" />
-                                    Ganti Petugas Ini
-                                </Button>
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        class="h-7 px-2.5 text-xs font-semibold"
+                                        onclick={() => quickSwitchUser(u.id)}
+                                    >
+                                        <UserCheck class="size-3 mr-1 text-primary" />
+                                        Ganti Petugas Ini
+                                    </Button>
+                                    {#if u.can_delete}
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            class="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
+                                            onclick={() => deleteUser(u)}
+                                            disabled={deletingUserId === u.id}
+                                            title="Hapus karyawan (belum memiliki riwayat data)"
+                                        >
+                                            {#if deletingUserId === u.id}
+                                                <LoaderCircle class="size-3.5 animate-spin" />
+                                            {:else}
+                                                <Trash2 class="size-3.5" />
+                                            {/if}
+                                        </Button>
+                                    {:else if !u.is_current_user}
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            class="h-7 w-7 p-0 text-muted-foreground/30 border-dashed cursor-not-allowed"
+                                            disabled
+                                            title={`Tidak dapat dihapus: Memiliki riwayat data (${u.total_data ?? 0} transaksi/shift/mutasi)`}
+                                        >
+                                            <Trash2 class="size-3.5" />
+                                        </Button>
+                                    {/if}
+                                </div>
                             </TableCell>
                         </TableRow>
                     {/each}

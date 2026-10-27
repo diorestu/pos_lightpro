@@ -29,7 +29,19 @@ class ShiftController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        $users = User::orderBy('name')->get();
+        $currentUserId = $user->id;
+        $users = User::withCount(['orders', 'shifts', 'stockMutations', 'orderReturns', 'payments'])
+            ->orderBy('name')
+            ->get()
+            ->map(function (User $u) use ($currentUserId) {
+                $totalData = (int) ($u->orders_count + $u->shifts_count + $u->stock_mutations_count + $u->order_returns_count + $u->payments_count);
+                $u->has_data = $totalData > 0;
+                $u->total_data = $totalData;
+                $u->is_current_user = ($u->id === $currentUserId);
+                $u->can_delete = ($totalData === 0 && ! $u->is_current_user);
+
+                return $u;
+            });
 
         return Inertia::render('Shifts/Index', [
             'activeShift' => $activeShift,
@@ -150,5 +162,27 @@ class ShiftController extends Controller
         Auth::login($targetUser);
 
         return redirect()->route('pos.index')->with('success', "Beralih akun ke {$targetUser->name} ({$targetUser->role}).");
+    }
+
+    public function destroyUser(Request $request, User $user): RedirectResponse
+    {
+        if ($user->id === $request->user()->id) {
+            return back()->with('error', 'Anda tidak dapat menghapus akun yang sedang Anda gunakan saat ini.');
+        }
+
+        $hasData = $user->orders()->exists()
+            || $user->shifts()->exists()
+            || $user->stockMutations()->exists()
+            || $user->orderReturns()->exists()
+            || $user->payments()->exists();
+
+        if ($hasData) {
+            return back()->with('error', "Karyawan {$user->name} tidak dapat dihapus karena sudah memiliki riwayat data/transaksi.");
+        }
+
+        $userName = $user->name;
+        $user->delete();
+
+        return back()->with('success', "Akun karyawan {$userName} berhasil dihapus.");
     }
 }

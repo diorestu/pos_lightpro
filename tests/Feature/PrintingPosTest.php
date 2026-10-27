@@ -518,4 +518,54 @@ class PrintingPosTest extends TestCase
             ->has('filters')
         );
     }
+
+    public function test_user_can_be_deleted_if_has_no_data(): void
+    {
+        $employee = User::factory()->create([
+            'name' => 'Karyawan Baru',
+            'email' => 'baru@example.com',
+            'role' => 'kasir',
+        ]);
+
+        $response = $this->actingAs($this->admin)->delete(route('shifts.users.destroy', $employee));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        $this->assertDatabaseMissing('users', ['id' => $employee->id]);
+    }
+
+    public function test_user_cannot_be_deleted_if_has_orders_or_shifts(): void
+    {
+        // User with shift
+        $cashierWithShift = User::factory()->create([
+            'name' => 'Kasir Shift',
+            'email' => 'kasir_shift@example.com',
+            'role' => 'kasir',
+        ]);
+
+        CashierShift::create([
+            'user_id' => $cashierWithShift->id,
+            'opened_at' => now(),
+            'starting_cash' => 100000,
+            'cash_sales' => 0,
+            'non_cash_sales' => 0,
+            'expected_cash' => 100000,
+            'status' => 'open',
+        ]);
+
+        $response = $this->actingAs($this->admin)->delete(route('shifts.users.destroy', $cashierWithShift));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $this->assertDatabaseHas('users', ['id' => $cashierWithShift->id]);
+    }
+
+    public function test_user_cannot_delete_themselves(): void
+    {
+        $response = $this->actingAs($this->admin)->delete(route('shifts.users.destroy', $this->admin));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+        $this->assertDatabaseHas('users', ['id' => $this->admin->id]);
+    }
 }
