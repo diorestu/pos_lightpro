@@ -223,7 +223,7 @@
 <Dialog bind:open>
     <DialogContent class="max-w-5xl lg:max-w-6xl w-[96vw] max-h-[92vh] flex flex-col p-0 overflow-hidden shadow-2xl">
         <!-- Header Dialog -->
-        <DialogHeader class="p-4 sm:p-5 pb-3 border-b bg-muted/20">
+        <DialogHeader class="px-6 sm:px-8 py-5 pb-4 border-b bg-muted/20">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                     <div class="p-2 rounded-lg bg-primary/10 text-primary">
@@ -245,7 +245,7 @@
         </DialogHeader>
 
         <!-- Batch Controls & Presets Bar -->
-        <div class="p-3 sm:px-5 bg-muted/40 border-b flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="px-6 sm:px-8 py-3.5 bg-muted/40 border-b flex flex-wrap items-center justify-between gap-3 text-xs">
             <div class="flex flex-wrap items-center gap-3">
                 <div class="flex items-center gap-1.5">
                     <Label class="text-xs text-muted-foreground whitespace-nowrap font-medium">Tipe Default:</Label>
@@ -331,7 +331,7 @@
         </div>
 
         <!-- Table Body (Scrollable Container) -->
-        <div class="flex-1 overflow-y-auto p-4 sm:p-5 max-h-[52vh]">
+        <div class="flex-1 overflow-y-auto px-6 sm:px-8 py-5 max-h-[52vh]">
             {#if rows.length === 0}
                 <div class="py-12 flex flex-col items-center justify-center text-center text-muted-foreground border-2 border-dashed rounded-lg bg-muted/10">
                     <Boxes class="size-12 opacity-30 mb-2" />
@@ -508,9 +508,9 @@
         </div>
 
         <!-- Footer Dialog: Summary & Action Buttons -->
-        <DialogFooter class="p-3 sm:p-4 px-5 border-t bg-muted/20 flex-col sm:flex-row items-center justify-between gap-3">
+        <DialogFooter class="px-6 sm:px-8 py-4 border-t bg-muted/20 flex-col sm:flex-row items-center justify-between gap-4">
             <!-- Summary Badges (Kiri) -->
-            <div class="flex flex-wrap items-center gap-2 text-xs w-full sm:w-auto">
+            <div class="flex flex-wrap items-center gap-2.5 text-xs w-full sm:w-auto">
                 <span class="text-muted-foreground font-medium">Ringkasan:</span>
                 <Badge variant="outline" class="font-semibold bg-background">
                     {summary.totalItems} Produk Siap
@@ -530,11 +530,11 @@
             </div>
 
             <!-- Action Buttons (Kanan) -->
-            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
                 <Button
                     type="button"
                     variant="outline"
-                    class="font-medium text-xs h-9"
+                    class="font-medium text-xs h-9 px-4"
                     onclick={() => (open = false)}
                     disabled={isSubmitting}
                 >
@@ -542,7 +542,7 @@
                 </Button>
                 <Button
                     type="button"
-                    class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 shadow-xs min-w-[170px]"
+                    class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-9 px-5 shadow-xs min-w-[180px]"
                     onclick={handleSubmit}
                     disabled={isSubmitting || summary.totalItems === 0}
                 >

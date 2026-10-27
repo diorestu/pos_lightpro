@@ -19,12 +19,15 @@
     import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
     import Clock from '@lucide/svelte/icons/clock';
     import DollarSign from '@lucide/svelte/icons/dollar-sign';
+    import LoaderCircle from '@lucide/svelte/icons/loader-circle';
     import Lock from '@lucide/svelte/icons/lock';
     import Plus from '@lucide/svelte/icons/plus';
     import ShieldCheck from '@lucide/svelte/icons/shield-check';
     import UserCheck from '@lucide/svelte/icons/user-check';
     import Users from '@lucide/svelte/icons/users';
+    import { toast } from 'svelte-sonner';
     import AppHead from '@/components/AppHead.svelte';
+    import InputError from '@/components/InputError.svelte';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
     import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -103,6 +106,8 @@
     let newUserPassword = $state('');
     let newUserRole = $state<'admin' | 'kasir' | 'manager' | 'desainer'>('kasir');
     let newUserPhone = $state('');
+    let isAddingUser = $state(false);
+    let userErrors = $state<Record<string, string>>({});
 
     function formatRupiah(amount: number): string {
         return new Intl.NumberFormat('id-ID', {
@@ -138,20 +143,40 @@
     }
 
     function submitAddUser() {
-        router.post('/shifts/users', {
-            name: newUserName,
-            email: newUserEmail,
-            password: newUserPassword,
-            role: newUserRole,
-            phone: newUserPhone,
-        }, {
-            onSuccess: () => {
-                showAddUserModal = false;
-                newUserName = '';
-                newUserEmail = '';
-                newUserPassword = '';
+        isAddingUser = true;
+        userErrors = {};
+
+        router.post(
+            '/shifts/users',
+            {
+                name: newUserName,
+                email: newUserEmail,
+                password: newUserPassword,
+                role: newUserRole,
+                phone: newUserPhone,
             },
-        });
+            {
+                onSuccess: () => {
+                    showAddUserModal = false;
+                    newUserName = '';
+                    newUserEmail = '';
+                    newUserPassword = '';
+                    newUserPhone = '';
+                    userErrors = {};
+                    toast.success('Karyawan baru berhasil ditambahkan!');
+                },
+                onError: (errs) => {
+                    userErrors = errs;
+                    const firstErr = Object.values(errs)[0];
+                    if (firstErr) {
+                        toast.error(firstErr);
+                    }
+                },
+                onFinish: () => {
+                    isAddingUser = false;
+                },
+            }
+        );
     }
 
     function quickSwitchUser(userId: number) {
@@ -520,7 +545,13 @@
 </Dialog>
 
 <!-- Modal: Tambah Karyawan Baru -->
-<Dialog open={showAddUserModal} onOpenChange={(open) => (showAddUserModal = open)}>
+<Dialog
+    open={showAddUserModal}
+    onOpenChange={(open) => {
+        showAddUserModal = open;
+        if (!open) userErrors = {};
+    }}
+>
     <DialogContent class="sm:max-w-md">
         <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
@@ -536,15 +567,24 @@
             <div class="space-y-1">
                 <Label for="u_name">Nama Lengkap *</Label>
                 <Input id="u_name" bind:value={newUserName} placeholder="Nama karyawan..." />
+                {#if userErrors.name}
+                    <InputError message={userErrors.name} />
+                {/if}
             </div>
             <div class="space-y-1">
                 <Label for="u_email">Email Login *</Label>
                 <Input id="u_email" type="email" bind:value={newUserEmail} placeholder="kasir@lightprint.id" />
+                {#if userErrors.email}
+                    <InputError message={userErrors.email} />
+                {/if}
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div class="space-y-1">
                     <Label for="u_pass">Password *</Label>
                     <Input id="u_pass" type="password" bind:value={newUserPassword} placeholder="Minimal 6 karakter" />
+                    {#if userErrors.password}
+                        <InputError message={userErrors.password} />
+                    {/if}
                 </div>
                 <div class="space-y-1">
                     <Label for="u_role">Peran / Role *</Label>
@@ -554,18 +594,33 @@
                         <option value="desainer">Operator / Desainer</option>
                         <option value="admin">Administrator Penuh</option>
                     </select>
+                    {#if userErrors.role}
+                        <InputError message={userErrors.role} />
+                    {/if}
                 </div>
             </div>
             <div class="space-y-1">
                 <Label for="u_phone">No. Telepon / WA</Label>
                 <Input id="u_phone" bind:value={newUserPhone} placeholder="08123456789" />
+                {#if userErrors.phone}
+                    <InputError message={userErrors.phone} />
+                {/if}
             </div>
         </div>
 
         <DialogFooter>
-            <Button variant="outline" onclick={() => (showAddUserModal = false)}>Batal</Button>
-            <Button class="bg-primary" onclick={submitAddUser} disabled={!newUserName || !newUserEmail || !newUserPassword}>
-                Simpan Karyawan
+            <Button variant="outline" onclick={() => (showAddUserModal = false)} disabled={isAddingUser}>Batal</Button>
+            <Button
+                class="bg-primary"
+                onclick={submitAddUser}
+                disabled={isAddingUser || !newUserName || !newUserEmail || !newUserPassword}
+            >
+                {#if isAddingUser}
+                    <LoaderCircle class="size-4 mr-2 animate-spin" />
+                    Menyimpan...
+                {:else}
+                    Simpan Karyawan
+                {/if}
             </Button>
         </DialogFooter>
     </DialogContent>

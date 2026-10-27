@@ -116,12 +116,21 @@ class ShiftController extends Controller
             'password' => 'required|string|min:6',
             'role' => 'required|string|in:admin,kasir,manager,desainer',
             'phone' => 'nullable|string|max:50',
+        ], [
+            'name.required' => 'Nama lengkap karyawan wajib diisi.',
+            'email.required' => 'Email login wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email ini sudah terdaftar untuk akun lain. Silakan gunakan alamat email berbeda.',
+            'password.required' => 'Password wajib diisi.',
+            'password.min' => 'Password minimal harus 6 karakter.',
+            'role.required' => 'Peran / Role wajib dipilih.',
+            'role.in' => 'Peran yang dipilih tidak valid.',
         ]);
 
         User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'password' => $validated['password'],
             'role' => $validated['role'],
             'phone' => $validated['phone'] ?? null,
             'is_active' => true,

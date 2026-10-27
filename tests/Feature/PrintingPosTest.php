@@ -221,6 +221,24 @@ class PrintingPosTest extends TestCase
         $this->assertEquals(100, $this->rawMaterial->fresh()->stock); // 98 + 2 restored
     }
 
+    public function test_add_karyawan(): void
+    {
+        $response = $this->actingAs($this->admin)->post(route('shifts.users.store'), [
+            'name' => 'Budi Kasir',
+            'email' => 'budi@test.com',
+            'password' => 'secret123',
+            'role' => 'kasir',
+            'phone' => '08123456789',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('users', [
+            'email' => 'budi@test.com',
+            'name' => 'Budi Kasir',
+            'role' => 'kasir',
+        ]);
+    }
+
     public function test_stock_manual_adjustment(): void
     {
         $response = $this->actingAs($this->admin)->post(route('stock-reports.adjust'), [
