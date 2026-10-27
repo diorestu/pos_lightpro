@@ -174,7 +174,7 @@
 
     // Calculations
     const cartSubtotal = $derived(
-        cart.reduce((sum, item) => sum + item.subtotal, 0)
+        Math.round(cart.reduce((sum, item) => sum + (Number(item.subtotal) || 0), 0))
     );
 
     const discountPercent = $derived(
@@ -185,28 +185,28 @@
         Math.round((cartSubtotal * discountPercent) / 100)
     );
 
-    const grandTotal = $derived(Math.max(0, cartSubtotal - discountAmount));
+    const grandTotal = $derived(Math.round(Math.max(0, cartSubtotal - discountAmount)));
 
     const paidAmount = $derived(
         paymentMethod === 'cash'
-            ? (cashPaidInput ? parseFloat(cashPaidInput) : 0)
+            ? (cashPaidInput ? Math.round(parseFloat(cashPaidInput) || 0) : 0)
             : (paymentMethod === 'split' ? totalPaidTermsNow : grandTotal)
     );
 
     const changeAmount = $derived(
-        paymentMethod === 'cash' && paidAmount > grandTotal ? paidAmount - grandTotal : 0
+        paymentMethod === 'cash' && paidAmount > grandTotal ? Math.round(paidAmount - grandTotal) : 0
     );
 
     const remainingDebt = $derived(
-        grandTotal > paidAmount ? grandTotal - paidAmount : 0
+        grandTotal > paidAmount ? Math.round(grandTotal - paidAmount) : 0
     );
 
     const totalAllocatedTerms = $derived(
-        paymentTerms.reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
+        Math.round(paymentTerms.reduce((sum, t) => sum + (Number(t.amount) || 0), 0))
     );
 
     const totalPaidTermsNow = $derived(
-        paymentTerms.filter((t) => t.is_paid).reduce((sum, t) => sum + (Number(t.amount) || 0), 0)
+        Math.round(paymentTerms.filter((t) => t.is_paid).reduce((sum, t) => sum + (Number(t.amount) || 0), 0))
     );
 
     const termAllocationDiff = $derived(
@@ -322,7 +322,7 @@
         const width = isDimension ? 1 : 1;
         const area = isDimension ? Math.max(product.min_order || 1, length * width) : 1;
         const unitPrice = Number(product.base_price);
-        const subtotal = isDimension ? unitPrice * area : unitPrice;
+        const subtotal = Math.round(isDimension ? unitPrice * area : unitPrice);
 
         const newItem: CartItem = {
             temp_id: Math.random().toString(36).substring(2, 9),
@@ -352,9 +352,9 @@
             item.area = Math.round(rawArea * 100) / 100;
             // Area calculated with min order 1 if applicable
             const billedArea = Math.max(1, item.area);
-            item.subtotal = (billedArea * item.base_price + (Number(item.finishing_price) || 0)) * (Number(item.quantity) || 1);
+            item.subtotal = Math.round((billedArea * item.base_price + (Number(item.finishing_price) || 0)) * (Number(item.quantity) || 1));
         } else {
-            item.subtotal = (item.base_price + (Number(item.finishing_price) || 0)) * (Number(item.quantity) || 1);
+            item.subtotal = Math.round((item.base_price + (Number(item.finishing_price) || 0)) * (Number(item.quantity) || 1));
         }
         cart = [...cart];
     }
@@ -371,7 +371,7 @@
     }
 
     function setQuickCash(amount: number) {
-        cashPaidInput = amount.toString();
+        cashPaidInput = Math.round(Number(amount) || 0).toString();
     }
 
     function submitOrder() {
@@ -429,12 +429,12 @@
                     subtotal: item.subtotal,
                     design_note: item.design_note,
                 })),
-                subtotal: cartSubtotal,
-                discount_amount: discountAmount,
+                subtotal: Math.round(cartSubtotal),
+                discount_amount: Math.round(discountAmount),
                 tax_amount: 0,
-                grand_total: grandTotal,
-                paid_amount: isSplit ? totalPaidTermsNow : paidAmount,
-                change_amount: paymentMethod === 'cash' ? changeAmount : 0,
+                grand_total: Math.round(grandTotal),
+                paid_amount: Math.round(isSplit ? totalPaidTermsNow : paidAmount),
+                change_amount: Math.round(paymentMethod === 'cash' ? changeAmount : 0),
                 payment_method: isSplit ? 'split' : paymentMethod,
                 is_split_payment: isSplit,
                 terms: isSplit
@@ -843,6 +843,8 @@
                             <span class="text-xs text-muted-foreground whitespace-nowrap">Uang Diterima:</span>
                             <Input
                                 type="number"
+                                step="1"
+                                min="0"
                                 bind:value={cashPaidInput}
                                 placeholder="Nominal uang..."
                                 class="h-8 text-xs font-bold"

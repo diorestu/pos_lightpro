@@ -154,7 +154,7 @@
     function openPayTermModal(term: OrderPaymentItem) {
         selectedTerm = term;
         const owed = Math.max(0, Number(term.amount) - Number(term.paid_amount));
-        payAmount = owed > 0 ? owed.toString() : term.amount.toString();
+        payAmount = Math.round(owed > 0 ? owed : Number(term.amount) || 0).toString();
         payMethod = (term.payment_method as any) || 'cash';
         payNotes = `Pembayaran ${term.term_name}`;
         showPayModal = true;
@@ -162,7 +162,7 @@
 
     function openGeneralPayModal() {
         selectedTerm = null;
-        payAmount = remainingDebt.toString();
+        payAmount = Math.round(remainingDebt).toString();
         payMethod = 'cash';
         payNotes = 'Pelunasan sisa tagihan';
         showPayModal = true;
@@ -855,6 +855,8 @@
                 <Input
                     id="p_amt"
                     type="number"
+                    step="1"
+                    min="0"
                     bind:value={payAmount}
                     class="font-bold text-base"
                 />

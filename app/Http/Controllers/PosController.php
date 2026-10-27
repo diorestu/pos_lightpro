@@ -142,15 +142,15 @@ class PosController extends Controller
                 }
                 $invoiceNumber = sprintf('INV-%s-%04d', $todayDate, $nextSeq);
 
-            $grandTotal = (float) $validated['grand_total'];
+            $grandTotal = round((float) $validated['grand_total']);
             $isSplit = ! empty($validated['is_split_payment']) && ! empty($validated['terms']);
 
             if ($isSplit) {
-                $paidAmount = (float) collect($validated['terms'])->where('is_paid', true)->sum('amount');
+                $paidAmount = round((float) collect($validated['terms'])->where('is_paid', true)->sum('amount'));
                 $paymentMethod = 'split';
                 $paymentStatus = $paidAmount >= $grandTotal ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid');
             } else {
-                $paidAmount = (float) $validated['paid_amount'];
+                $paidAmount = round((float) $validated['paid_amount']);
                 $paymentMethod = $validated['payment_method'];
                 // Determine payment status
                 $paymentStatus = 'paid';
@@ -182,12 +182,12 @@ class PosController extends Controller
                 'customer_id' => $validated['customer_id'] ?? null,
                 'customer_name' => $customerName,
                 'customer_phone' => $customerPhone,
-                'subtotal' => $validated['subtotal'],
-                'discount_amount' => $validated['discount_amount'] ?? 0,
-                'tax_amount' => $validated['tax_amount'] ?? 0,
+                'subtotal' => round($validated['subtotal']),
+                'discount_amount' => round($validated['discount_amount'] ?? 0),
+                'tax_amount' => round($validated['tax_amount'] ?? 0),
                 'grand_total' => $grandTotal,
                 'paid_amount' => $paidAmount,
-                'change_amount' => $validated['change_amount'] ?? 0,
+                'change_amount' => round($validated['change_amount'] ?? 0),
                 'payment_method' => $paymentMethod,
                 'payment_status' => $paymentStatus,
                 'order_status' => $orderStatus,
