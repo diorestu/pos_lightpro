@@ -397,7 +397,7 @@
                     <div class="space-y-1.5">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" bind:checked={showLogo} class="size-4 rounded border-input" />
-                            <span>Tampilkan Header Judul Percetakan</span>
+                            <span>Tampilkan Logo Percetakan di Nota</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" bind:checked={showCashierName} class="size-4 rounded border-input" />
@@ -447,27 +447,15 @@
             <CardContent>
                 <!-- Thermal paper simulation -->
                 <div class="mx-auto bg-white text-black p-4 rounded shadow-md border border-neutral-300 text-[11px] {paperSize === '58mm' ? 'max-w-[270px]' : paperSize === '80mm' ? 'max-w-[340px]' : 'max-w-full'}">
-                    {#if showLogo}
-                        <div class="text-center pb-2 border-b border-dashed border-neutral-400">
-                            {#if activeLogoDisplay}
-                                <div class="flex justify-center mb-1.5">
-                                    <img
-                                        src={activeLogoDisplay}
-                                        alt="Logo Toko"
-                                        class="max-h-12 max-w-[150px] object-contain filter grayscale contrast-125"
-                                    />
-                                </div>
-                            {/if}
-                            <h3 class="font-bold text-sm uppercase tracking-tight">{storeName || 'Nama Toko'}</h3>
-                            {#if tagline}
-                                <p class="text-[9px] text-neutral-600">{tagline}</p>
-                            {/if}
-                            {#if address}
-                                <p class="text-[9px] text-neutral-600">{address}</p>
-                            {/if}
-                            {#if phone}
-                                <p class="text-[9px] text-neutral-600">WA: {phone}</p>
-                            {/if}
+                    {#if showLogo && activeLogoDisplay}
+                        <div class="text-center pb-2 mb-2 border-b border-dashed border-neutral-400">
+                            <div class="flex justify-center">
+                                <img
+                                    src={activeLogoDisplay}
+                                    alt="Logo Toko"
+                                    class="max-h-12 max-w-[150px] object-contain filter grayscale contrast-125"
+                                />
+                            </div>
                         </div>
                     {/if}
 
@@ -532,22 +520,23 @@
                 </div>
 
                 <!-- Test Print Section -->
-                <div class="mt-4 pt-3 border-t flex flex-col sm:flex-row items-center justify-between gap-2.5">
-                    <div class="text-[11px] text-muted-foreground">
+                <div class="mt-4 pt-3 border-t space-y-2">
+                    <div class="flex items-center justify-between text-[11px]">
                         <span class="font-semibold text-foreground">Tes Perangkat:</span>
-                        Uji coba printer thermal USB dengan format kertas 80mm
+                        <span class="text-[10px] text-muted-foreground">Format Kertas 80mm</span>
                     </div>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <Button
-                            size="sm"
-                            class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs flex-1 sm:flex-none shadow-xs"
-                            disabled={isTestingUSB}
-                            onclick={handleTestUSB}
-                        >
-                            <Usb class="size-3.5 mr-1.5" />
-                            {isTestingUSB ? 'Mengirim...' : 'Tes Cetak USB (80mm)'}
-                        </Button>
-                    </div>
+                    <Button
+                        size="sm"
+                        class="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-xs flex items-center justify-center"
+                        disabled={isTestingUSB}
+                        onclick={handleTestUSB}
+                    >
+                        <Usb class="size-3.5 mr-1.5 shrink-0" />
+                        <span>{isTestingUSB ? 'Mengirim Data ke Printer...' : 'Tes Cetak USB (80mm)'}</span>
+                    </Button>
+                    <p class="text-[10px] text-muted-foreground text-center">
+                        Pastikan printer thermal USB telah terhubung ke komputer.
+                    </p>
                 </div>
             </CardContent>
         </Card>

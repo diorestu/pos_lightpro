@@ -221,33 +221,9 @@ export async function buildEscPos80mm(
         if (logoRaster.length > 0) {
             bytes.push(...logoRaster);
             write('\n');
+            write('-'.repeat(LINE_WIDTH_80MM) + '\n');
         }
     }
-
-    // 3. Header Toko (Center)
-    cmd(0x1b, 0x61, 0x01); // Center
-    cmd(0x1b, 0x45, 0x01); // Bold ON
-    cmd(0x1d, 0x21, 0x11); // Double width & height
-    write((settings.store_name || 'LightPrint POS') + '\n');
-
-    cmd(0x1d, 0x21, 0x00); // Normal size
-    cmd(0x1b, 0x45, 0x00); // Bold OFF
-
-    if (settings.tagline) {
-        write(settings.tagline + '\n');
-    }
-    if (settings.address) {
-        write(settings.address + '\n');
-    }
-    if (settings.phone) {
-        write(`Telp/WA: ${settings.phone}\n`);
-    }
-    if (settings.website) {
-        write(`${settings.website}\n`);
-    }
-
-    // Pembatas ganda
-    write('='.repeat(LINE_WIDTH_80MM) + '\n');
 
     // 3. Info Transaksi (Left)
     cmd(0x1b, 0x61, 0x00); // Align Left
