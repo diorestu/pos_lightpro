@@ -24,6 +24,7 @@
     import Search from '@lucide/svelte/icons/search';
     import Sliders from '@lucide/svelte/icons/sliders';
     import AppHead from '@/components/AppHead.svelte';
+    import BulkStockModal from '@/components/BulkStockModal.svelte';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
     import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,6 +98,7 @@
 
     // Modal state
     let showAdjustModal = $state(false);
+    let showBulkStockModal = $state(false);
     let adjustItemType = $state<'raw_material' | 'product'>('raw_material');
     let adjustItemId = $state<number | string>('');
     let adjustType = $state<'in' | 'out' | 'adjustment'>('in');
@@ -162,10 +164,20 @@
             </p>
         </div>
 
-        <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center" onclick={openAdjust}>
-            <Sliders class="size-4 mr-1.5" />
-            Penyesuaian Stok Manual
-        </Button>
+        <div class="flex items-center gap-2">
+            <Button
+                variant="outline"
+                class="font-semibold whitespace-nowrap inline-flex items-center border-primary/30 text-primary hover:bg-primary/10 shadow-2xs"
+                onclick={() => (showBulkStockModal = true)}
+            >
+                <Boxes class="size-4 mr-1.5" />
+                Kelola Stok Multi Produk
+            </Button>
+            <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center" onclick={openAdjust}>
+                <Sliders class="size-4 mr-1.5" />
+                Penyesuaian Satuan
+            </Button>
+        </div>
     </div>
 
     <!-- KPI Summary Row -->
@@ -408,3 +420,10 @@
         </DialogFooter>
     </DialogContent>
 </Dialog>
+
+<!-- Extra Width Popup: Kelola Stok Multi Produk -->
+<BulkStockModal
+    bind:open={showBulkStockModal}
+    products={products || []}
+    endpoint="/stock-reports/bulk-adjust"
+/>

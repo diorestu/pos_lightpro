@@ -47,7 +47,7 @@ class StockReportController extends Controller
         $totalOut = StockMutation::where('type', 'out')->sum('quantity');
 
         $rawMaterials = RawMaterial::orderBy('name')->get();
-        $products = Product::where('is_stock_managed', true)->orderBy('name')->get();
+        $products = Product::orderBy('name')->get(['id', 'name', 'code', 'stock', 'unit', 'pricing_type', 'is_stock_managed']);
 
         return Inertia::render('StockReports/Index', [
             'mutations' => $mutations,
@@ -113,5 +113,10 @@ class StockReportController extends Controller
         ]);
 
         return back()->with('success', "Penyesuaian stok untuk {$itemName} berhasil disimpan! (Stok: {$oldStock} -> {$newStock})");
+    }
+
+    public function bulkAdjust(Request $request): RedirectResponse
+    {
+        return app(ProductController::class)->bulkStock($request);
     }
 }

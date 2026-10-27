@@ -17,11 +17,13 @@
     import { router } from '@inertiajs/svelte';
     import Edit2 from '@lucide/svelte/icons/edit-2';
     import Filter from '@lucide/svelte/icons/filter';
+    import Boxes from '@lucide/svelte/icons/boxes';
     import Package from '@lucide/svelte/icons/package';
     import Plus from '@lucide/svelte/icons/plus';
     import Search from '@lucide/svelte/icons/search';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import AppHead from '@/components/AppHead.svelte';
+    import BulkStockModal from '@/components/BulkStockModal.svelte';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
     import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,12 +54,14 @@
 
     let {
         products = { data: [], links: [] },
+        allProducts = [],
         categories = [],
         rawMaterials = [],
         units = [],
         filters = {},
     }: {
         products: any;
+        allProducts?: any[];
         categories: any[];
         rawMaterials: any[];
         units?: Array<{ id: number; name: string; symbol: string }>;
@@ -93,6 +97,7 @@
 
     // Modal state
     let showModal = $state(false);
+    let showBulkStockModal = $state(false);
     let editingProduct = $state<ProductItem | null>(null);
 
     // Form inputs
@@ -216,10 +221,20 @@
                 Katalog master produk: Spanduk meteran (m²), Stiker A3+, Kartu Nama, Merchandise, dan Banner Display. Klik judul kolom untuk mengurutkan (sortable).
             </p>
         </div>
-        <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center" onclick={openCreate}>
-            <Plus class="size-4 mr-1.5" />
-            Tambah Produk
-        </Button>
+        <div class="flex items-center gap-2">
+            <Button
+                variant="outline"
+                class="font-semibold whitespace-nowrap inline-flex items-center border-primary/30 text-primary hover:bg-primary/10 shadow-2xs"
+                onclick={() => (showBulkStockModal = true)}
+            >
+                <Boxes class="size-4 mr-1.5" />
+                Kelola Stok Multi Produk
+            </Button>
+            <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center" onclick={openCreate}>
+                <Plus class="size-4 mr-1.5" />
+                Tambah Produk
+            </Button>
+        </div>
     </div>
 
     <!-- Reusable DataTable with Search, Column Filter, Records Per Page & Pagination in Head Table Card -->
@@ -434,3 +449,10 @@
         </DialogFooter>
     </DialogContent>
 </Dialog>
+
+<!-- Extra Width Popup: Kelola Stok Multi Produk -->
+<BulkStockModal
+    bind:open={showBulkStockModal}
+    products={allProducts.length > 0 ? allProducts : (products?.data || [])}
+    endpoint="/products/bulk-stock"
+/>

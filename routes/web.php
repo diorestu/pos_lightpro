@@ -38,6 +38,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
 
     // 4. Produk
+    Route::post('/products/bulk-stock', [ProductController::class, 'bulkStock'])->name('products.bulk-stock');
     Route::resource('products', ProductController::class)->except(['create', 'edit', 'show']);
 
     // 5. Kategori Produk
@@ -63,6 +64,7 @@ Route::middleware(['auth'])->group(function () {
     // 10. Laporan Stok (Tambah / Kurang)
     Route::get('/stock-reports', [StockReportController::class, 'index'])->name('stock-reports.index');
     Route::post('/stock-reports/adjust', [StockReportController::class, 'adjust'])->name('stock-reports.adjust');
+    Route::post('/stock-reports/bulk-adjust', [StockReportController::class, 'bulkAdjust'])->name('stock-reports.bulk-adjust');
 
     // 11. Pengaturan
     Route::resource('settings/units', UnitController::class)->names('settings.units')->except(['create', 'edit', 'show']);

@@ -235,6 +235,116 @@ class PrintingPosTest extends TestCase
         $this->assertEquals(150, $this->rawMaterial->fresh()->stock);
     }
 
+    public function test_bulk_stock_adjustment_multi_product(): void
+    {
+        $prod1 = Product::create([
+            'category_id' => $this->category->id,
+            'name' => 'Roll Up Banner 85x200',
+            'code' => 'PRD-RB85',
+            'pricing_type' => 'fixed',
+            'unit' => 'set',
+            'base_price' => 175000,
+            'min_order' => 1,
+            'stock' => 10,
+            'is_stock_managed' => true,
+        ]);
+
+        $prod2 = Product::create([
+            'category_id' => $this->category->id,
+            'name' => 'Mug Keramik Sublim',
+            'code' => 'PRD-MUG',
+            'pricing_type' => 'fixed',
+            'unit' => 'pcs',
+            'base_price' => 25000,
+            'min_order' => 1,
+            'stock' => 50,
+            'is_stock_managed' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('products.bulk-stock'), [
+            'default_reason' => 'Restock & Koreksi Gudang',
+            'items' => [
+                [
+                    'product_id' => $prod1->id,
+                    'type' => 'in',
+                    'quantity' => 25,
+                    'reason' => 'Pengiriman Supplier Utama',
+                ],
+                [
+                    'product_id' => $prod2->id,
+                    'type' => 'out',
+                    'quantity' => 15,
+                    'reason' => 'Cacat Produksi / Pecah',
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        // Prod 1: 10 + 25 = 35
+        $this->assertEquals(35, $prod1->fresh()->stock);
+        // Prod 2: 50 - 15 = 35
+        $this->assertEquals(35, $prod2->fresh()->stock);
+
+        $this->assertDatabaseHas('stock_mutations', [
+            'item_type' => 'product',
+            'item_id' => $prod1->id,
+            'type' => 'in',
+            'quantity' => 25,
+            'current_stock' => 35,
+            'reason' => 'Pengiriman Supplier Utama',
+        ]);
+
+        $this->assertDatabaseHas('stock_mutations', [
+            'item_type' => 'product',
+            'item_id' => $prod2->id,
+            'type' => 'out',
+            'quantity' => 15,
+            'current_stock' => 35,
+            'reason' => 'Cacat Produksi / Pecah',
+        ]);
+    }
+
+    public function test_bulk_stock_adjustment_stock_reports_opname(): void
+    {
+        $prod = Product::create([
+            'category_id' => $this->category->id,
+            'name' => 'Kartu Nama Box',
+            'code' => 'PRD-KN-TEST',
+            'pricing_type' => 'fixed',
+            'unit' => 'box',
+            'base_price' => 35000,
+            'min_order' => 1,
+            'stock' => 20,
+            'is_stock_managed' => false,
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('stock-reports.bulk-adjust'), [
+            'default_reason' => 'Stock Opname Akhir Bulan',
+            'items' => [
+                [
+                    'product_id' => $prod->id,
+                    'type' => 'adjustment',
+                    'quantity' => 45, // Set physical counted stock
+                    'reason' => null, // will use default_reason
+                ],
+            ],
+        ]);
+
+        $response->assertRedirect();
+        $this->assertEquals(45, $prod->fresh()->stock);
+        $this->assertTrue($prod->fresh()->is_stock_managed);
+
+        $this->assertDatabaseHas('stock_mutations', [
+            'item_type' => 'product',
+            'item_id' => $prod->id,
+            'type' => 'adjustment',
+            'current_stock' => 45,
+            'reason' => 'Stock Opname Akhir Bulan',
+        ]);
+    }
+
     public function test_receipt_settings_can_be_updated(): void
     {
         $response = $this->actingAs($this->admin)->put(route('settings.receipt.update'), [
