@@ -152,6 +152,47 @@ class ShiftController extends Controller
         return back()->with('success', "Karyawan {$validated['name']} ({$validated['role']}) berhasil ditambahkan!");
     }
 
+    public function updateUser(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:6',
+            'role' => 'required|string|in:admin,kasir,manager,desainer',
+            'phone' => 'nullable|string|max:50',
+            'is_active' => 'required|boolean',
+        ], [
+            'name.required' => 'Nama lengkap karyawan wajib diisi.',
+            'email.required' => 'Email login wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email ini sudah terdaftar untuk akun lain. Silakan gunakan alamat email berbeda.',
+            'password.min' => 'Password minimal harus 6 karakter jika ingin diubah.',
+            'role.required' => 'Peran / Role wajib dipilih.',
+            'role.in' => 'Peran yang dipilih tidak valid.',
+        ]);
+
+        $updateData = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role' => $validated['role'],
+            'phone' => $validated['phone'] ?? null,
+            'is_active' => $validated['is_active'],
+        ];
+
+        // Pastikan akun sendiri yang sedang login tidak dapat dinonaktifkan
+        if ($user->id === $request->user()->id) {
+            $updateData['is_active'] = true;
+        }
+
+        if (! empty($validated['password'])) {
+            $updateData['password'] = $validated['password'];
+        }
+
+        $user->update($updateData);
+
+        return back()->with('success', "Data karyawan {$user->name} berhasil diperbarui.");
+    }
+
     public function switchUser(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -159,6 +200,11 @@ class ShiftController extends Controller
         ]);
 
         $targetUser = User::findOrFail($validated['user_id']);
+
+        if (! $targetUser->is_active) {
+            return back()->with('error', "Akun karyawan {$targetUser->name} sedang nonaktif dan tidak dapat digunakan.");
+        }
+
         Auth::login($targetUser);
 
         return redirect()->route('pos.index')->with('success', "Beralih akun ke {$targetUser->name} ({$targetUser->role}).");

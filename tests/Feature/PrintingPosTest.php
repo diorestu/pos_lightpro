@@ -568,4 +568,82 @@ class PrintingPosTest extends TestCase
         $response->assertSessionHas('error');
         $this->assertDatabaseHas('users', ['id' => $this->admin->id]);
     }
+
+    public function test_employee_can_be_updated(): void
+    {
+        $employee = User::factory()->create([
+            'name' => 'Old Name',
+            'email' => 'old_email@example.com',
+            'role' => 'kasir',
+            'phone' => '0811111111',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->put(route('shifts.users.update', $employee), [
+            'name' => 'Updated Name',
+            'email' => 'updated_email@example.com',
+            'role' => 'manager',
+            'phone' => '0822222222',
+            'is_active' => true,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $employee->refresh();
+        $this->assertEquals('Updated Name', $employee->name);
+        $this->assertEquals('updated_email@example.com', $employee->email);
+        $this->assertEquals('manager', $employee->role);
+        $this->assertEquals('0822222222', $employee->phone);
+    }
+
+    public function test_employee_password_can_be_optionally_updated(): void
+    {
+        $employee = User::factory()->create([
+            'role' => 'kasir',
+            'password' => 'oldpassword123',
+        ]);
+
+        $response = $this->actingAs($this->admin)->put(route('shifts.users.update', $employee), [
+            'name' => $employee->name,
+            'email' => $employee->email,
+            'role' => $employee->role,
+            'password' => 'newsecretpassword',
+            'is_active' => true,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        $employee->refresh();
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('newsecretpassword', $employee->password));
+    }
+
+    public function test_user_cannot_deactivate_self(): void
+    {
+        $response = $this->actingAs($this->admin)->put(route('shifts.users.update', $this->admin), [
+            'name' => 'Admin Updated',
+            'email' => $this->admin->email,
+            'role' => 'admin',
+            'is_active' => false,
+        ]);
+
+        $response->assertRedirect();
+        $this->admin->refresh();
+        $this->assertTrue($this->admin->is_active);
+    }
+
+    public function test_cannot_switch_to_inactive_user(): void
+    {
+        $inactiveKasir = User::factory()->create([
+            'role' => 'kasir',
+            'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('shifts.switch-user'), [
+            'user_id' => $inactiveKasir->id,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error');
+    }
 }

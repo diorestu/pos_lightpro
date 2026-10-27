@@ -19,6 +19,7 @@
     import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
     import Clock from '@lucide/svelte/icons/clock';
     import DollarSign from '@lucide/svelte/icons/dollar-sign';
+    import Edit2 from '@lucide/svelte/icons/edit-2';
     import LoaderCircle from '@lucide/svelte/icons/loader-circle';
     import Lock from '@lucide/svelte/icons/lock';
     import Plus from '@lucide/svelte/icons/plus';
@@ -183,6 +184,64 @@
                 },
                 onFinish: () => {
                     isAddingUser = false;
+                },
+            }
+        );
+    }
+
+    let showEditUserModal = $state(false);
+    let editingUser = $state<UserItem | null>(null);
+    let editName = $state('');
+    let editEmail = $state('');
+    let editPassword = $state('');
+    let editRole = $state<'admin' | 'kasir' | 'manager' | 'desainer'>('kasir');
+    let editPhone = $state('');
+    let editIsActive = $state(true);
+    let isEditingUser = $state(false);
+    let editUserErrors = $state<Record<string, string>>({});
+
+    function openEditUser(u: UserItem) {
+        editingUser = u;
+        editName = u.name;
+        editEmail = u.email;
+        editPassword = '';
+        editRole = (u.role as any) || 'kasir';
+        editPhone = u.phone || '';
+        editIsActive = u.is_active ?? true;
+        editUserErrors = {};
+        showEditUserModal = true;
+    }
+
+    function submitEditUser() {
+        if (!editingUser) return;
+        isEditingUser = true;
+        editUserErrors = {};
+
+        router.put(
+            `/shifts/users/${editingUser.id}`,
+            {
+                name: editName,
+                email: editEmail,
+                password: editPassword || null,
+                role: editRole,
+                phone: editPhone || null,
+                is_active: editIsActive,
+            },
+            {
+                onSuccess: () => {
+                    showEditUserModal = false;
+                    editingUser = null;
+                    editUserErrors = {};
+                },
+                onError: (errs) => {
+                    editUserErrors = errs;
+                    const firstErr = Object.values(errs)[0];
+                    if (firstErr) {
+                        toast.error(firstErr);
+                    }
+                },
+                onFinish: () => {
+                    isEditingUser = false;
                 },
             }
         );
@@ -387,7 +446,11 @@
                                 {/if}
                             </TableCell>
                             <TableCell class="text-xs">
-                                <Badge variant="outline" class="bg-emerald-50 text-emerald-700 text-[10px]">Aktif</Badge>
+                                {#if u.is_active}
+                                    <Badge variant="outline" class="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]">Aktif</Badge>
+                                {:else}
+                                    <Badge variant="outline" class="bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 text-[10px]">Nonaktif</Badge>
+                                {/if}
                             </TableCell>
                             <TableCell class="text-xs text-right">
                                 <div class="flex items-center justify-end gap-1.5">
@@ -396,9 +459,20 @@
                                         variant="outline"
                                         class="h-7 px-2.5 text-xs font-semibold"
                                         onclick={() => quickSwitchUser(u.id)}
+                                        disabled={!u.is_active}
+                                        title={!u.is_active ? 'Akun karyawan ini sedang nonaktif' : 'Ganti Petugas Kasir'}
                                     >
                                         <UserCheck class="size-3 mr-1 text-primary" />
                                         Ganti Petugas Ini
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                                        onclick={() => openEditUser(u)}
+                                        title="Ubah data karyawan"
+                                    >
+                                        <Edit2 class="size-3.5" />
                                     </Button>
                                     {#if u.can_delete}
                                         <Button
@@ -685,6 +759,110 @@
                     Menyimpan...
                 {:else}
                     Simpan Karyawan
+                {/if}
+            </Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
+
+<!-- Modal: Edit Data Karyawan -->
+<Dialog
+    open={showEditUserModal}
+    onOpenChange={(open) => {
+        showEditUserModal = open;
+        if (!open) {
+            editingUser = null;
+            editUserErrors = {};
+        }
+    }}
+>
+    <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+            <DialogTitle class="flex items-center gap-2">
+                <Edit2 class="size-5 text-primary" />
+                Edit Data Karyawan
+            </DialogTitle>
+            <DialogDescription class="text-xs">
+                Perbarui informasi akun, peran hak akses, atau kata sandi karyawan.
+            </DialogDescription>
+        </DialogHeader>
+
+        <div class="space-y-3 py-2 text-xs">
+            <div class="space-y-1">
+                <Label for="eu_name">Nama Lengkap *</Label>
+                <Input id="eu_name" bind:value={editName} placeholder="Nama karyawan..." />
+                {#if editUserErrors.name}
+                    <InputError message={editUserErrors.name} />
+                {/if}
+            </div>
+            <div class="space-y-1">
+                <Label for="eu_email">Email Login *</Label>
+                <Input id="eu_email" type="email" bind:value={editEmail} placeholder="kasir@lightprint.id" />
+                {#if editUserErrors.email}
+                    <InputError message={editUserErrors.email} />
+                {/if}
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="space-y-1">
+                    <Label for="eu_pass">Password Baru</Label>
+                    <Input id="eu_pass" type="password" bind:value={editPassword} placeholder="Kosongkan jika tetap" />
+                    <p class="text-[10px] text-muted-foreground">Isi hanya jika ingin ganti password.</p>
+                    {#if editUserErrors.password}
+                        <InputError message={editUserErrors.password} />
+                    {/if}
+                </div>
+                <div class="space-y-1">
+                    <Label for="eu_role">Peran / Role *</Label>
+                    <select id="eu_role" bind:value={editRole} class="w-full h-9 rounded-md border border-input bg-background px-2.5 pr-8">
+                        <option value="kasir">Kasir (POS & Transaksi)</option>
+                        <option value="manager">Manager (Laporan & Audit)</option>
+                        <option value="desainer">Operator / Desainer</option>
+                        <option value="admin">Administrator Penuh</option>
+                    </select>
+                    {#if editUserErrors.role}
+                        <InputError message={editUserErrors.role} />
+                    {/if}
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div class="space-y-1">
+                    <Label for="eu_phone">No. Telepon / WA</Label>
+                    <Input id="eu_phone" bind:value={editPhone} placeholder="08123456789" />
+                    {#if editUserErrors.phone}
+                        <InputError message={editUserErrors.phone} />
+                    {/if}
+                </div>
+                <div class="space-y-1">
+                    <Label for="eu_status">Status Akun *</Label>
+                    <select
+                        id="eu_status"
+                        value={editIsActive ? '1' : '0'}
+                        onchange={(e) => (editIsActive = (e.target as HTMLSelectElement).value === '1')}
+                        disabled={editingUser?.is_current_user}
+                        class="w-full h-9 rounded-md border border-input bg-background px-2.5 pr-8 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        <option value="1">Aktif</option>
+                        <option value="0">Nonaktif</option>
+                    </select>
+                    {#if editingUser?.is_current_user}
+                        <p class="text-[10px] text-muted-foreground">Akun sendiri tidak dapat dinonaktifkan.</p>
+                    {/if}
+                </div>
+            </div>
+        </div>
+
+        <DialogFooter>
+            <Button variant="outline" onclick={() => (showEditUserModal = false)} disabled={isEditingUser}>Batal</Button>
+            <Button
+                class="bg-primary"
+                onclick={submitEditUser}
+                disabled={isEditingUser || !editName || !editEmail}
+            >
+                {#if isEditingUser}
+                    <LoaderCircle class="size-4 mr-2 animate-spin" />
+                    Menyimpan...
+                {:else}
+                    Perbarui Data
                 {/if}
             </Button>
         </DialogFooter>

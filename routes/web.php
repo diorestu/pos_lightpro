@@ -55,6 +55,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/shifts/start', [ShiftController::class, 'start'])->name('shifts.start');
     Route::post('/shifts/{shift}/close', [ShiftController::class, 'close'])->name('shifts.close');
     Route::post('/shifts/users', [ShiftController::class, 'storeUser'])->name('shifts.users.store');
+    Route::put('/shifts/users/{user}', [ShiftController::class, 'updateUser'])->name('shifts.users.update');
     Route::delete('/shifts/users/{user}', [ShiftController::class, 'destroyUser'])->name('shifts.users.destroy');
     Route::post('/shifts/switch-user', [ShiftController::class, 'switchUser'])->name('shifts.switch-user');
 
