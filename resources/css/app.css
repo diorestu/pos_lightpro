@@ -207,6 +207,20 @@
         padding: 0 !important;
         width: 100% !important;
     }
+
+    /* Sembunyikan semua elemen header aplikasi (berisi nama page/breadcrumb), sidebar, dan toaster saat cetak */
+    header,
+    nav,
+    aside,
+    [data-slot="sidebar"],
+    [data-slot="sidebar-wrapper"],
+    [data-slot="sidebar-container"],
+    [data-sidebar="sidebar"],
+    .sidebar,
+    [data-sonner-toaster] {
+        display: none !important;
+    }
+
     .thermal-receipt-80mm {
         /* Lebar printable area fisik 72mm dengan margin kiri & kanan simetris 4mm (total lebar 80mm) */
         width: 72mm !important;

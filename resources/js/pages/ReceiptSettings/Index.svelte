@@ -253,7 +253,113 @@
 
 <AppHead title="Pengaturan Nota Percetakan" />
 
-<div class="flex flex-col gap-6 p-4 md:p-6 max-w-6xl mx-auto w-full">
+<!-- Print-Only Test Receipt Thermal 80mm View -->
+<div class="hidden print:block thermal-receipt-80mm text-black font-sans text-xs">
+    <!-- Store Header (Logo & Identitas Percetakan di Bawah Logo) -->
+    <div class="text-center pb-2 border-b border-dashed border-black">
+        {#if showLogo && activeLogoDisplay}
+            <div class="flex justify-center mb-1.5">
+                <img
+                    src={activeLogoDisplay}
+                    alt="Logo Toko"
+                    class="receipt-logo max-h-14 max-w-[160px] object-contain filter grayscale contrast-125 mx-auto block"
+                />
+            </div>
+        {/if}
+        <h2 class="font-bold text-sm tracking-tight uppercase">{storeName || 'LightPrint Percetakan'}</h2>
+        {#if tagline}
+            <p class="text-[10px] text-neutral-800">{tagline}</p>
+        {/if}
+        {#if address}
+            <p class="text-[10px] text-neutral-800">{address}</p>
+        {/if}
+        {#if phone}
+            <p class="text-[10px] font-medium text-neutral-800">Telp/WA: {phone}</p>
+        {/if}
+        {#if website}
+            <p class="text-[9px] text-neutral-700">{website}</p>
+        {/if}
+    </div>
+
+    <!-- Metadata Contoh -->
+    <div class="py-2 text-[10px] border-b border-dashed border-black space-y-0.5">
+        <div class="flex justify-between font-bold">
+            <span>No. Nota:</span>
+            <span>INV-20261019-0001 (TEST)</span>
+        </div>
+        <div class="flex justify-between">
+            <span>Tanggal:</span>
+            <span>19 Okt 2026 14:30</span>
+        </div>
+        {#if showCashierName}
+            <div class="flex justify-between">
+                <span>Kasir:</span>
+                <span>Siti Kasir (Shift Pagi)</span>
+            </div>
+        {/if}
+        {#if showCustomerInfo}
+            <div class="flex justify-between">
+                <span>Pelanggan:</span>
+                <span class="font-semibold">Berkah Adv (Reseller)</span>
+            </div>
+        {/if}
+        <div class="flex justify-between">
+            <span>Metode / Status:</span>
+            <span class="font-bold uppercase">TUNAI / LUNAS</span>
+        </div>
+    </div>
+
+    <!-- Items Contoh -->
+    <div class="py-2 border-b border-dashed border-black space-y-1.5 text-[10px]">
+        <div>
+            <div class="flex justify-between font-bold">
+                <span>1. Spanduk Flexi 280g</span>
+                <span>Rp 75.000</span>
+            </div>
+            <div class="text-[9px] text-neutral-600 pl-2">
+                3.00 x 1.00 m (3.00 m²) @ Rp 25.000
+            </div>
+        </div>
+        <div>
+            <div class="flex justify-between font-bold">
+                <span>2. Stiker Vinyl Ritrama</span>
+                <span>Rp 45.000</span>
+            </div>
+            <div class="text-[9px] text-neutral-600 pl-2">
+                1.00 x 0.50 m (0.50 m²) @ Rp 90.000
+            </div>
+        </div>
+    </div>
+
+    <!-- Totals -->
+    <div class="py-2 border-b border-dashed border-black space-y-1 text-[10px]">
+        <div class="flex justify-between font-bold">
+            <span>TOTAL:</span>
+            <span>Rp 120.000</span>
+        </div>
+        <div class="flex justify-between">
+            <span>BAYAR (TUNAI):</span>
+            <span>Rp 150.000</span>
+        </div>
+        <div class="flex justify-between">
+            <span>KEMBALIAN:</span>
+            <span>Rp 30.000</span>
+        </div>
+    </div>
+
+    <!-- Footer Terms -->
+    {#if footerText}
+        <div class="pt-2 text-center text-[9px] whitespace-pre-line text-neutral-700 leading-tight">
+            {footerText}
+        </div>
+    {/if}
+
+    <div class="pt-3 pb-1 text-center text-[9px] font-bold">
+        *** TEST PRINTING 80MM ***
+    </div>
+</div>
+
+<div class="flex flex-col gap-6 p-4 md:p-6 max-w-6xl mx-auto w-full print:hidden">
     <!-- Header -->
     <div class="border-b pb-4">
         <h1 class="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -459,6 +565,23 @@
                         </div>
                     {/if}
 
+                    <!-- Store Header (Nama Toko & Identitas di Bawah Logo) -->
+                    <div class="text-center pb-2 border-b border-dashed border-neutral-400">
+                        <h3 class="font-bold text-sm uppercase tracking-tight">{storeName || 'Nama Toko'}</h3>
+                        {#if tagline}
+                            <p class="text-[9px] text-neutral-600">{tagline}</p>
+                        {/if}
+                        {#if address}
+                            <p class="text-[9px] text-neutral-600">{address}</p>
+                        {/if}
+                        {#if phone}
+                            <p class="text-[9px] text-neutral-600">WA: {phone}</p>
+                        {/if}
+                        {#if website}
+                            <p class="text-[9px] text-neutral-600">{website}</p>
+                        {/if}
+                    </div>
+
                     <div class="py-2 border-b border-dashed border-neutral-400 space-y-0.5 text-[10px]">
                         <div class="flex justify-between">
                             <span>No: INV-20261019-0001</span>
@@ -525,17 +648,28 @@
                         <span class="font-semibold text-foreground">Tes Perangkat:</span>
                         <span class="text-[10px] text-muted-foreground">Format Kertas 80mm</span>
                     </div>
-                    <Button
-                        size="sm"
-                        class="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-xs flex items-center justify-center"
-                        disabled={isTestingUSB}
-                        onclick={handleTestUSB}
-                    >
-                        <Usb class="size-3.5 mr-1.5 shrink-0" />
-                        <span>{isTestingUSB ? 'Mengirim Data ke Printer...' : 'Tes Cetak USB (80mm)'}</span>
-                    </Button>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <Button
+                            size="sm"
+                            class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs shadow-xs flex items-center justify-center"
+                            disabled={isTestingUSB}
+                            onclick={handleTestUSB}
+                        >
+                            <Usb class="size-3.5 mr-1.5 shrink-0" />
+                            <span>{isTestingUSB ? 'Mengirim Data...' : 'Tes Cetak USB'}</span>
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            class="font-semibold text-xs shadow-xs flex items-center justify-center"
+                            onclick={() => window.print()}
+                        >
+                            <Printer class="size-3.5 mr-1.5 shrink-0" />
+                            <span>Tes Cetak Browser</span>
+                        </Button>
+                    </div>
                     <p class="text-[10px] text-muted-foreground text-center">
-                        Pastikan printer thermal USB telah terhubung ke komputer.
+                        Tes cetak nota kasir (USB atau browser dialog/popup auto-print).
                     </p>
                 </div>
             </CardContent>
