@@ -249,12 +249,106 @@
             isTestingUSB = false;
         }
     }
+
+    function handleTestBrowserPrint() {
+        const receiptEl = document.getElementById('test-thermal-receipt');
+        if (!receiptEl) {
+            window.print();
+            return;
+        }
+
+        // Buka popup window bersih terisolasi khusus nota 80mm
+        const popup = window.open('', '_blank', 'width=380,height=600,top=100,left=100');
+        if (!popup) {
+            // Jika popup diblokir oleh browser, fallback ke window.print()
+            window.print();
+            return;
+        }
+
+        popup.document.open();
+        popup.document.write(`
+            <!DOCTYPE html>
+            <html lang="id">
+            <head>
+                <meta charset="utf-8">
+                <title>Tes Cetak Nota - ${storeName || 'LightPrint'}</title>
+                <style>
+                    @page { size: 80mm auto; margin: 0; }
+                    * { box-sizing: border-box; }
+                    html, body {
+                        margin: 0;
+                        padding: 0;
+                        background: #ffffff;
+                        color: #000000;
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    }
+                    .thermal-receipt-80mm {
+                        display: block !important;
+                        width: 72mm !important;
+                        max-width: 72mm !important;
+                        min-width: 72mm !important;
+                        margin: 0 auto !important;
+                        padding: 2mm 1mm !important;
+                        font-size: 11px !important;
+                        color: #000000 !important;
+                    }
+                    .receipt-logo {
+                        display: block;
+                        max-height: 54px;
+                        max-width: 180px;
+                        margin: 0 auto 6px auto;
+                        object-fit: contain;
+                        filter: grayscale(100%) contrast(160%);
+                    }
+                    .border-dashed { border-style: dashed; }
+                    .border-b { border-bottom-width: 1px; }
+                    .border-black { border-color: #000000; }
+                    .text-center { text-align: center; }
+                    .font-bold { font-weight: 700; }
+                    .font-semibold { font-weight: 600; }
+                    .uppercase { text-transform: uppercase; }
+                    .flex { display: flex; }
+                    .justify-between { justify-content: space-between; }
+                    .space-y-0\\.5 > * + * { margin-top: 2px; }
+                    .space-y-1 > * + * { margin-top: 4px; }
+                    .space-y-1\\.5 > * + * { margin-top: 6px; }
+                    .py-2 { padding-top: 8px; padding-bottom: 8px; }
+                    .pb-2 { padding-bottom: 8px; }
+                    .pt-2 { padding-top: 8px; }
+                    .pt-3 { padding-top: 12px; }
+                    .pb-1 { padding-bottom: 4px; }
+                    .mb-1\\.5 { margin-bottom: 6px; }
+                    .pl-2 { padding-left: 8px; }
+                    .text-\\[10px\\] { font-size: 10px; }
+                    .text-\\[9px\\] { font-size: 9px; }
+                    .text-xs { font-size: 12px; }
+                    .text-sm { font-size: 14px; }
+                    .whitespace-pre-line { white-space: pre-line; }
+                    .leading-tight { line-height: 1.25; }
+                </style>
+            </head>
+            <body>
+                <div class="thermal-receipt-80mm">
+                    ${receiptEl.innerHTML}
+                </div>
+                <script>
+                    window.addEventListener('load', () => {
+                        window.focus();
+                        window.print();
+                        setTimeout(() => window.close(), 500);
+                    });
+                <\/script>
+            </body>
+            </html>
+        `);
+        popup.document.close();
+    }
 </script>
 
 <AppHead title="Pengaturan Nota Percetakan" />
 
 <!-- Print-Only Test Receipt Thermal 80mm View -->
-<div class="hidden print:block thermal-receipt-80mm text-black font-sans text-xs">
+<div id="test-thermal-receipt" class="thermal-receipt-80mm text-black font-sans text-xs">
     <!-- Store Header (Logo & Identitas Percetakan di Bawah Logo) -->
     <div class="text-center pb-2 border-b border-dashed border-black">
         {#if showLogo && activeLogoDisplay}
@@ -662,7 +756,7 @@
                             size="sm"
                             variant="outline"
                             class="font-semibold text-xs shadow-xs flex items-center justify-center"
-                            onclick={() => window.print()}
+                            onclick={handleTestBrowserPrint}
                         >
                             <Printer class="size-3.5 mr-1.5 shrink-0" />
                             <span>Tes Cetak Browser</span>

@@ -195,33 +195,63 @@
     }
 }
 
+.thermal-receipt-80mm {
+    display: none;
+}
+
 @media print {
     @page {
         size: 80mm auto;
         margin: 0;
     }
+
+    *,
+    *::before,
+    *::after {
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
     html, body {
         background: #ffffff !important;
         color: #000000 !important;
         margin: 0 !important;
         padding: 0 !important;
         width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
     }
 
-    /* Sembunyikan semua elemen header aplikasi (berisi nama page/breadcrumb), sidebar, dan toaster saat cetak */
+    /* Pastikan root wrapper layout aplikasi tidak membatasi atau menyembunyikan halaman cetak */
+    [data-slot="sidebar-wrapper"],
+    [data-slot="sidebar-inset"],
+    main {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: transparent !important;
+        border: none !important;
+    }
+
+    /* Sembunyikan semua elemen header aplikasi (berisi nama page/breadcrumb), sidebar, navigasi, dan toaster saat cetak */
     header,
     nav,
     aside,
     [data-slot="sidebar"],
-    [data-slot="sidebar-wrapper"],
-    [data-slot="sidebar-container"],
     [data-sidebar="sidebar"],
     .sidebar,
     [data-sonner-toaster] {
         display: none !important;
     }
 
+    /* Tampilkan struk thermal 80mm */
     .thermal-receipt-80mm {
+        display: block !important;
         /* Lebar printable area fisik 72mm dengan margin kiri & kanan simetris 4mm (total lebar 80mm) */
         width: 72mm !important;
         max-width: 72mm !important;
@@ -236,6 +266,7 @@
         color: #000000 !important;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
     }
+
     .thermal-receipt-80mm img.receipt-logo {
         display: block !important;
         max-height: 54px !important;
