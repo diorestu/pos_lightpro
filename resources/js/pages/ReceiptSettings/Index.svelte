@@ -287,6 +287,20 @@
                         color: #000000;
                         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                     }
+                    p, h1, h2, h3, h4, h5, h6 {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        line-height: 1.25 !important;
+                    }
+                    .header-store p {
+                        margin-top: 1.5px !important;
+                        margin-bottom: 0 !important;
+                        line-height: 1.2 !important;
+                    }
+                    .header-store h2, .header-store h3 {
+                        margin: 0 0 2px 0 !important;
+                        line-height: 1.25 !important;
+                    }
                     .thermal-receipt-80mm {
                         display: block !important;
                         width: 72mm !important;
@@ -370,7 +384,7 @@
 <!-- Print-Only Test Receipt Thermal 80mm View -->
 <div id="test-thermal-receipt" class="thermal-receipt-80mm text-black font-sans text-xs">
     <!-- Store Header (Logo & Identitas Percetakan di Bawah Logo) -->
-    <div class="text-center pb-2 border-b border-dashed border-black">
+    <div class="header-store text-center pb-2 border-b border-dashed border-black">
         {#if showLogo && activeLogoDisplay}
             <div class="flex justify-center mb-1.5">
                 <img
@@ -380,18 +394,18 @@
                 />
             </div>
         {/if}
-        <h2 class="font-bold text-sm tracking-tight uppercase">{storeName || 'LightPrint Percetakan'}</h2>
+        <h2 class="font-bold text-sm tracking-tight uppercase leading-tight m-0">{storeName || 'LightPrint Percetakan'}</h2>
         {#if tagline}
-            <p class="text-[10px] text-neutral-800">{tagline}</p>
+            <p class="text-[10px] text-neutral-800 leading-tight m-0">{tagline}</p>
         {/if}
         {#if address}
-            <p class="text-[10px] text-neutral-800">{address}</p>
+            <p class="text-[10px] text-neutral-800 leading-tight m-0">{address}</p>
         {/if}
         {#if phone}
-            <p class="text-[10px] font-medium text-neutral-800">Telp/WA: {phone}</p>
+            <p class="text-[10px] font-medium text-neutral-800 leading-tight m-0">Telp/WA: {phone}</p>
         {/if}
         {#if website}
-            <p class="text-[9px] text-neutral-700">{website}</p>
+            <p class="text-[9px] text-neutral-700 leading-tight m-0">{website}</p>
         {/if}
     </div>
 
@@ -680,19 +694,19 @@
                     {/if}
 
                     <!-- Store Header (Nama Toko & Identitas di Bawah Logo) -->
-                    <div class="text-center pb-2 border-b border-dashed border-neutral-400">
-                        <h3 class="font-bold text-sm uppercase tracking-tight">{storeName || 'Nama Toko'}</h3>
+                    <div class="header-store text-center pb-2 border-b border-dashed border-neutral-400">
+                        <h3 class="font-bold text-sm uppercase tracking-tight leading-tight m-0">{storeName || 'Nama Toko'}</h3>
                         {#if tagline}
-                            <p class="text-[9px] text-neutral-600">{tagline}</p>
+                            <p class="text-[9px] text-neutral-600 leading-tight m-0 mt-0.5">{tagline}</p>
                         {/if}
                         {#if address}
-                            <p class="text-[9px] text-neutral-600">{address}</p>
+                            <p class="text-[9px] text-neutral-600 leading-tight m-0 mt-0.5">{address}</p>
                         {/if}
                         {#if phone}
-                            <p class="text-[9px] text-neutral-600">WA: {phone}</p>
+                            <p class="text-[9px] text-neutral-600 leading-tight m-0 mt-0.5">Telp/WA: {phone}</p>
                         {/if}
                         {#if website}
-                            <p class="text-[9px] text-neutral-600">{website}</p>
+                            <p class="text-[9px] text-neutral-600 leading-tight m-0 mt-0.5">{website}</p>
                         {/if}
                     </div>
 

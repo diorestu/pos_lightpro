@@ -178,6 +178,20 @@
                         color: #000000;
                         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                     }
+                    p, h1, h2, h3, h4, h5, h6 {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        line-height: 1.25 !important;
+                    }
+                    .header-store p {
+                        margin-top: 1.5px !important;
+                        margin-bottom: 0 !important;
+                        line-height: 1.2 !important;
+                    }
+                    .header-store h2, .header-store h3 {
+                        margin: 0 0 2px 0 !important;
+                        line-height: 1.25 !important;
+                    }
                     .thermal-receipt-80mm {
                         display: block !important;
                         width: 72mm !important;
@@ -336,7 +350,7 @@
 <!-- Print-Only Receipt Thermal 80mm View (Standard Font & 80mm Paper) -->
 <div id="order-thermal-receipt" class="thermal-receipt-80mm text-black font-sans text-xs">
     <!-- Store Header (Logo & Identitas Toko di Bawah Logo) -->
-    <div class="text-center pb-2 border-b border-dashed border-black">
+    <div class="header-store text-center pb-2 border-b border-dashed border-black">
         {#if receiptSettings.show_logo !== false && receiptSettings.logo_url}
             <div class="flex justify-center mb-1.5">
                 <img
@@ -346,18 +360,18 @@
                 />
             </div>
         {/if}
-        <h2 class="font-bold text-sm tracking-tight uppercase">{receiptSettings.store_name || 'LightPrint Percetakan'}</h2>
+        <h2 class="font-bold text-sm tracking-tight uppercase leading-tight m-0">{receiptSettings.store_name || 'LightPrint Percetakan'}</h2>
         {#if receiptSettings.tagline}
-            <p class="text-[10px] text-neutral-800">{receiptSettings.tagline}</p>
+            <p class="text-[10px] text-neutral-800 leading-tight m-0">{receiptSettings.tagline}</p>
         {/if}
         {#if receiptSettings.address}
-            <p class="text-[10px] text-neutral-800">{receiptSettings.address}</p>
+            <p class="text-[10px] text-neutral-800 leading-tight m-0">{receiptSettings.address}</p>
         {/if}
         {#if receiptSettings.phone}
-            <p class="text-[10px] font-medium text-neutral-800">Telp/WA: {receiptSettings.phone}</p>
+            <p class="text-[10px] font-medium text-neutral-800 leading-tight m-0">Telp/WA: {receiptSettings.phone}</p>
         {/if}
         {#if receiptSettings.website}
-            <p class="text-[9px] text-neutral-700">{receiptSettings.website}</p>
+            <p class="text-[9px] text-neutral-700 leading-tight m-0">{receiptSettings.website}</p>
         {/if}
     </div>
 
@@ -1089,7 +1103,7 @@
         <!-- Kertas Thermal 80mm Simulasi -->
         <div class="my-2 p-4 bg-white text-black rounded-lg border border-neutral-300 shadow-inner font-sans text-xs max-w-[340px] mx-auto select-none">
             <!-- Store Header (Logo & Identitas Toko) -->
-            <div class="text-center pb-2 border-b border-dashed border-black">
+            <div class="header-store text-center pb-2 border-b border-dashed border-black">
                 {#if receiptSettings.show_logo !== false && receiptSettings.logo_url}
                     <div class="flex justify-center mb-1.5">
                         <img
@@ -1099,15 +1113,18 @@
                         />
                     </div>
                 {/if}
-                <h3 class="font-bold text-sm uppercase">{receiptSettings.store_name || 'LightPrint Percetakan'}</h3>
+                <h3 class="font-bold text-sm uppercase leading-tight m-0">{receiptSettings.store_name || 'LightPrint Percetakan'}</h3>
                 {#if receiptSettings.tagline}
-                    <p class="text-[10px] text-neutral-700">{receiptSettings.tagline}</p>
+                    <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.tagline}</p>
                 {/if}
                 {#if receiptSettings.address}
-                    <p class="text-[10px] text-neutral-700">{receiptSettings.address}</p>
+                    <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.address}</p>
                 {/if}
                 {#if receiptSettings.phone}
-                    <p class="text-[10px] text-neutral-700">WA: {receiptSettings.phone}</p>
+                    <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">Telp/WA: {receiptSettings.phone}</p>
+                {/if}
+                {#if receiptSettings.website}
+                    <p class="text-[9px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.website}</p>
                 {/if}
             </div>
 

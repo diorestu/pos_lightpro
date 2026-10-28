@@ -275,6 +275,23 @@
         border-right: none !important;
     }
 
+    /* Rapatkan jarak antar-baris header nota (nama toko, tagline, alamat, no telp, web) */
+    .thermal-receipt-80mm h1,
+    .thermal-receipt-80mm h2,
+    .thermal-receipt-80mm h3,
+    .thermal-receipt-80mm h4,
+    .thermal-receipt-80mm p {
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1.25 !important;
+    }
+
+    .thermal-receipt-80mm .header-store p {
+        margin-top: 1.5px !important;
+        margin-bottom: 0 !important;
+        line-height: 1.2 !important;
+    }
+
     .thermal-receipt-80mm img.receipt-logo {
         display: block !important;
         max-height: 54px !important;
