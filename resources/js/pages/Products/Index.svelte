@@ -24,6 +24,7 @@
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import AppHead from '@/components/AppHead.svelte';
     import BulkStockModal from '@/components/BulkStockModal.svelte';
+    import { formatStock, formatStockInput } from '@/lib/utils';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
     import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -163,10 +164,10 @@
         formCode = p.code;
         formPricingType = p.pricing_type;
         formUnit = p.unit;
-        formBasePrice = p.base_price.toString();
-        formMinOrder = p.min_order.toString();
-        formCostPrice = p.cost_price.toString();
-        formStock = p.stock.toString();
+        formBasePrice = formatStockInput(p.base_price);
+        formMinOrder = formatStockInput(p.min_order);
+        formCostPrice = formatStockInput(p.cost_price);
+        formStock = formatStockInput(p.stock);
         formIsStockManaged = p.is_stock_managed;
         formDescription = p.description || '';
         showModal = true;
@@ -430,7 +431,7 @@
                 <select id="p_raw" bind:value={formRawMaterialId} class="w-full h-9 rounded-md border border-input bg-background px-3 pr-8">
                     <option value="">-- Tidak Terhubung Bahan Baku --</option>
                     {#each rawMaterials as raw}
-                        <option value={raw.id}>{raw.name} ({raw.code} - Sisa: {raw.stock} {raw.unit})</option>
+                        <option value={raw.id}>{raw.name} ({raw.code} - Sisa: {formatStock(raw.stock)} {raw.unit})</option>
                     {/each}
                 </select>
             </div>

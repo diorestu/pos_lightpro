@@ -31,9 +31,9 @@ class Product extends Model
     {
         return [
             'base_price' => 'decimal:2',
-            'min_order' => 'decimal:2',
+            'min_order' => 'float',
             'cost_price' => 'decimal:2',
-            'stock' => 'decimal:2',
+            'stock' => 'float',
             'is_stock_managed' => 'boolean',
             'is_active' => 'boolean',
         ];

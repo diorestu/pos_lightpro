@@ -23,6 +23,7 @@
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
     import TrendingUp from '@lucide/svelte/icons/trending-up';
     import AppHead from '@/components/AppHead.svelte';
+    import { formatStock } from '@/lib/utils';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
     import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -282,7 +283,7 @@
                                 </div>
                                 <div class="text-right">
                                     <div class="font-semibold text-foreground">{formatRupiah(item.total_amount)}</div>
-                                    <div class="text-[10px] text-muted-foreground">{item.total_qty} terjual</div>
+                                    <div class="text-[10px] text-muted-foreground">{formatStock(item.total_qty)} terjual</div>
                                 </div>
                             </div>
                         {/each}

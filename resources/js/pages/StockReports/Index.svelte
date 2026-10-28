@@ -25,6 +25,7 @@
     import Sliders from '@lucide/svelte/icons/sliders';
     import AppHead from '@/components/AppHead.svelte';
     import BulkStockModal from '@/components/BulkStockModal.svelte';
+    import { formatStock } from '@/lib/utils';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
     import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -193,7 +194,7 @@
             </CardHeader>
             <CardContent>
                 <div class="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
-                    +{summary.total_in.toLocaleString('id-ID')} Unit
+                    +{formatStock(summary.total_in)} Unit
                 </div>
                 <p class="text-xs text-muted-foreground mt-1">Dari pembelian supplier & stock in</p>
             </CardContent>
@@ -210,7 +211,7 @@
             </CardHeader>
             <CardContent>
                 <div class="text-2xl font-bold text-destructive">
-                    -{summary.total_out.toLocaleString('id-ID')} Unit
+                    -{formatStock(summary.total_out)} Unit
                 </div>
                 <p class="text-xs text-muted-foreground mt-1">Dari cetak pesanan POS & sisa bahan</p>
             </CardContent>
@@ -303,14 +304,14 @@
                 {/if}
                 {#if isVisible('quantity')}
                     <TableCell class="text-xs text-right font-bold {mut.type === 'in' ? 'text-emerald-600' : mut.type === 'out' ? 'text-destructive' : 'text-blue-600'}">
-                        {mut.type === 'in' ? '+' : mut.type === 'out' ? '-' : ''}{mut.quantity}
+                        {mut.type === 'in' ? '+' : mut.type === 'out' ? '-' : ''}{formatStock(mut.quantity)}
                     </TableCell>
                 {/if}
                 {#if isVisible('current_stock')}
                     <TableCell class="text-xs text-center">
-                        <span class="text-muted-foreground">{mut.previous_stock}</span>
+                        <span class="text-muted-foreground">{formatStock(mut.previous_stock)}</span>
                         <span class="text-muted-foreground/60 mx-1">&rarr;</span>
-                        <span class="font-bold text-foreground">{mut.current_stock}</span>
+                        <span class="font-bold text-foreground">{formatStock(mut.current_stock)}</span>
                     </TableCell>
                 {/if}
                 {#if isVisible('reason')}
@@ -377,11 +378,11 @@
                 <select id="adj_item" bind:value={adjustItemId} class="w-full h-9 rounded-md border border-input bg-background px-3 pr-8">
                     {#if adjustItemType === 'raw_material'}
                         {#each rawMaterials as raw}
-                            <option value={raw.id}>{raw.name} (Stok Saat Ini: {raw.stock} {raw.unit})</option>
+                            <option value={raw.id}>{raw.name} (Stok Saat Ini: {formatStock(raw.stock)} {raw.unit})</option>
                         {/each}
                     {:else}
                         {#each products as prd}
-                            <option value={prd.id}>{prd.name} (Stok Saat Ini: {prd.stock} {prd.unit})</option>
+                            <option value={prd.id}>{prd.name} (Stok Saat Ini: {formatStock(prd.stock)} {prd.unit})</option>
                         {/each}
                     {/if}
                 </select>

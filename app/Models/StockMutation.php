@@ -27,9 +27,9 @@ class StockMutation extends Model
     protected function casts(): array
     {
         return [
-            'quantity' => 'decimal:2',
-            'previous_stock' => 'decimal:2',
-            'current_stock' => 'decimal:2',
+            'quantity' => 'float',
+            'previous_stock' => 'float',
+            'current_stock' => 'float',
         ];
     }
 

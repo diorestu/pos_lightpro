@@ -23,6 +23,7 @@
     import Search from '@lucide/svelte/icons/search';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import AppHead from '@/components/AppHead.svelte';
+    import { formatStock, formatStockInput, isLowStock } from '@/lib/utils';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
     import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -129,9 +130,9 @@
         formName = item.name;
         formCode = item.code;
         formUnit = item.unit;
-        formStock = item.stock.toString();
-        formMinStock = item.min_stock.toString();
-        formCostPrice = item.cost_price.toString();
+        formStock = formatStockInput(item.stock);
+        formMinStock = formatStockInput(item.min_stock);
+        formCostPrice = formatStockInput(item.cost_price);
         formDescription = item.description || '';
         showModal = true;
     }
@@ -240,17 +241,17 @@
                 {/if}
                 {#if isVisible('stock')}
                     <TableCell class="text-xs text-right font-bold text-foreground">
-                        {raw.stock} {raw.unit}
+                        {formatStock(raw.stock)} {raw.unit}
                     </TableCell>
                 {/if}
                 {#if isVisible('min_stock')}
                     <TableCell class="text-xs text-right text-muted-foreground">
-                        {raw.min_stock} {raw.unit}
+                        {formatStock(raw.min_stock)} {raw.unit}
                     </TableCell>
                 {/if}
                 {#if isVisible('status')}
                     <TableCell class="text-xs">
-                        {#if raw.stock <= raw.min_stock}
+                        {#if isLowStock(raw.stock, raw.min_stock)}
                             <Badge variant="destructive" class="text-[10px] gap-1">
                                 <AlertTriangle class="size-3" />
                                 Menipis

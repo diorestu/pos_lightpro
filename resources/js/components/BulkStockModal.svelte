@@ -10,6 +10,7 @@
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import { toast } from 'svelte-sonner';
+    import { formatStock } from '@/lib/utils';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
     import {
@@ -146,16 +147,16 @@
 
         if (row.type === 'in') {
             newStock = oldStock + qty;
-            deltaText = `+${qty}`;
+            deltaText = `+${formatStock(qty)}`;
         } else if (row.type === 'out') {
             newStock = Math.max(0, oldStock - qty);
-            deltaText = `-${qty}`;
+            deltaText = `-${formatStock(qty)}`;
             if (qty > oldStock) isNegative = true;
         } else {
             // Opname
             newStock = qty;
             const diff = qty - oldStock;
-            deltaText = diff >= 0 ? `+${diff}` : `${diff}`;
+            deltaText = diff >= 0 ? `+${formatStock(diff)}` : `-${formatStock(Math.abs(diff))}`;
         }
 
         return { oldStock, newStock, deltaText, isNegative };
@@ -384,7 +385,7 @@
                                             {#each products as p}
                                                 {@const isTaken = rows.some((r) => r.product_id === p.id && r.rowId !== row.rowId)}
                                                 <option value={p.id} disabled={isTaken}>
-                                                    [{p.code}] {p.name} {isTaken ? '(Sudah dipilih)' : `(Stok: ${p.stock} ${p.unit})`}
+                                                    [{p.code}] {p.name} {isTaken ? '(Sudah dipilih)' : `(Stok: ${formatStock(p.stock)} ${p.unit})`}
                                                 </option>
                                             {/each}
                                         </select>
@@ -406,7 +407,7 @@
                                     <td class="py-2 px-3 text-center">
                                         {#if prod}
                                             <span class="inline-block px-2 py-0.5 rounded font-mono font-semibold text-[11px] bg-muted/60 text-foreground">
-                                                {prod.stock} {prod.unit}
+                                                {formatStock(prod.stock)} {prod.unit}
                                             </span>
                                         {:else}
                                             <span class="text-muted-foreground">-</span>
@@ -437,11 +438,11 @@
                                         {#if prod && parseFloat(row.quantity) > 0}
                                             <div class="flex items-center justify-center gap-1">
                                                 <span class="text-muted-foreground line-through text-[10px]">
-                                                    {calc.oldStock}
+                                                    {formatStock(calc.oldStock)}
                                                 </span>
                                                 <span class="text-muted-foreground">→</span>
                                                 <span class="font-bold text-xs {row.type === 'in' ? 'text-emerald-600 dark:text-emerald-400' : row.type === 'out' ? 'text-destructive' : 'text-blue-600 dark:text-blue-400'}">
-                                                    {calc.newStock} {prod.unit}
+                                                    {formatStock(calc.newStock)} {prod.unit}
                                                 </span>
                                                 <span class="text-[9px] px-1 rounded {row.type === 'in' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : row.type === 'out' ? 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300' : 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300'}">
                                                     {calc.deltaText}
@@ -453,7 +454,7 @@
                                                 </div>
                                             {/if}
                                         {:else if prod}
-                                            <span class="text-muted-foreground text-[11px]">{prod.stock} {prod.unit}</span>
+                                            <span class="text-muted-foreground text-[11px]">{formatStock(prod.stock)} {prod.unit}</span>
                                         {:else}
                                             <span class="text-muted-foreground text-[11px]">-</span>
                                         {/if}
@@ -518,13 +519,13 @@
                 {#if summary.totalQtyIn > 0}
                     <Badge variant="outline" class="bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 font-semibold flex items-center gap-1">
                         <ArrowUpRight class="size-3" />
-                        +{summary.totalQtyIn.toLocaleString('id-ID')} Masuk
+                        +{formatStock(summary.totalQtyIn)} Masuk
                     </Badge>
                 {/if}
                 {#if summary.totalQtyOut > 0}
                     <Badge variant="outline" class="bg-red-50 text-destructive border-red-300 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800 font-semibold flex items-center gap-1">
                         <ArrowDownRight class="size-3" />
-                        -{summary.totalQtyOut.toLocaleString('id-ID')} Keluar
+                        -{formatStock(summary.totalQtyOut)} Keluar
                     </Badge>
                 {/if}
             </div>

@@ -23,8 +23,8 @@ class RawMaterial extends Model
     protected function casts(): array
     {
         return [
-            'stock' => 'decimal:2',
-            'min_stock' => 'decimal:2',
+            'stock' => 'float',
+            'min_stock' => 'float',
             'cost_price' => 'decimal:2',
         ];
     }
@@ -36,6 +36,6 @@ class RawMaterial extends Model
 
     public function isLowStock(): bool
     {
-        return $this->stock <= $this->min_stock;
+        return (float) $this->stock <= (float) $this->min_stock;
     }
 }
