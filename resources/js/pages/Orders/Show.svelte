@@ -165,7 +165,12 @@
                 <title>Nota #${order.invoice_number}</title>
                 <style>
                     @page { size: 80mm auto; margin: 0; }
-                    * { box-sizing: border-box; }
+                    * {
+                        box-sizing: border-box;
+                        border-width: 0;
+                        border-style: solid;
+                        border-color: transparent;
+                    }
                     html, body {
                         margin: 0;
                         padding: 0;
@@ -182,6 +187,13 @@
                         padding: 2mm 1mm !important;
                         font-size: 11px !important;
                         color: #000000 !important;
+                        border: none !important;
+                        outline: none !important;
+                    }
+                    .thermal-receipt-80mm, .thermal-receipt-80mm * {
+                        border-left: none !important;
+                        border-right: none !important;
+                        border-top: none !important;
                     }
                     .receipt-logo {
                         display: block;
@@ -191,9 +203,17 @@
                         object-fit: contain;
                         filter: grayscale(100%) contrast(160%);
                     }
-                    .border-dashed { border-style: dashed; }
-                    .border-b { border-bottom-width: 1px; }
-                    .border-black { border-color: #000; }
+                    .border-b {
+                        border-bottom-width: 1px !important;
+                        border-bottom-color: #000000 !important;
+                        border-bottom-style: dashed !important;
+                    }
+                    .border-dashed {
+                        border-bottom-style: dashed !important;
+                    }
+                    .border-black {
+                        border-bottom-color: #000000 !important;
+                    }
                     .text-center { text-align: center; }
                     .font-bold { font-weight: 700; }
                     .font-semibold { font-weight: 600; }
