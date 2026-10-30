@@ -94,6 +94,18 @@ class CashierAccessTest extends TestCase
         $this->assertFalse($props['sidebarOpen']);
     }
 
+    public function test_sidebar_is_automatically_minimized_on_pos_page(): void
+    {
+        // Even if sidebar cookie was true, on POS page it must be false
+        $response = $this->actingAs($this->admin)
+            ->withCookie('sidebar_state', 'true')
+            ->get(route('pos.index'));
+        $response->assertOk();
+
+        $props = $response->viewData('page')['props'];
+        $this->assertFalse($props['sidebarOpen']);
+    }
+
     public function test_double_submission_is_prevented_and_deduplicated(): void
     {
         $shift = \App\Models\CashierShift::create([

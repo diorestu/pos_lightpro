@@ -12,7 +12,7 @@
     import { Button } from '@/components/ui/button';
     import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
     import { toUrl } from '@/lib/utils';
-    import { dashboard, login, register } from '@/routes';
+    import { dashboard, login } from '@/routes';
 
     const auth = $derived(page.props.auth);
 </script>
@@ -43,13 +43,9 @@
                     </Link>
                 {:else}
                     <Link href={toUrl(login())}>
-                        <Button variant="ghost" size="sm" class="text-xs font-medium">
-                            Masuk
-                        </Button>
-                    </Link>
-                    <Link href={toUrl(register())}>
                         <Button size="sm" class="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold shadow-xs">
-                            Daftar Akun
+                            Masuk ke Sistem POS
+                            <ArrowRight class="size-3.5 ml-1.5" />
                         </Button>
                     </Link>
                 {/if}

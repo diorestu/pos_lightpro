@@ -59,7 +59,9 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
             ],
             'receipt_settings' => ReceiptSetting::getActive(),
-            'sidebarOpen' => $request->hasCookie('sidebar_state') && $request->cookie('sidebar_state') === 'true',
+            'sidebarOpen' => $request->is('pos*')
+                ? false
+                : ($request->hasCookie('sidebar_state') && $request->cookie('sidebar_state') === 'true'),
         ];
     }
 }

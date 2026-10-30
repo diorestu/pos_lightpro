@@ -10,6 +10,7 @@
 </script>
 
 <script lang="ts">
+    import { onMount } from 'svelte';
     import { router } from '@inertiajs/svelte';
     import AlertCircle from '@lucide/svelte/icons/alert-circle';
     import Calculator from '@lucide/svelte/icons/calculator';
@@ -41,6 +42,7 @@
     import { Input } from '@/components/ui/input';
     import { Label } from '@/components/ui/label';
     import { Textarea } from '@/components/ui/textarea';
+    import { useSidebar } from '@/components/ui/sidebar';
 
     interface ProductItem {
         id: number;
@@ -118,6 +120,13 @@
     let showPendingOrdersModal = $state(false);
     let pendingSearchQuery = $state('');
     let showDriverPickupModal = $state(false);
+
+    const sidebar = useSidebar();
+
+    onMount(() => {
+        sidebar.setOpen(false);
+        sidebar.setOpenMobile(false);
+    });
 
     // Delivery & Courier for Current Cart
     let deliveryType = $state<'pickup' | 'courier'>('pickup');

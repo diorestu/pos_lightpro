@@ -2,6 +2,7 @@
     import type { Snippet } from 'svelte';
     import { derived, readable, writable } from 'svelte/store';
     import { onMount, setContext } from 'svelte';
+    import { page } from '@inertiajs/svelte';
     import { cn } from '@/lib/utils';
     import { TooltipProvider } from '@/components/ui/tooltip';
     import {
@@ -25,6 +26,9 @@
     } = $props();
 
     const initialOpen = () => {
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/pos')) {
+            return false;
+        }
         if (typeof document === 'undefined') return defaultOpen;
         const match = document.cookie.match(new RegExp('(^|;\\s*)' + SIDEBAR_COOKIE_NAME + '=([^;]*)'));
         if (match) {
@@ -35,6 +39,25 @@
 
     const open = writable(initialOpen());
     const openMobile = writable(false);
+
+    let previousUrl = '';
+
+    $effect(() => {
+        const currentUrl = page?.url || '';
+        const isPos = currentUrl.startsWith('/pos');
+        const wasPos = previousUrl.startsWith('/pos');
+        previousUrl = currentUrl;
+
+        if (isPos) {
+            open.set(false);
+            openMobile.set(false);
+        } else if (wasPos && typeof document !== 'undefined') {
+            const match = document.cookie.match(new RegExp('(^|;\\s*)' + SIDEBAR_COOKIE_NAME + '=([^;]*)'));
+            if (match && match[2] === 'true') {
+                open.set(true);
+            }
+        }
+    });
 
     const isMobile = readable(false, (set) => {
         if (typeof window === 'undefined') {

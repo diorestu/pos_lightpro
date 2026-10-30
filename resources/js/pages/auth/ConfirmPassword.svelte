@@ -15,24 +15,9 @@
     import { Label } from '@/components/ui/label';
     import { Spinner } from '@/components/ui/spinner';
     import { store } from '@/routes/password/confirm';
-    import {
-        index as confirmOptions,
-        store as confirmStore,
-    } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyConfirmationController';
-    import PasskeyVerify from '@/components/PasskeyVerify.svelte';
 </script>
 
 <AppHead title="Konfirmasi Kata Sandi" />
-
-<PasskeyVerify
-    routes={{
-        options: confirmOptions(),
-        submit: confirmStore(),
-    }}
-    label="Konfirmasi dengan Passkey"
-    loadingLabel="Mengonfirmasi..."
-    separator="Atau konfirmasi dengan kata sandi"
-/>
 
 <Form {...store.form()} resetOnSuccess>
     {#snippet children({ errors, processing })}
