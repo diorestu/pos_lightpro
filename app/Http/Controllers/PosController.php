@@ -40,6 +40,26 @@ class PosController extends Controller
         $customers = Customer::orderBy('name')->get();
         $receiptSettings = ReceiptSetting::getActive();
 
+        // Pending & unpaid orders for pickup OR courier waiting for pickup
+        $pendingOrders = Order::with(['items', 'customer', 'payments'])
+            ->where(function ($q) {
+                $q->where('payment_status', '!=', 'paid')
+                    ->orWhere('payment_method', 'pending')
+                    ->orWhere('delivery_status', 'pending');
+            })
+            ->where('order_status', '!=', 'cancelled')
+            ->latest()
+            ->take(40)
+            ->get();
+
+        $courierWaitingCount = Order::where('delivery_type', 'courier')
+            ->where(function ($q) {
+                $q->where('delivery_status', 'pending')
+                    ->orWhereNull('delivery_status');
+            })
+            ->where('order_status', '!=', 'cancelled')
+            ->count();
+
         // Calculate next invoice number preview
         $todayDate = date('Ymd');
         $todayOrderCount = Order::whereDate('created_at', Carbon::today())->count() + 1;
@@ -52,6 +72,8 @@ class PosController extends Controller
             'customers' => $customers,
             'receiptSettings' => $receiptSettings,
             'nextInvoice' => $nextInvoice,
+            'pendingOrders' => $pendingOrders,
+            'courierWaitingCount' => $courierWaitingCount,
         ]);
     }
 
@@ -93,7 +115,7 @@ class PosController extends Controller
             'grand_total' => 'required|numeric|min:0',
             'paid_amount' => 'required|numeric|min:0',
             'change_amount' => 'nullable|numeric|min:0',
-            'payment_method' => 'required|string|in:cash,transfer,qris,tempo,split',
+            'payment_method' => 'required|string|in:cash,transfer,qris,tempo,split,pending',
             'order_status' => 'nullable|string|in:pending,processing,ready,completed',
             'due_date' => 'nullable|date',
             'notes' => 'nullable|string',
@@ -105,6 +127,10 @@ class PosController extends Controller
             'terms.*.is_paid' => 'nullable|boolean',
             'terms.*.due_date' => 'nullable|date',
             'terms.*.notes' => 'nullable|string',
+            'delivery_type' => 'nullable|string|in:pickup,courier',
+            'courier_name' => 'nullable|string|max:50',
+            'booking_code' => 'nullable|string|max:100',
+            'delivery_notes' => 'nullable|string|max:500',
         ]);
 
         $clientToken = $validated['client_token'] ?? null;
@@ -149,6 +175,10 @@ class PosController extends Controller
                 $paidAmount = round((float) collect($validated['terms'])->where('is_paid', true)->sum('amount'));
                 $paymentMethod = 'split';
                 $paymentStatus = $paidAmount >= $grandTotal ? 'paid' : ($paidAmount > 0 ? 'partial' : 'unpaid');
+            } elseif ($validated['payment_method'] === 'pending') {
+                $paidAmount = 0;
+                $paymentMethod = 'pending';
+                $paymentStatus = 'unpaid';
             } else {
                 $paidAmount = round((float) $validated['paid_amount']);
                 $paymentMethod = $validated['payment_method'];
@@ -171,8 +201,13 @@ class PosController extends Controller
                 }
             }
 
-            // Order status default
-            $orderStatus = $validated['order_status'] ?? 'completed';
+            // Order status default: for pending payment, start in 'processing' (sedang dicetak)
+            $orderStatus = $validated['order_status'] ?? ($paymentMethod === 'pending' ? 'processing' : 'completed');
+
+            $deliveryType = $validated['delivery_type'] ?? 'pickup';
+            $courierName = $deliveryType === 'courier' ? ($validated['courier_name'] ?: 'Gojek / Grab') : null;
+            $bookingCode = $deliveryType === 'courier' ? trim($validated['booking_code'] ?? '') : null;
+            $deliveryStatus = $deliveryType === 'courier' ? 'pending' : null;
 
             // Create Order
             $order = Order::create([
@@ -193,6 +228,11 @@ class PosController extends Controller
                 'order_status' => $orderStatus,
                 'due_date' => $validated['due_date'] ?? null,
                 'notes' => $validated['notes'] ?? null,
+                'delivery_type' => $deliveryType,
+                'courier_name' => $courierName,
+                'booking_code' => $bookingCode,
+                'delivery_status' => $deliveryStatus,
+                'delivery_notes' => $validated['delivery_notes'] ?? null,
             ]);
 
             // Create items and handle stock deduction
@@ -300,6 +340,21 @@ class PosController extends Controller
                         'notes' => $termData['notes'] ?? null,
                     ]);
                 }
+            } elseif ($paymentMethod === 'pending') {
+                // Pending payment upon pickup
+                OrderPayment::create([
+                    'order_id' => $order->id,
+                    'cashier_shift_id' => null,
+                    'user_id' => null,
+                    'term_index' => 1,
+                    'term_name' => 'Pelunasan Saat Ambil Barang',
+                    'amount' => $grandTotal,
+                    'paid_amount' => 0,
+                    'payment_method' => 'cash',
+                    'status' => 'pending',
+                    'due_date' => $validated['due_date'] ?? null,
+                    'notes' => 'Pembayaran saat pengambilan pesanan di toko',
+                ]);
             } else {
                 $receivedNow = min($paidAmount, $grandTotal);
                 if ($paymentMethod === 'tempo' || $paidAmount < $grandTotal) {
@@ -363,7 +418,11 @@ class PosController extends Controller
 
                 Cache::put($dedupCacheKey, $order->id, now()->addMinutes(5));
 
-                return redirect()->route('orders.show', $order->id)->with('success', "Transaksi {$invoiceNumber} berhasil disimpan!");
+                $successMsg = $paymentMethod === 'pending'
+                    ? "Pesanan {$invoiceNumber} berhasil disimpan (Pending Pembayaran / Bayar Saat Ambil)!"
+                    : "Transaksi {$invoiceNumber} berhasil diproses!";
+
+                return redirect()->route('orders.show', $order->id)->with('success', $successMsg);
             });
         } finally {
             $lock->release();

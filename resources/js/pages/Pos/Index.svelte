@@ -18,9 +18,11 @@
     import Clock from '@lucide/svelte/icons/clock';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import DollarSign from '@lucide/svelte/icons/dollar-sign';
+    import Eye from '@lucide/svelte/icons/eye';
     import FileText from '@lucide/svelte/icons/file-text';
     import LoaderCircle from '@lucide/svelte/icons/loader-circle';
     import Minus from '@lucide/svelte/icons/minus';
+    import Motorbike from '@lucide/svelte/icons/motorbike';
     import Plus from '@lucide/svelte/icons/plus';
     import Printer from '@lucide/svelte/icons/printer';
     import QrCode from '@lucide/svelte/icons/qr-code';
@@ -31,6 +33,7 @@
     import UserPlus from '@lucide/svelte/icons/user-plus';
     import Users from '@lucide/svelte/icons/users';
     import AppHead from '@/components/AppHead.svelte';
+    import DriverPickupModal from '@/components/DriverPickupModal.svelte';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
     import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -89,6 +92,8 @@
         customers = [],
         receiptSettings = {},
         nextInvoice = '',
+        pendingOrders = [],
+        courierWaitingCount = 0,
     }: {
         activeShift: any;
         categories: any[];
@@ -96,6 +101,8 @@
         customers: CustomerItem[];
         receiptSettings: any;
         nextInvoice: string;
+        pendingOrders?: any[];
+        courierWaitingCount?: number;
     } = $props();
 
     // State
@@ -103,11 +110,32 @@
     let searchQuery = $state('');
     let cart = $state<CartItem[]>([]);
     let selectedCustomerId = $state<number | null>(null);
-    let paymentMethod = $state<'cash' | 'transfer' | 'qris' | 'split'>('cash');
+    let paymentMethod = $state<'cash' | 'transfer' | 'qris' | 'split' | 'pending'>('cash');
     let cashPaidInput = $state('');
     let orderNotes = $state('');
     let dueDate = $state('');
     let isSubmitting = $state(false);
+    let showPendingOrdersModal = $state(false);
+    let pendingSearchQuery = $state('');
+    let showDriverPickupModal = $state(false);
+
+    // Delivery & Courier for Current Cart
+    let deliveryType = $state<'pickup' | 'courier'>('pickup');
+    let courierName = $state('Gojek (GoSend)');
+    let bookingCode = $state('');
+    let deliveryNotes = $state('');
+
+    const filteredPendingOrders = $derived(
+        pendingOrders.filter((o: any) => {
+            const q = pendingSearchQuery.toLowerCase().trim();
+            if (!q) return true;
+            return (
+                (o.invoice_number && o.invoice_number.toLowerCase().includes(q)) ||
+                (o.customer_name && o.customer_name.toLowerCase().includes(q)) ||
+                (o.customer_phone && o.customer_phone.toLowerCase().includes(q))
+            );
+        })
+    );
 
     interface PaymentTermItem {
         id: string;
@@ -198,7 +226,9 @@
     const paidAmount = $derived(
         paymentMethod === 'cash'
             ? (cashPaidInput ? Math.round(parseFloat(cashPaidInput) || 0) : 0)
-            : (paymentMethod === 'split' ? totalPaidTermsNow : grandTotal)
+            : (paymentMethod === 'split'
+                ? totalPaidTermsNow
+                : (paymentMethod === 'pending' ? 0 : grandTotal))
     );
 
     const changeAmount = $derived(
@@ -367,7 +397,12 @@
         cart = [];
         cashPaidInput = '';
         orderNotes = '';
+        dueDate = '';
         paymentMethod = 'cash';
+        deliveryType = 'pickup';
+        courierName = 'Gojek (GoSend)';
+        bookingCode = '';
+        deliveryNotes = '';
     }
 
     function setQuickCash(amount: number) {
@@ -433,7 +468,7 @@
                 discount_amount: Math.round(discountAmount),
                 tax_amount: 0,
                 grand_total: Math.round(grandTotal),
-                paid_amount: Math.round(isSplit ? totalPaidTermsNow : paidAmount),
+                paid_amount: Math.round(paymentMethod === 'pending' ? 0 : (isSplit ? totalPaidTermsNow : paidAmount)),
                 change_amount: Math.round(paymentMethod === 'cash' ? changeAmount : 0),
                 payment_method: isSplit ? 'split' : paymentMethod,
                 is_split_payment: isSplit,
@@ -447,9 +482,15 @@
                           notes: t.notes || null,
                       }))
                     : null,
-                order_status: 'completed',
-                due_date: isSplit ? (paymentTerms.find((t) => !t.is_paid && t.due_date)?.due_date || null) : null,
+                order_status: paymentMethod === 'pending' ? 'processing' : 'completed',
+                due_date: isSplit
+                    ? (paymentTerms.find((t) => !t.is_paid && t.due_date)?.due_date || null)
+                    : (dueDate || null),
                 notes: orderNotes,
+                delivery_type: deliveryType,
+                courier_name: deliveryType === 'courier' ? courierName : null,
+                booking_code: deliveryType === 'courier' ? bookingCode : null,
+                delivery_notes: deliveryType === 'courier' ? deliveryNotes : null,
             },
             {
                 onFinish: () => {
@@ -510,6 +551,38 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                class="h-8 text-xs font-semibold border-indigo-300 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40"
+                onclick={() => (showPendingOrdersModal = true)}
+                title="Lihat daftar pesanan pending / yang akan diambil customer"
+            >
+                <Clock class="size-3.5 mr-1 text-indigo-600 dark:text-indigo-400" />
+                Ambil Pesanan / Pending
+                {#if pendingOrders && pendingOrders.length > 0}
+                    <Badge variant="secondary" class="ml-1.5 h-4 px-1.5 text-[10px] bg-indigo-200 text-indigo-900 dark:bg-indigo-900 dark:text-indigo-200 font-bold">
+                        {pendingOrders.length}
+                    </Badge>
+                {/if}
+            </Button>
+
+            <Button
+                variant="outline"
+                size="sm"
+                class="h-8 text-xs font-semibold border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40"
+                onclick={() => (showDriverPickupModal = true)}
+                title="Pencocokan kode booking driver Gojek / Grab yang pick-up barang"
+            >
+                <Motorbike class="size-3.5 mr-1 text-emerald-600 dark:text-emerald-400" />
+                Pick-up Kurir (Ojol)
+                {#if courierWaitingCount > 0}
+                    <Badge variant="secondary" class="ml-1.5 h-4 px-1.5 text-[10px] bg-emerald-200 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200 font-bold">
+                        {courierWaitingCount}
+                    </Badge>
+                {/if}
+            </Button>
+
             {#if activeShift}
                 <div class="flex items-center gap-2 text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 px-3 py-1 rounded-md">
                     <Clock class="size-3.5 text-emerald-600" />
@@ -804,35 +877,93 @@
                     </div>
                 </div>
 
+                <!-- Pengambilan: Ambil Toko vs Kurir Ojol -->
+                <div class="space-y-1.5 bg-background p-2 rounded-md border text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold text-muted-foreground">Pengambilan:</span>
+                        <div class="flex items-center gap-1">
+                            <button
+                                type="button"
+                                class="px-2 py-0.5 rounded text-[11px] font-medium transition-colors {deliveryType === 'pickup' ? 'bg-primary text-primary-foreground font-bold shadow-2xs' : 'text-muted-foreground hover:bg-muted'}"
+                                onclick={() => (deliveryType = 'pickup')}
+                            >
+                                Ambil di Toko
+                            </button>
+                            <button
+                                type="button"
+                                class="px-2 py-0.5 rounded text-[11px] font-medium transition-colors {deliveryType === 'courier' ? 'bg-indigo-600 text-white font-bold shadow-2xs' : 'text-muted-foreground hover:bg-muted'}"
+                                onclick={() => (deliveryType = 'courier')}
+                            >
+                                <Motorbike class="size-3 inline-block mr-0.5" />
+                                Kirim Ojol
+                            </button>
+                        </div>
+                    </div>
+                    {#if deliveryType === 'courier'}
+                        <div class="pt-1.5 border-t space-y-1.5 text-xs">
+                            <div class="grid grid-cols-2 gap-1.5">
+                                <select
+                                    bind:value={courierName}
+                                    class="h-7 text-xs rounded border border-input bg-background px-2"
+                                >
+                                    <option value="Gojek (GoSend)">Gojek (GoSend)</option>
+                                    <option value="Grab (GrabExpress)">Grab (GrabExpress)</option>
+                                    <option value="Maxim">Maxim</option>
+                                    <option value="Lalamove">Lalamove</option>
+                                    <option value="Kurir Toko">Kurir Toko</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                </select>
+                                <Input
+                                    bind:value={bookingCode}
+                                    placeholder="Kode Booking (opsional)"
+                                    class="h-7 text-xs font-mono uppercase"
+                                />
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+
                 <!-- Payment Method Tabs -->
-                <div class="grid grid-cols-4 gap-1.5">
+                <div class="grid grid-cols-5 gap-1">
                     <button
                         onclick={() => (paymentMethod = 'cash')}
-                        class="py-1.5 text-xs font-medium rounded border transition-colors flex flex-col items-center gap-1 {paymentMethod === 'cash' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted'}"
+                        class="py-1.5 text-xs font-medium rounded border transition-colors flex flex-col items-center gap-1 {paymentMethod === 'cash' ? 'bg-primary text-primary-foreground border-primary font-bold' : 'bg-background hover:bg-muted'}"
+                        title="Pembayaran Tunai"
                     >
                         <DollarSign class="size-3.5" />
                         Tunai
                     </button>
                     <button
                         onclick={() => (paymentMethod = 'qris')}
-                        class="py-1.5 text-xs font-medium rounded border transition-colors flex flex-col items-center gap-1 {paymentMethod === 'qris' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted'}"
+                        class="py-1.5 text-xs font-medium rounded border transition-colors flex flex-col items-center gap-1 {paymentMethod === 'qris' ? 'bg-primary text-primary-foreground border-primary font-bold' : 'bg-background hover:bg-muted'}"
+                        title="Pembayaran QRIS"
                     >
                         <QrCode class="size-3.5" />
                         QRIS
                     </button>
                     <button
                         onclick={() => (paymentMethod = 'transfer')}
-                        class="py-1.5 text-xs font-medium rounded border transition-colors flex flex-col items-center gap-1 {paymentMethod === 'transfer' ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted'}"
+                        class="py-1.5 text-xs font-medium rounded border transition-colors flex flex-col items-center gap-1 {paymentMethod === 'transfer' ? 'bg-primary text-primary-foreground border-primary font-bold' : 'bg-background hover:bg-muted'}"
+                        title="Pembayaran Transfer Bank"
                     >
                         <CreditCard class="size-3.5" />
                         Transfer
                     </button>
                     <button
                         onclick={() => initSplitTerms(50)}
-                        class="py-1.5 text-xs font-medium rounded border transition-colors flex flex-col items-center gap-1 {paymentMethod === 'split' ? 'bg-amber-600 text-white border-amber-600' : 'bg-background hover:bg-muted text-amber-700'}"
+                        class="py-1.5 text-xs font-medium rounded border transition-colors flex flex-col items-center gap-1 {paymentMethod === 'split' ? 'bg-amber-600 text-white border-amber-600 font-bold' : 'bg-background hover:bg-muted text-amber-700'}"
+                        title="Uang Muka / Bertahap"
                     >
                         <Split class="size-3.5" />
-                        Split / Termin
+                        Termin
+                    </button>
+                    <button
+                        onclick={() => (paymentMethod = 'pending')}
+                        class="py-1.5 text-xs font-medium rounded border transition-colors flex flex-col items-center gap-1 {paymentMethod === 'pending' ? 'bg-indigo-600 text-white border-indigo-600 font-bold shadow-xs' : 'bg-background hover:bg-muted text-indigo-700 dark:text-indigo-400'}"
+                        title="Pesan Sekarang, Bayar Saat Pengambilan Barang di Toko"
+                    >
+                        <Clock class="size-3.5" />
+                        Saat Ambil
                     </button>
                 </div>
 
@@ -1013,6 +1144,31 @@
                             {/if}
                         </div>
                     </div>
+                {:else if paymentMethod === 'pending'}
+                    <div class="space-y-2 bg-indigo-50/70 dark:bg-indigo-950/30 p-2.5 rounded-lg border border-indigo-200 dark:border-indigo-800 text-xs">
+                        <div class="flex items-center justify-between pb-1 border-b border-indigo-200/70 dark:border-indigo-800/70">
+                            <span class="font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5 text-xs">
+                                <Clock class="size-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                                Bayar Saat Ambil (Pending)
+                            </span>
+                            <Badge variant="outline" class="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200 border-indigo-300 text-[10px] font-semibold">
+                                Belum Bayar
+                            </Badge>
+                        </div>
+                        <p class="text-[11px] text-muted-foreground leading-relaxed">
+                            Customer pesan cetak dulu sekarang dan akan membayar penuh sebesar <strong class="text-foreground">{formatRupiah(grandTotal)}</strong> saat pengambilan pesanan di toko.
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-indigo-200/50 dark:border-indigo-800/50">
+                            <div class="space-y-1">
+                                <Label class="text-[10px] text-muted-foreground font-medium">Estimasi Tgl Ambil:</Label>
+                                <Input type="date" bind:value={dueDate} class="h-7 text-xs bg-background" />
+                            </div>
+                            <div class="space-y-1">
+                                <Label class="text-[10px] text-muted-foreground font-medium">Catatan Pengambilan:</Label>
+                                <Input bind:value={orderNotes} placeholder="Contoh: Diambil jam 4 sore..." class="h-7 text-xs bg-background" />
+                            </div>
+                        </div>
+                    </div>
                 {/if}
 
                 <!-- Action Buttons: Clear & Checkout -->
@@ -1021,13 +1177,16 @@
                         Reset
                     </Button>
                     <Button
-                        class="flex-1 h-9 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-xs"
+                        class="flex-1 h-9 {paymentMethod === 'pending' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-primary hover:bg-primary/90 text-primary-foreground'} font-bold text-xs shadow-xs"
                         onclick={submitOrder}
                         disabled={cart.length === 0 || isSubmitting}
                     >
                         {#if isSubmitting}
                             <LoaderCircle class="size-4 mr-1.5 animate-spin" />
                             Memproses Transaksi...
+                        {:else if paymentMethod === 'pending'}
+                            <Clock class="size-4 mr-1.5" />
+                            Simpan Pesanan (Bayar Saat Ambil)
                         {:else}
                             <Check class="size-4 mr-1.5" />
                             Bayar & Cetak Nota ({formatRupiah(grandTotal)})
@@ -1138,3 +1297,126 @@
         </DialogFooter>
     </DialogContent>
 </Dialog>
+
+<!-- Modal: Pesanan Pending / Ambil di Toko -->
+<Dialog open={showPendingOrdersModal} onOpenChange={(open) => (showPendingOrdersModal = open)}>
+    <DialogContent class="sm:max-w-3xl max-h-[85vh] flex flex-col p-0">
+        <DialogHeader class="px-6 pt-5 pb-3 border-b">
+            <div class="flex items-center justify-between">
+                <div>
+                    <DialogTitle class="flex items-center gap-2 text-base font-bold">
+                        <Clock class="size-5 text-indigo-600" />
+                        Daftar Pesanan Pending & Siap Ambil
+                    </DialogTitle>
+                    <DialogDescription class="text-xs text-muted-foreground mt-0.5">
+                        Pesanan yang belum lunas atau menunggu pelunasan saat customer datang mengambil hasil cetak ke toko.
+                    </DialogDescription>
+                </div>
+                <Badge variant="outline" class="font-bold text-xs bg-indigo-50 text-indigo-700 border-indigo-200">
+                    {pendingOrders.length} Pesanan
+                </Badge>
+            </div>
+            <!-- Search bar -->
+            <div class="pt-3">
+                <div class="relative">
+                    <Search class="size-3.5 absolute left-3 top-2.5 text-muted-foreground" />
+                    <Input
+                        bind:value={pendingSearchQuery}
+                        placeholder="Cari nomor invoice, nama pelanggan, atau no telepon..."
+                        class="pl-8 h-8 text-xs bg-background"
+                    />
+                </div>
+            </div>
+        </DialogHeader>
+
+        <!-- Body: List of orders -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-2.5">
+            {#if filteredPendingOrders.length === 0}
+                <div class="py-12 text-center text-muted-foreground space-y-2">
+                    <Clock class="size-10 mx-auto text-muted-foreground/40" />
+                    <p class="text-xs font-medium">Tidak ada pesanan pending yang menunggu pembayaran.</p>
+                </div>
+            {:else}
+                <div class="space-y-2">
+                    {#each filteredPendingOrders as order (order.id)}
+                        {@const remaining = Math.max(0, Number(order.grand_total) - Number(order.paid_amount))}
+                        <div class="p-3 rounded-lg border bg-card hover:border-indigo-300 dark:hover:border-indigo-800 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-foreground text-sm">{order.invoice_number}</span>
+                                    {#if order.payment_method === 'pending'}
+                                        <Badge class="bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 text-[10px] font-semibold border-indigo-200">
+                                            Bayar Saat Ambil
+                                        </Badge>
+                                    {:else}
+                                        <Badge variant="outline" class="uppercase text-[10px] font-semibold">
+                                            {order.payment_method} ({order.payment_status === 'partial' ? 'DP' : 'Belum Lunas'})
+                                        </Badge>
+                                    {/if}
+
+                                    {#if order.order_status === 'ready'}
+                                        <Badge variant="outline" class="bg-purple-50 text-purple-700 border-purple-200 text-[10px]">
+                                            Siap Ambil
+                                        </Badge>
+                                    {:else if order.order_status === 'processing'}
+                                        <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">
+                                            Proses Cetak
+                                        </Badge>
+                                    {:else}
+                                        <Badge variant="outline" class="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
+                                            Antrian
+                                        </Badge>
+                                    {/if}
+                                </div>
+
+                                <div class="text-muted-foreground flex items-center gap-2 flex-wrap">
+                                    <span class="font-semibold text-foreground">{order.customer_name || 'Pelanggan Umum'}</span>
+                                    {#if order.customer_phone && order.customer_phone !== '-'}
+                                        <span>• {order.customer_phone}</span>
+                                    {/if}
+                                    <span>• {new Date(order.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+
+                                {#if order.items && order.items.length > 0}
+                                    <div class="text-[11px] text-muted-foreground line-clamp-1">
+                                        Item: {order.items.map((it) => `${it.product_name} (${it.quantity} ${it.unit})`).join(', ')}
+                                    </div>
+                                {/if}
+
+                                {#if order.notes}
+                                    <div class="text-[10px] italic text-amber-700 dark:text-amber-400">
+                                        Catatan: {order.notes}
+                                    </div>
+                                {/if}
+                            </div>
+
+                            <div class="flex items-center sm:flex-col sm:items-end justify-between gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0">
+                                <div class="text-left sm:text-right">
+                                    <div class="text-muted-foreground text-[10px]">Sisa Tagihan:</div>
+                                    <div class="font-bold text-sm text-destructive">{formatRupiah(remaining)}</div>
+                                    <div class="text-[10px] text-muted-foreground">Total: {formatRupiah(order.grand_total)}</div>
+                                </div>
+
+                                <a href="/orders/{order.id}">
+                                    <Button size="sm" class="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                                        <DollarSign class="size-3.5 mr-1" />
+                                        Pelunasan & Nota
+                                    </Button>
+                                </a>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            {/if}
+        </div>
+
+        <DialogFooter class="px-6 py-3 border-t bg-muted/20">
+            <Button variant="outline" class="text-xs" onclick={() => (showPendingOrdersModal = false)}>
+                Tutup
+            </Button>
+        </DialogFooter>
+    </DialogContent>
+</Dialog>
+
+<!-- Modal: Verifikasi & Pencocokan Kode Pick-up Driver (Gojek / Grab) -->
+<DriverPickupModal bind:open={showDriverPickupModal} />

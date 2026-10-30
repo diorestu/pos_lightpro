@@ -14,14 +14,17 @@
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
     import Clock from '@lucide/svelte/icons/clock';
+    import CreditCard from '@lucide/svelte/icons/credit-card';
     import Eye from '@lucide/svelte/icons/eye';
     import Filter from '@lucide/svelte/icons/filter';
+    import Motorbike from '@lucide/svelte/icons/motorbike';
     import Plus from '@lucide/svelte/icons/plus';
     import Printer from '@lucide/svelte/icons/printer';
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
     import Search from '@lucide/svelte/icons/search';
     import XCircle from '@lucide/svelte/icons/x-circle';
     import AppHead from '@/components/AppHead.svelte';
+    import DriverPickupModal from '@/components/DriverPickupModal.svelte';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
     import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,6 +46,11 @@
         payment_status: 'paid' | 'partial' | 'unpaid';
         order_status: 'pending' | 'processing' | 'ready' | 'completed' | 'cancelled';
         cancellation_reason?: string;
+        delivery_type?: 'pickup' | 'courier';
+        courier_name?: string | null;
+        booking_code?: string | null;
+        driver_name?: string | null;
+        delivery_status?: 'pending' | 'picked_up' | 'delivered' | null;
         created_at: string;
         user?: { name: string };
         items?: any[];
@@ -52,9 +60,11 @@
     let {
         orders = { data: [], links: [] },
         filters = {},
+        courierWaitingCount = 0,
     }: {
         orders: any;
         filters: Record<string, string>;
+        courierWaitingCount?: number;
     } = $props();
 
     // svelte-ignore state_referenced_locally
@@ -70,7 +80,11 @@
     // svelte-ignore state_referenced_locally
     let paymentMethod = $state(filters.payment_method || '');
     // svelte-ignore state_referenced_locally
+    let deliveryType = $state(filters.delivery_type || '');
+    // svelte-ignore state_referenced_locally
     let currentPerPage = $state(filters.per_page ? parseInt(filters.per_page, 10) : 15);
+
+    let showDriverPickupModal = $state(false);
 
     $effect(() => {
         search = filters.search || '';
@@ -79,6 +93,7 @@
         orderStatus = filters.order_status || '';
         paymentStatus = filters.payment_status || '';
         paymentMethod = filters.payment_method || '';
+        deliveryType = filters.delivery_type || '';
         currentPerPage = filters.per_page ? parseInt(filters.per_page, 10) : 15;
     });
 
@@ -118,6 +133,7 @@
                 order_status: orderStatus || undefined,
                 payment_status: paymentStatus || undefined,
                 payment_method: paymentMethod || undefined,
+                delivery_type: deliveryType || undefined,
                 per_page: currentPerPage,
             },
             { preserveState: true }
@@ -131,6 +147,7 @@
         orderStatus = '';
         paymentStatus = '';
         paymentMethod = '';
+        deliveryType = '';
         router.get('/orders');
     }
 
@@ -204,18 +221,34 @@
                 Kelola transaksi cetak, pelunasan sisa tempo, pembatalan pesanan (cancel order), dan retur pelanggan. Klik judul kolom untuk mengurutkan data (sortable).
             </p>
         </div>
-        <Link href="/pos">
-            <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center">
-                <Plus class="size-4 mr-1.5" />
-                Transaksi POS
+        <div class="flex items-center gap-2">
+            <Button
+                variant="outline"
+                class="font-semibold whitespace-nowrap inline-flex items-center border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40"
+                onclick={() => (showDriverPickupModal = true)}
+                title="Pencocokan kode booking driver Gojek / Grab yang pick-up barang"
+            >
+                <Motorbike class="size-4 mr-1.5 text-emerald-600 dark:text-emerald-400" />
+                Verifikasi Pick-up Driver
+                {#if courierWaitingCount > 0}
+                    <Badge variant="secondary" class="ml-1.5 h-4 px-1.5 text-[10px] bg-emerald-200 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200 font-bold">
+                        {courierWaitingCount}
+                    </Badge>
+                {/if}
             </Button>
-        </Link>
+            <Link href="/pos">
+                <Button class="bg-primary font-semibold whitespace-nowrap inline-flex items-center">
+                    <Plus class="size-4 mr-1.5" />
+                    Transaksi POS
+                </Button>
+            </Link>
+        </div>
     </div>
 
     <!-- Filters Bar -->
     <Card class="border shadow-2xs">
         <CardContent class="p-3.5 space-y-2.5">
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
                 <!-- Date From -->
                 <div class="space-y-1">
                     <Label class="text-[11px] text-muted-foreground">Dari Tanggal</Label>
@@ -241,6 +274,20 @@
                         <option value="transfer">Transfer Bank</option>
                         <option value="tempo">Tempo / DP</option>
                         <option value="split">Split / Termin</option>
+                        <option value="pending">Bayar Saat Ambil</option>
+                    </select>
+                </div>
+
+                <!-- Delivery Type -->
+                <div class="space-y-1">
+                    <Label class="text-[11px] text-muted-foreground">Pengambilan</Label>
+                    <select
+                        bind:value={deliveryType}
+                        class="h-8 text-xs rounded-md border border-input bg-background px-2 pr-8 w-full cursor-pointer font-medium"
+                    >
+                        <option value="">Semua Pengambilan</option>
+                        <option value="pickup">Ambil di Toko</option>
+                        <option value="courier">Kurir / Ojol (Gojek/Grab)</option>
                     </select>
                 </div>
 
@@ -337,30 +384,51 @@
                 {/if}
                 {#if isVisible('order_status')}
                     <TableCell class="text-xs">
-                        {#if order.order_status === 'completed'}
-                            <Badge variant="outline" class="bg-emerald-50 text-emerald-700 border-emerald-200">Selesai</Badge>
-                        {:else if order.order_status === 'processing'}
-                            <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-200">Proses Cetak</Badge>
-                        {:else if order.order_status === 'ready'}
-                            <Badge variant="outline" class="bg-purple-50 text-purple-700 border-purple-200">Siap Ambil</Badge>
-                        {:else if order.order_status === 'pending'}
-                            <Badge variant="outline" class="bg-amber-50 text-amber-700 border-amber-200">Antrian</Badge>
-                        {:else if order.order_status === 'cancelled'}
-                            <Badge variant="destructive">Batal</Badge>
-                        {/if}
+                        <div class="space-y-1">
+                            <div>
+                                {#if order.order_status === 'completed'}
+                                    <Badge variant="outline" class="bg-emerald-50 text-emerald-700 border-emerald-200">Selesai</Badge>
+                                {:else if order.order_status === 'processing'}
+                                    <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-200">Proses Cetak</Badge>
+                                {:else if order.order_status === 'ready'}
+                                    <Badge variant="outline" class="bg-purple-50 text-purple-700 border-purple-200">Siap Ambil</Badge>
+                                {:else if order.order_status === 'pending'}
+                                    <Badge variant="outline" class="bg-amber-50 text-amber-700 border-amber-200">Antrian</Badge>
+                                {:else if order.order_status === 'cancelled'}
+                                    <Badge variant="destructive">Batal</Badge>
+                                {/if}
+                            </div>
+                            {#if order.delivery_type === 'courier'}
+                                <div class="flex items-center gap-1 flex-wrap">
+                                    <Badge variant="outline" class="text-[10px] bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-300 font-mono">
+                                        <Motorbike class="size-3 mr-0.5 inline" />
+                                        {order.courier_name || 'Ojol'}{order.booking_code ? `: ${order.booking_code}` : ''}
+                                    </Badge>
+                                    {#if order.delivery_status === 'picked_up'}
+                                        <span class="text-[10px] text-emerald-600 font-semibold" title="Barang sudah diserahkan ke driver">✓ Diambil</span>
+                                    {/if}
+                                </div>
+                            {/if}
+                        </div>
                     </TableCell>
                 {/if}
                 {#if isVisible('payment_status')}
                     <TableCell class="text-xs">
-                        <div class="flex items-center gap-1.5">
+                        <div class="flex items-center gap-1.5 flex-wrap">
                             {#if order.payment_status === 'paid'}
                                 <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px]">Lunas</Badge>
                             {:else if order.payment_status === 'partial'}
                                 <Badge variant="secondary" class="bg-amber-100 text-amber-800 text-[10px]">DP / Tempo</Badge>
+                            {:else if order.payment_method === 'pending'}
+                                <Badge variant="outline" class="border-indigo-400 text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 text-[10px] font-semibold">
+                                    Bayar Saat Ambil
+                                </Badge>
                             {:else}
                                 <Badge variant="destructive" class="text-[10px]">Belum Bayar</Badge>
                             {/if}
-                            <span class="text-[11px] uppercase text-muted-foreground font-semibold">({order.payment_method})</span>
+                            {#if order.payment_method !== 'pending'}
+                                <span class="text-[11px] uppercase text-muted-foreground font-semibold">({order.payment_method})</span>
+                            {/if}
                         </div>
                         {#if order.payment_status !== 'paid' && order.order_status !== 'cancelled'}
                             <div class="text-[10px] text-amber-700 dark:text-amber-300 mt-0.5 font-medium">
@@ -383,6 +451,15 @@
                                     Detail
                                 </Button>
                             </Link>
+
+                            {#if order.payment_status !== 'paid' && order.order_status !== 'cancelled'}
+                                <Link href="/orders/{order.id}">
+                                    <Button size="sm" class="h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium" title="Catat Pelunasan Pembayaran">
+                                        <CreditCard class="size-3.5 mr-1" />
+                                        Bayar
+                                    </Button>
+                                </Link>
+                            {/if}
 
                             {#if order.order_status !== 'cancelled'}
                                 <Button
@@ -521,3 +598,6 @@
         </DialogFooter>
     </DialogContent>
 </Dialog>
+
+<!-- Modal: Verifikasi Driver Pick-up (Gojek / Grab) -->
+<DriverPickupModal bind:open={showDriverPickupModal} />

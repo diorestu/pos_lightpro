@@ -24,6 +24,8 @@
     import DollarSign from '@lucide/svelte/icons/dollar-sign';
     import Eye from '@lucide/svelte/icons/eye';
     import FileText from '@lucide/svelte/icons/file-text';
+    import Motorbike from '@lucide/svelte/icons/motorbike';
+    import PackageCheck from '@lucide/svelte/icons/package-check';
     import Plus from '@lucide/svelte/icons/plus';
     import Printer from '@lucide/svelte/icons/printer';
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
@@ -31,6 +33,7 @@
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import Usb from '@lucide/svelte/icons/usb';
     import User from '@lucide/svelte/icons/user';
+    import DriverPickupModal from '@/components/DriverPickupModal.svelte';
     import AppHead from '@/components/AppHead.svelte';
     import { Badge } from '@/components/ui/badge';
     import { Button } from '@/components/ui/button';
@@ -78,6 +81,14 @@
         cancelled_at?: string;
         due_date?: string;
         notes?: string;
+        delivery_type?: 'pickup' | 'courier';
+        courier_name?: string | null;
+        booking_code?: string | null;
+        driver_name?: string | null;
+        driver_phone?: string | null;
+        delivery_status?: 'pending' | 'picked_up' | 'delivered' | null;
+        picked_up_at?: string | null;
+        delivery_notes?: string | null;
         created_at: string;
         user?: { name: string; email: string };
         customer?: { name: string; phone: string; address: string; customer_type: string };
@@ -103,6 +114,7 @@
     let payAmount = $state('');
     let payMethod = $state<'cash' | 'transfer' | 'qris'>('cash');
     let payNotes = $state('');
+    let markAsCompleted = $state(true);
 
     // Add new term modal
     let showAddTermModal = $state(false);
@@ -110,6 +122,53 @@
     let newTermAmount = $state('');
     let newTermDueDate = $state('');
     let newTermNotes = $state('');
+
+    // Delivery & Courier Modal
+    let showDeliveryModal = $state(false);
+    let deliveryType = $state<'pickup' | 'courier'>('pickup');
+    let courierName = $state('Gojek');
+    let bookingCode = $state('');
+    let deliveryNotes = $state('');
+    let deliveryStatus = $state<'pending' | 'picked_up' | 'delivered'>('pending');
+    let isSavingDelivery = $state(false);
+
+    // Driver Pickup Matching Modal
+    let showDriverPickupModal = $state(false);
+
+    function openDeliveryModal() {
+        deliveryType = order.delivery_type || 'pickup';
+        courierName = order.courier_name || 'Gojek';
+        bookingCode = order.booking_code || '';
+        deliveryNotes = order.delivery_notes || '';
+        deliveryStatus = (order.delivery_status as any) || 'pending';
+        showDeliveryModal = true;
+    }
+
+    function submitDelivery() {
+        isSavingDelivery = true;
+        router.patch(
+            `/orders/${order.id}/delivery`,
+            {
+                delivery_type: deliveryType,
+                courier_name: courierName,
+                booking_code: bookingCode,
+                delivery_notes: deliveryNotes,
+                delivery_status: deliveryStatus,
+            },
+            {
+                onSuccess: () => {
+                    toast.success('Informasi kurir/pengiriman berhasil disimpan!');
+                    showDeliveryModal = false;
+                },
+                onError: () => {
+                    toast.error('Gagal menyimpan informasi kurir.');
+                },
+                onFinish: () => {
+                    isSavingDelivery = false;
+                },
+            }
+        );
+    }
 
     // Thermal Printer USB & Preview State
     let isPrintingUSB = $state(false);
@@ -287,6 +346,7 @@
         payAmount = Math.round(remainingDebt).toString();
         payMethod = 'cash';
         payNotes = 'Pelunasan sisa tagihan';
+        markAsCompleted = true;
         showPayModal = true;
     }
 
@@ -298,6 +358,7 @@
                 amount: parseFloat(payAmount) || 0,
                 payment_method: payMethod,
                 notes: payNotes,
+                mark_as_completed: markAsCompleted,
             },
             {
                 onSuccess: () => {
@@ -400,9 +461,15 @@
         <div class="flex justify-between">
             <span>Metode / Status:</span>
             <span class="font-bold uppercase">
-                {order.payment_method} / {order.payment_status === 'paid' ? 'LUNAS' : order.payment_status === 'partial' ? 'DP (PARSIAL)' : 'BELUM BAYAR'}
+                {order.payment_method === 'pending' ? 'BAYAR SAAT AMBIL' : order.payment_method} / {order.payment_status === 'paid' ? 'LUNAS' : order.payment_status === 'partial' ? 'DP (PARSIAL)' : 'BELUM BAYAR'}
             </span>
         </div>
+        {#if order.delivery_type === 'courier'}
+            <div class="flex justify-between font-bold border-t border-dotted border-black/50 pt-1 mt-1">
+                <span>Kurir / Booking:</span>
+                <span>{order.courier_name?.toUpperCase() || 'KURIR'}{order.booking_code ? ` (${order.booking_code})` : ''}</span>
+            </div>
+        {/if}
     </div>
 
     <!-- Items List (80mm Width) -->
@@ -459,7 +526,7 @@
             <span>{formatRupiah(order.grand_total)}</span>
         </div>
         <div class="flex justify-between">
-            <span>Total Bayar ({order.payment_method.toUpperCase()}):</span>
+            <span>Total Bayar ({order.payment_method === 'pending' ? 'BAYAR SAAT AMBIL' : order.payment_method.toUpperCase()}):</span>
             <span class="font-bold">{formatRupiah(order.paid_amount)}</span>
         </div>
         <div class="flex justify-between">
@@ -646,7 +713,7 @@
     {/if}
 
     <!-- Order Summary Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
         <!-- Customer Info -->
         <Card class="border shadow-2xs">
             <CardHeader class="pb-2">
@@ -678,7 +745,9 @@
             <CardContent class="space-y-1">
                 <div class="flex justify-between">
                     <span class="text-muted-foreground">Metode Bayar:</span>
-                    <span class="font-bold uppercase text-foreground">{order.payment_method}</span>
+                    <span class="font-bold uppercase text-foreground">
+                        {order.payment_method === 'pending' ? 'Bayar Saat Ambil (Pending)' : order.payment_method}
+                    </span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-muted-foreground">Status Bayar:</span>
@@ -701,6 +770,79 @@
                         <span>Sisa Tagihan:</span>
                         <span>{formatRupiah(remainingDebt)}</span>
                     </div>
+                {/if}
+            </CardContent>
+        </Card>
+
+        <!-- Delivery / Courier Info -->
+        <Card class="border shadow-2xs {order.delivery_type === 'courier' && order.delivery_status !== 'picked_up' ? 'border-amber-400/80 bg-amber-50/20 dark:bg-amber-950/10' : ''}">
+            <CardHeader class="pb-2 flex flex-row items-center justify-between space-y-0">
+                <CardTitle class="text-xs uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
+                    <Motorbike class="size-3.5 text-primary" />
+                    Pengiriman & Kurir
+                </CardTitle>
+                <Button variant="ghost" size="sm" class="h-6 px-1.5 text-[11px] text-primary hover:text-primary/80" onclick={openDeliveryModal}>
+                    {order.delivery_type === 'courier' ? 'Ubah Kode' : 'Set Kurir'}
+                </Button>
+            </CardHeader>
+            <CardContent class="space-y-1.5">
+                {#if order.delivery_type === 'courier'}
+                    <div class="flex justify-between items-center">
+                        <span class="text-muted-foreground">Kurir / Ojol:</span>
+                        <Badge class="bg-indigo-600 text-white text-[10px] uppercase font-semibold">
+                            {order.courier_name || 'Gojek / Grab'}
+                        </Badge>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <span class="text-muted-foreground">Kode Booking:</span>
+                        {#if order.booking_code}
+                            <span class="font-mono font-bold text-xs bg-muted px-2 py-0.5 rounded text-primary border">
+                                {order.booking_code}
+                            </span>
+                        {:else}
+                            <span class="text-amber-700 dark:text-amber-400 italic text-[11px] font-medium">(Belum diinput)</span>
+                        {/if}
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <span class="text-muted-foreground">Status Pick-up:</span>
+                        {#if order.delivery_status === 'picked_up'}
+                            <Badge class="bg-emerald-600 text-white text-[10px]">Sudah Diambil</Badge>
+                        {:else}
+                            <Badge variant="outline" class="border-amber-400 bg-amber-50 text-amber-800 text-[10px] font-semibold">
+                                Menunggu Driver
+                            </Badge>
+                        {/if}
+                    </div>
+
+                    {#if order.delivery_status === 'picked_up'}
+                        <div class="text-[10px] text-muted-foreground pt-1 border-t space-y-0.5">
+                            <div>Driver: <strong>{order.driver_name || '-'}</strong> {order.driver_phone ? `(${order.driver_phone})` : ''}</div>
+                            {#if order.picked_up_at}
+                                <div>Waktu: {new Date(order.picked_up_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                            {/if}
+                        </div>
+                    {:else}
+                        <Button
+                            size="sm"
+                            class="w-full h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold mt-1"
+                            onclick={() => (showDriverPickupModal = true)}
+                        >
+                            <CheckCircle class="size-3.5 mr-1" />
+                            Serahkan ke Driver
+                        </Button>
+                    {/if}
+                {:else}
+                    <div class="text-muted-foreground">
+                        Metode: <strong class="text-foreground">Ambil di Toko</strong>
+                    </div>
+                    <p class="text-[11px] text-muted-foreground">
+                        Customer mengambil pesanan langsung ke kasir toko.
+                    </p>
+                    <Button variant="outline" size="sm" class="w-full h-7 text-[11px] mt-1 text-primary border-primary/30" onclick={openDeliveryModal}>
+                        Kirim via Gojek / Grab
+                    </Button>
                 {/if}
             </CardContent>
         </Card>
@@ -1002,6 +1144,13 @@
                 <Label for="p_notes">Catatan Pembayaran</Label>
                 <Input id="p_notes" bind:value={payNotes} placeholder="Catatan pembayaran / no referensi transfer..." />
             </div>
+
+            {#if order.order_status !== 'completed'}
+                <label class="flex items-center gap-2 pt-1 text-xs cursor-pointer select-none">
+                    <input type="checkbox" bind:checked={markAsCompleted} class="size-4 rounded border-input text-primary focus:ring-primary" />
+                    <span class="font-medium text-foreground">Sekaligus tandai pesanan sebagai <strong>Selesai (Sudah Diambil)</strong></span>
+                </label>
+            {/if}
         </div>
 
         <DialogFooter>
@@ -1152,9 +1301,15 @@
                 <div class="flex justify-between">
                     <span>Metode / Status:</span>
                     <span class="font-bold uppercase">
-                        {order.payment_method} / {order.payment_status === 'paid' ? 'LUNAS' : order.payment_status === 'partial' ? 'DP' : 'BELUM'}
+                        {order.payment_method === 'pending' ? 'BAYAR SAAT AMBIL' : order.payment_method} / {order.payment_status === 'paid' ? 'LUNAS' : order.payment_status === 'partial' ? 'DP' : 'BELUM'}
                     </span>
                 </div>
+                {#if order.delivery_type === 'courier'}
+                    <div class="flex justify-between font-bold border-t border-dotted border-black pt-1 mt-1">
+                        <span>Kurir / Booking:</span>
+                        <span>{order.courier_name?.toUpperCase() || 'KURIR'}{order.booking_code ? ` (${order.booking_code})` : ''}</span>
+                    </div>
+                {/if}
             </div>
 
             <div class="py-2 border-b border-dashed border-black space-y-1.5 text-[10px]">
@@ -1251,3 +1406,125 @@
         </DialogFooter>
     </DialogContent>
 </Dialog>
+
+<!-- Delivery / Courier Modal -->
+<Dialog bind:open={showDeliveryModal}>
+    <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+            <DialogTitle class="text-base font-bold flex items-center gap-2">
+                <Motorbike class="size-5 text-primary" />
+                Pengaturan Pengiriman & Kurir (Gojek / Grab)
+            </DialogTitle>
+            <DialogDescription class="text-xs">
+                Pilih apakah barang diambil sendiri oleh pelanggan atau dikirim menggunakan kurir ojol.
+            </DialogDescription>
+        </DialogHeader>
+
+        <form
+            onsubmit={(e) => {
+                e.preventDefault();
+                submitDelivery();
+            }}
+            class="space-y-4 py-2"
+        >
+            <div class="space-y-2">
+                <Label class="text-xs font-semibold">Tipe Pengambilan / Pengiriman</Label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button
+                        type="button"
+                        class="p-2.5 rounded-lg border text-xs font-medium text-left flex items-center gap-2 cursor-pointer transition-all {deliveryType === 'pickup' ? 'border-primary bg-primary/10 text-primary font-bold' : 'hover:bg-muted/50'}"
+                        onclick={() => (deliveryType = 'pickup')}
+                    >
+                        <User class="size-4 shrink-0" />
+                        <div>
+                            <div>Ambil di Toko</div>
+                            <div class="text-[10px] text-muted-foreground font-normal">Customer ambil sendiri</div>
+                        </div>
+                    </button>
+
+                    <button
+                        type="button"
+                        class="p-2.5 rounded-lg border text-xs font-medium text-left flex items-center gap-2 cursor-pointer transition-all {deliveryType === 'courier' ? 'border-primary bg-primary/10 text-primary font-bold' : 'hover:bg-muted/50'}"
+                        onclick={() => (deliveryType = 'courier')}
+                    >
+                        <Motorbike class="size-4 shrink-0" />
+                        <div>
+                            <div>Kurir / Ojol</div>
+                            <div class="text-[10px] text-muted-foreground font-normal">Gojek, Grab, dll</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            {#if deliveryType === 'courier'}
+                <div class="space-y-3 pt-2 border-t">
+                    <div class="space-y-1">
+                        <Label for="courier-name" class="text-xs">Layanan Kurir</Label>
+                        <select
+                            id="courier-name"
+                            bind:value={courierName}
+                            class="h-9 w-full rounded-md border border-input bg-background px-3 text-xs"
+                        >
+                            <option value="Gojek (GoSend)">Gojek (GoSend)</option>
+                            <option value="Grab (GrabExpress)">Grab (GrabExpress)</option>
+                            <option value="Maxim">Maxim</option>
+                            <option value="Lalamove">Lalamove</option>
+                            <option value="Kurir Toko / Internal">Kurir Toko / Internal</option>
+                            <option value="Ekspedisi (JNE/J&T/SiCepat)">Ekspedisi (JNE/J&T/SiCepat)</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1">
+                        <Label for="booking-code" class="text-xs font-semibold text-foreground">
+                            Kode Booking / Nomor Order Ojol / Resi
+                        </Label>
+                        <Input
+                            id="booking-code"
+                            bind:value={bookingCode}
+                            placeholder="Contoh: GK-882310 atau GRAB-10294"
+                            class="h-9 text-xs font-mono uppercase tracking-wider"
+                        />
+                        <p class="text-[10px] text-muted-foreground">
+                            Kode ini akan dicocokkan saat driver datang ke toko untuk mengambil barang.
+                        </p>
+                    </div>
+
+                    <div class="space-y-1">
+                        <Label for="delivery-status" class="text-xs">Status Penyerahan Kurir</Label>
+                        <select
+                            id="delivery-status"
+                            bind:value={deliveryStatus}
+                            class="h-9 w-full rounded-md border border-input bg-background px-3 text-xs"
+                        >
+                            <option value="pending">Menunggu Driver Pick-up</option>
+                            <option value="picked_up">Sudah Diambil Driver</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1">
+                        <Label for="delivery-notes" class="text-xs">Catatan Pengiriman (Opsional)</Label>
+                        <Input
+                            id="delivery-notes"
+                            bind:value={deliveryNotes}
+                            placeholder="Contoh: Titipkan di pos satpam / barang jangan ditumpuk"
+                            class="h-9 text-xs"
+                        />
+                    </div>
+                </div>
+            {/if}
+
+            <DialogFooter class="pt-2">
+                <Button type="button" variant="outline" size="sm" onclick={() => (showDeliveryModal = false)}>
+                    Batal
+                </Button>
+                <Button type="submit" size="sm" class="bg-primary text-primary-foreground font-semibold" disabled={isSavingDelivery}>
+                    {isSavingDelivery ? 'Menyimpan...' : 'Simpan Info Pengiriman'}
+                </Button>
+            </DialogFooter>
+        </form>
+    </DialogContent>
+</Dialog>
+
+<!-- Driver Pickup Matching Modal -->
+<DriverPickupModal bind:open={showDriverPickupModal} />

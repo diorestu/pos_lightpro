@@ -646,4 +646,194 @@ class PrintingPosTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('error');
     }
+
+    public function test_pos_pending_payment_upon_pickup_order(): void
+    {
+        // 1. Open shift
+        $shift = CashierShift::create([
+            'user_id' => $this->kasir->id,
+            'opened_at' => now(),
+            'starting_cash' => 100000,
+            'expected_cash' => 100000,
+            'status' => 'open',
+        ]);
+
+        $initialStock = $this->rawMaterial->stock; // 100
+
+        // 2. Submit order with payment_method = 'pending' (Bayar Saat Ambil)
+        $response = $this->actingAs($this->kasir)->post(route('pos.store'), [
+            'customer_name' => 'Budi Santoso',
+            'customer_phone' => '081234567890',
+            'due_date' => now()->addDays(2)->format('Y-m-d'),
+            'notes' => 'Pesanan diambil sore hari',
+            'items' => [
+                [
+                    'product_id' => $this->productSqm->id,
+                    'product_name' => $this->productSqm->name,
+                    'pricing_type' => 'dimension_sqm',
+                    'unit' => 'm²',
+                    'length' => 2.0,
+                    'width' => 1.5,
+                    'area' => 3.0,
+                    'quantity' => 1,
+                    'unit_price' => 25000,
+                    'finishing_option' => 'Mata Ayam 4 Sudut',
+                    'finishing_price' => 0,
+                    'cost_price' => 36000,
+                    'subtotal' => 75000,
+                    'design_note' => 'banner_ambil_toko.pdf',
+                ],
+            ],
+            'subtotal' => 75000,
+            'discount_amount' => 0,
+            'tax_amount' => 0,
+            'grand_total' => 75000,
+            'paid_amount' => 0,
+            'change_amount' => 0,
+            'payment_method' => 'pending',
+        ]);
+
+        $response->assertRedirect();
+
+        // 3. Verify Order Created as pending / unpaid with processing status
+        $order = Order::latest()->first();
+        $this->assertNotNull($order);
+        $this->assertEquals('pending', $order->payment_method);
+        $this->assertEquals('unpaid', $order->payment_status);
+        $this->assertEquals('processing', $order->order_status);
+        $this->assertEquals(0, $order->paid_amount);
+        $this->assertEquals(75000, $order->grand_total);
+
+        // 4. Verify Stock deducted for printing queue
+        $this->assertEquals($initialStock - 3, $this->rawMaterial->fresh()->stock);
+
+        // 5. Verify Cashier Shift has NOT added unpaid money
+        $this->assertEquals(100000, $shift->fresh()->expected_cash);
+
+        // 6. Verify Payment Term Created
+        $this->assertCount(1, $order->payments);
+        $term = $order->payments->first();
+        $this->assertEquals('pending', $term->status);
+        $this->assertEquals(75000, $term->amount);
+        $this->assertEquals(0, $term->paid_amount);
+        $this->assertEquals('Pelunasan Saat Ambil Barang', $term->term_name);
+
+        // 7. Customer arrives to pick up goods and pays cash
+        $payResponse = $this->actingAs($this->kasir)->post(route('orders.payment', $order->id), [
+            'order_payment_id' => $term->id,
+            'payment_method' => 'cash',
+            'amount' => 75000,
+            'notes' => 'Customer ambil barang di kasir dan lunas tunai',
+            'mark_as_completed' => true,
+        ]);
+
+        $payResponse->assertRedirect();
+
+        // 8. Verify order is paid & marked completed
+        $order->refresh();
+        $this->assertEquals('paid', $order->payment_status);
+        $this->assertEquals(75000, $order->paid_amount);
+        $this->assertEquals('completed', $order->order_status);
+        $this->assertEquals('paid', $term->fresh()->status);
+
+        // 9. Verify cashier shift now reflects the cash collected upon pickup
+        $this->assertEquals(175000, $shift->fresh()->expected_cash);
+    }
+
+    public function test_courier_booking_code_input_matching_and_pickup_confirmation(): void
+    {
+        // 1. Open shift
+        CashierShift::create([
+            'user_id' => $this->kasir->id,
+            'opened_at' => now(),
+            'starting_cash' => 100000,
+            'expected_cash' => 100000,
+            'status' => 'open',
+        ]);
+
+        // 2. Submit order from POS with courier delivery
+        $response = $this->actingAs($this->kasir)->post(route('pos.store'), [
+            'customer_name' => 'Siti Aminah',
+            'customer_phone' => '08987654321',
+            'delivery_type' => 'courier',
+            'courier_name' => 'Gojek (GoSend)',
+            'booking_code' => 'GK-772189',
+            'delivery_notes' => 'Pesanan diambil driver Gojek',
+            'items' => [
+                [
+                    'product_id' => $this->productSqm->id,
+                    'product_name' => $this->productSqm->name,
+                    'pricing_type' => 'dimension_sqm',
+                    'unit' => 'm²',
+                    'length' => 1.0,
+                    'width' => 1.0,
+                    'area' => 1.0,
+                    'quantity' => 1,
+                    'unit_price' => 25000,
+                    'finishing_option' => 'Tanpa Finishing',
+                    'finishing_price' => 0,
+                    'cost_price' => 12000,
+                    'subtotal' => 25000,
+                    'design_note' => 'spanduk.pdf',
+                ],
+            ],
+            'subtotal' => 25000,
+            'discount_amount' => 0,
+            'tax_amount' => 0,
+            'grand_total' => 25000,
+            'paid_amount' => 25000,
+            'change_amount' => 0,
+            'payment_method' => 'transfer',
+        ]);
+
+        $response->assertRedirect();
+
+        $order = Order::latest()->first();
+        $this->assertNotNull($order);
+        $this->assertEquals('courier', $order->delivery_type);
+        $this->assertEquals('Gojek (GoSend)', $order->courier_name);
+        $this->assertEquals('GK-772189', $order->booking_code);
+        $this->assertEquals('pending', $order->delivery_status);
+
+        // 3. Admin / Kasir updates delivery information and booking code
+        $updateDeliveryResponse = $this->actingAs($this->admin)->patch(route('orders.delivery', $order->id), [
+            'delivery_type' => 'courier',
+            'courier_name' => 'Grab (GrabExpress)',
+            'booking_code' => 'GRAB-889922',
+            'delivery_notes' => 'Paket fragile jangan dilipat',
+            'delivery_status' => 'pending',
+        ]);
+
+        $updateDeliveryResponse->assertRedirect();
+        $order->refresh();
+        $this->assertEquals('Grab (GrabExpress)', $order->courier_name);
+        $this->assertEquals('GRAB-889922', $order->booking_code);
+        $this->assertEquals('Paket fragile jangan dilipat', $order->delivery_notes);
+
+        // 4. Lookup booking code test (exact and case-insensitive)
+        $lookupResponse = $this->actingAs($this->kasir)->getJson(route('orders.lookup-booking', ['code' => 'grab-889922']));
+        $lookupResponse->assertOk();
+        $lookupResponse->assertJson([
+            'exact_match' => true,
+        ]);
+        $this->assertCount(1, $lookupResponse->json('orders'));
+        $this->assertEquals($order->id, $lookupResponse->json('orders.0.id'));
+
+        // 5. Driver comes to pick up and cashier confirms pickup
+        $confirmResponse = $this->actingAs($this->kasir)->post(route('orders.confirm-driver-pickup', $order->id), [
+            'driver_name' => 'Bambang (Grab)',
+            'driver_phone' => '081234567899',
+            'notes' => 'Driver sudah memeriksa barang',
+            'mark_as_completed' => true,
+        ]);
+
+        $confirmResponse->assertRedirect();
+        $order->refresh();
+        $this->assertEquals('picked_up', $order->delivery_status);
+        $this->assertEquals('completed', $order->order_status);
+        $this->assertEquals('Bambang (Grab)', $order->driver_name);
+        $this->assertEquals('081234567899', $order->driver_phone);
+        $this->assertNotNull($order->picked_up_at);
+        $this->assertStringContainsString('Bambang (Grab)', $order->notes);
+    }
 }

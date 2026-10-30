@@ -27,9 +27,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/pos', [PosController::class, 'store'])->name('pos.store');
     Route::post('/pos/quick-customer', [PosController::class, 'quickCustomer'])->name('pos.quick-customer');
 
-    // 3. Riwayat Penjualan (Order History, Cancel, Return, Repay, Status)
+    // 3. Riwayat Penjualan (Order History, Cancel, Return, Repay, Status, Delivery & Courier)
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/lookup-booking', [OrderController::class, 'lookupBooking'])->name('orders.lookup-booking');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::patch('/orders/{order}/delivery', [OrderController::class, 'updateDelivery'])->name('orders.delivery');
+    Route::post('/orders/{order}/confirm-driver-pickup', [OrderController::class, 'confirmDriverPickup'])->name('orders.confirm-driver-pickup');
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     Route::post('/orders/{order}/return', [OrderController::class, 'returnOrder'])->name('orders.return');
     Route::post('/orders/{order}/payment', [OrderController::class, 'updatePayment'])->name('orders.payment');

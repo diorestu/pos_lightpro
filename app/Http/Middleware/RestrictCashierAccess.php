@@ -26,6 +26,9 @@ class RestrictCashierAccess
                 'shifts.close',
                 'orders.show',
                 'orders.payment',
+                'orders.lookup-booking',
+                'orders.delivery',
+                'orders.confirm-driver-pickup',
                 'logout',
             ];
 

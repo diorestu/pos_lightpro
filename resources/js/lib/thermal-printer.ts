@@ -34,6 +34,10 @@ export interface ReceiptOrderData {
     order_status: string;
     payment_status: string;
     payment_method: string;
+    delivery_type?: string | null;
+    courier_name?: string | null;
+    booking_code?: string | null;
+    driver_name?: string | null;
     subtotal: number;
     discount_amount: number;
     tax_amount?: number;
@@ -274,8 +278,17 @@ export async function buildEscPos80mm(
         ? 'LUNAS'
         : order.payment_status === 'partial'
         ? 'DP / PARSIAL'
+        : order.payment_method === 'pending'
+        ? 'BELUM LUNAS'
         : 'BELUM LUNAS';
-    write(padLine(`Metode   : ${order.payment_method.toUpperCase()}`, `Status: ${payStatusLabel}`) + '\n');
+    const methodUpper = order.payment_method === 'pending' ? 'SAAT AMBIL' : order.payment_method.toUpperCase();
+    write(padLine(`Metode   : ${methodUpper}`, `Status: ${payStatusLabel}`) + '\n');
+
+    if (order.delivery_type === 'courier') {
+        const cName = order.courier_name ? order.courier_name.toUpperCase() : 'KURIR/OJOL';
+        const bCode = order.booking_code ? `KODE: ${order.booking_code}` : 'BELUM ADA KODE';
+        write(padLine(`Kurir    : ${cName}`, bCode) + '\n');
+    }
 
     // Garis pembatas
     write('-'.repeat(LINE_WIDTH_80MM) + '\n');
@@ -323,13 +336,15 @@ export async function buildEscPos80mm(
     write(padLine('TOTAL TAGIHAN:', formatRupiah(order.grand_total)) + '\n');
     cmd(0x1b, 0x45, 0x00); // Bold OFF
 
-    write(padLine(`Total Bayar (${order.payment_method.toUpperCase()}):`, formatRupiah(order.paid_amount)) + '\n');
+    const payMethodTitle = order.payment_method === 'pending' ? 'SAAT AMBIL' : order.payment_method.toUpperCase();
+    write(padLine(`Total Bayar (${payMethodTitle}):`, formatRupiah(order.paid_amount)) + '\n');
     write(padLine('Kembalian:', formatRupiah(order.change_amount)) + '\n');
 
     const remaining = Math.max(0, order.grand_total - order.paid_amount);
     if (remaining > 0) {
         cmd(0x1b, 0x45, 0x01); // Bold ON
-        write(padLine('SISA KEKURANGAN / TEMPO:', formatRupiah(remaining)) + '\n');
+        const remTitle = order.payment_method === 'pending' ? 'BAYAR SAAT AMBIL:' : 'SISA KEKURANGAN / TEMPO:';
+        write(padLine(remTitle, formatRupiah(remaining)) + '\n');
         cmd(0x1b, 0x45, 0x00); // Bold OFF
     }
 

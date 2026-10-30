@@ -12,6 +12,7 @@ use App\Models\RawMaterial;
 use App\Models\ReceiptSetting;
 use App\Models\StockMutation;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,8 @@ class OrderController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('invoice_number', 'like', "%{$search}%")
                     ->orWhere('customer_name', 'like', "%{$search}%")
-                    ->orWhere('customer_phone', 'like', "%{$search}%");
+                    ->orWhere('customer_phone', 'like', "%{$search}%")
+                    ->orWhere('booking_code', 'like', "%{$search}%");
             });
         }
 
@@ -56,12 +58,31 @@ class OrderController extends Controller
             $query->where('payment_method', $paymentMethod);
         }
 
+        // Filter delivery type
+        if ($deliveryType = $request->input('delivery_type')) {
+            $query->where('delivery_type', $deliveryType);
+        }
+
+        // Filter delivery status
+        if ($deliveryStatus = $request->input('delivery_status')) {
+            $query->where('delivery_status', $deliveryStatus);
+        }
+
+        $courierWaitingCount = Order::where('delivery_type', 'courier')
+            ->where(function ($q) {
+                $q->where('delivery_status', 'pending')
+                    ->orWhereNull('delivery_status');
+            })
+            ->where('order_status', '!=', 'cancelled')
+            ->count();
+
         $perPage = min(max($request->integer('per_page', 15), 5), 100);
         $orders = $query->latest()->paginate($perPage)->withQueryString();
 
         return Inertia::render('Orders/Index', [
             'orders' => $orders,
-            'filters' => $request->only(['search', 'date_from', 'date_to', 'order_status', 'payment_status', 'payment_method', 'per_page']),
+            'courierWaitingCount' => $courierWaitingCount,
+            'filters' => $request->only(['search', 'date_from', 'date_to', 'order_status', 'payment_status', 'payment_method', 'delivery_type', 'delivery_status', 'per_page']),
         ]);
     }
 
@@ -223,6 +244,7 @@ class OrderController extends Controller
             'payment_method' => 'required|string|in:cash,transfer,qris',
             'amount' => 'required|numeric|min:1',
             'notes' => 'nullable|string',
+            'mark_as_completed' => 'nullable|boolean',
         ]);
 
         $user = $request->user();
@@ -232,7 +254,7 @@ class OrderController extends Controller
             ->latest('opened_at')
             ->first();
 
-        DB::transaction(function () use ($order, $validated, $user, $payAmt, $activeShift) {
+        DB::transaction(function () use ($order, $validated, $user, $payAmt, $activeShift, $request) {
             if (! empty($validated['order_payment_id'])) {
                 $term = $order->payments()->findOrFail($validated['order_payment_id']);
                 $newTermPaid = (float) $term->paid_amount + $payAmt;
@@ -297,11 +319,17 @@ class OrderController extends Controller
             $newPaid = $order->paid_amount + $payAmt;
             $newPaymentStatus = $newPaid >= $order->grand_total ? 'paid' : 'partial';
 
-            $order->update([
+            $updateData = [
                 'paid_amount' => $newPaid,
                 'payment_status' => $newPaymentStatus,
                 'notes' => ($order->notes ? $order->notes . "\n" : '') . "Pembayaran Rp " . number_format($payAmt, 0, ',', '.') . " via {$validated['payment_method']} pada " . now()->format('d/m/Y H:i'),
-            ]);
+            ];
+
+            if ($request->boolean('mark_as_completed')) {
+                $updateData['order_status'] = 'completed';
+            }
+
+            $order->update($updateData);
         });
 
         return back()->with('success', "Pembayaran untuk pesanan {$order->invoice_number} berhasil dicatat!");
@@ -357,5 +385,116 @@ class OrderController extends Controller
         $order->update(['order_status' => $validated['order_status']]);
 
         return back()->with('success', "Status pesanan {$order->invoice_number} diubah menjadi {$validated['order_status']}.");
+    }
+
+    public function lookupBooking(Request $request): JsonResponse
+    {
+        $code = trim((string) $request->input('code', ''));
+
+        if (empty($code)) {
+            // Return latest courier orders waiting for pickup
+            $waiting = Order::with(['items', 'customer', 'payments'])
+                ->where('delivery_type', 'courier')
+                ->where(function ($q) {
+                    $q->where('delivery_status', 'pending')
+                      ->orWhereNull('delivery_status');
+                })
+                ->where('order_status', '!=', 'cancelled')
+                ->latest()
+                ->take(15)
+                ->get();
+
+            return response()->json([
+                'exact_match' => false,
+                'query' => '',
+                'orders' => $waiting,
+            ]);
+        }
+
+        $cleanCode = strtoupper($code);
+
+        // Search by booking code (exact or partial), invoice number, or customer phone/name
+        $orders = Order::with(['items', 'customer', 'payments'])
+            ->where(function ($q) use ($code, $cleanCode) {
+                $q->whereRaw('UPPER(TRIM(COALESCE(booking_code, ""))) = ?', [$cleanCode])
+                  ->orWhereRaw('UPPER(COALESCE(booking_code, "")) LIKE ?', ['%' . $cleanCode . '%'])
+                  ->orWhereRaw('UPPER(invoice_number) = ?', [$cleanCode])
+                  ->orWhere('customer_phone', 'LIKE', '%' . $code . '%')
+                  ->orWhere('customer_name', 'LIKE', '%' . $code . '%');
+            })
+            ->where('order_status', '!=', 'cancelled')
+            ->latest()
+            ->take(10)
+            ->get();
+
+        $exactMatch = false;
+        foreach ($orders as $ord) {
+            if ($ord->booking_code && strtoupper(trim($ord->booking_code)) === $cleanCode) {
+                $exactMatch = true;
+                break;
+            }
+        }
+
+        return response()->json([
+            'exact_match' => $exactMatch,
+            'query' => $code,
+            'orders' => $orders,
+        ]);
+    }
+
+    public function updateDelivery(Request $request, Order $order): RedirectResponse
+    {
+        $validated = $request->validate([
+            'delivery_type' => 'required|string|in:pickup,courier',
+            'courier_name' => 'nullable|string|max:50',
+            'booking_code' => 'nullable|string|max:100',
+            'delivery_notes' => 'nullable|string|max:500',
+            'delivery_status' => 'nullable|string|in:pending,picked_up,delivered',
+        ]);
+
+        $isCourier = $validated['delivery_type'] === 'courier';
+        $status = $isCourier ? ($validated['delivery_status'] ?? ($order->delivery_status ?: 'pending')) : null;
+
+        $order->update([
+            'delivery_type' => $validated['delivery_type'],
+            'courier_name' => $isCourier ? ($validated['courier_name'] ?: 'Gojek / Grab') : null,
+            'booking_code' => $isCourier ? trim($validated['booking_code'] ?? '') : null,
+            'delivery_notes' => $validated['delivery_notes'] ?? null,
+            'delivery_status' => $status,
+        ]);
+
+        return back()->with('success', "Informasi kurir/pengiriman untuk nota {$order->invoice_number} berhasil disimpan!");
+    }
+
+    public function confirmDriverPickup(Request $request, Order $order): RedirectResponse
+    {
+        $validated = $request->validate([
+            'driver_name' => 'nullable|string|max:100',
+            'driver_phone' => 'nullable|string|max:30',
+            'notes' => 'nullable|string|max:255',
+            'mark_as_completed' => 'nullable|boolean',
+        ]);
+
+        $driverName = ! empty($validated['driver_name']) ? trim($validated['driver_name']) : 'Driver';
+        $courierName = $order->courier_name ?: 'Kurir/Ojol';
+        $booking = $order->booking_code ? " (Kode Booking: {$order->booking_code})" : '';
+        $logNote = "Barang diserahkan ke {$courierName} - {$driverName}{$booking} pada " . now()->format('d/m/Y H:i');
+
+        $updateData = [
+            'delivery_type' => 'courier',
+            'delivery_status' => 'picked_up',
+            'picked_up_at' => now(),
+            'driver_name' => $validated['driver_name'] ?? $order->driver_name,
+            'driver_phone' => $validated['driver_phone'] ?? $order->driver_phone,
+            'notes' => ($order->notes ? $order->notes . "\n" : '') . $logNote . (! empty($validated['notes']) ? ' | ' . $validated['notes'] : ''),
+        ];
+
+        if ($request->boolean('mark_as_completed', true)) {
+            $updateData['order_status'] = 'completed';
+        }
+
+        $order->update($updateData);
+
+        return back()->with('success', "Barang untuk nota {$order->invoice_number} berhasil diserahkan ke {$courierName} ({$driverName})!");
     }
 }

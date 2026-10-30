@@ -33,6 +33,14 @@ class Order extends Model
         'cancelled_by',
         'due_date',
         'notes',
+        'delivery_type',
+        'courier_name',
+        'booking_code',
+        'driver_name',
+        'driver_phone',
+        'delivery_status',
+        'picked_up_at',
+        'delivery_notes',
     ];
 
     protected function casts(): array
@@ -46,6 +54,7 @@ class Order extends Model
             'change_amount' => 'decimal:2',
             'cancelled_at' => 'datetime',
             'due_date' => 'date',
+            'picked_up_at' => 'datetime',
         ];
     }
 

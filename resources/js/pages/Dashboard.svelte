@@ -349,7 +349,11 @@
                                 </TableCell>
                                 <TableCell class="text-xs">{order.customer_name || 'Pelanggan Umum'}</TableCell>
                                 <TableCell class="text-xs">
-                                    <span class="uppercase font-semibold text-[11px]">{order.payment_method}</span>
+                                    {#if order.payment_method === 'pending'}
+                                        <Badge variant="outline" class="border-indigo-300 text-indigo-700 bg-indigo-50 text-[10px]">Saat Ambil</Badge>
+                                    {:else}
+                                        <span class="uppercase font-semibold text-[11px]">{order.payment_method}</span>
+                                    {/if}
                                 </TableCell>
                                 <TableCell class="text-xs">
                                     {#if order.order_status === 'completed'}
