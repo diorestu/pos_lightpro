@@ -44,6 +44,14 @@
     import { Textarea } from '@/components/ui/textarea';
     import { useSidebar } from '@/components/ui/sidebar';
 
+    interface CategoryItem {
+        id: number;
+        name: string;
+        color?: string | null;
+        slug?: string;
+        products_count?: number;
+    }
+
     interface ProductItem {
         id: number;
         category_id: number;
@@ -57,7 +65,7 @@
         cost_price: number;
         stock: number;
         is_stock_managed: boolean;
-        category?: { id: number; name: string };
+        category?: { id: number; name: string; color?: string | null };
         raw_material?: { id: number; name: string; stock: number; unit: string };
     }
 
@@ -98,7 +106,7 @@
         courierWaitingCount = 0,
     }: {
         activeShift: any;
-        categories: any[];
+        categories: CategoryItem[];
         products: ProductItem[];
         customers: CustomerItem[];
         receiptSettings: any;
@@ -106,6 +114,22 @@
         pendingOrders?: any[];
         courierWaitingCount?: number;
     } = $props();
+
+    const CATEGORY_PALETTE = [
+        '#2563EB', '#059669', '#D97706', '#7C3AED', '#0891B2',
+        '#DB2777', '#EA580C', '#4F46E5', '#0D9488', '#DC2626',
+        '#9333EA', '#16A34A',
+    ];
+
+    function getCategoryColor(catId?: number | null, catColor?: string | null): string {
+        if (catColor) return catColor;
+        if (catId) {
+            const found = categories.find((c) => c.id === catId);
+            if (found?.color) return found.color;
+            return CATEGORY_PALETTE[(catId - 1) % CATEGORY_PALETTE.length];
+        }
+        return '#2563EB';
+    }
 
     // State
     let selectedCategory = $state<number | 'all'>('all');
@@ -632,11 +656,13 @@
                         Semua Kategori
                     </button>
                     {#each categories as cat}
+                        {@const catColor = getCategoryColor(cat.id, cat.color)}
                         <button
                             onclick={() => (selectedCategory = cat.id)}
-                            class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors {selectedCategory === cat.id ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-muted text-muted-foreground hover:bg-muted/80'}"
+                            class="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1.5 {selectedCategory === cat.id ? 'bg-primary text-primary-foreground shadow-xs' : 'bg-muted text-muted-foreground hover:bg-muted/80'}"
                         >
-                            {cat.name} ({cat.products_count})
+                            <span class="size-2 rounded-full shrink-0 shadow-2xs" style="background-color: {catColor};"></span>
+                            <span>{cat.name} ({cat.products_count})</span>
                         </button>
                     {/each}
                 </div>
@@ -652,28 +678,33 @@
                 {:else}
                     <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5">
                         {#each filteredProducts as p}
+                            {@const catColor = getCategoryColor(p.category_id, p.category?.color)}
                             <button
                                 onclick={() => addToCart(p)}
                                 class="flex flex-col text-left p-3 rounded-xl border bg-card hover:border-primary/60 hover:shadow-sm transition-all group relative overflow-hidden"
+                                style="border-top: 3px solid {catColor};"
                             >
-                                <span class="text-xs font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                                <span
+                                    class="text-xs font-bold line-clamp-2 transition-opacity group-hover:opacity-85"
+                                    style="color: {catColor};"
+                                >
                                     {p.name}
-                                </span>
-                                <span class="text-[11px] text-muted-foreground mt-0.5">
-                                    {p.code}
                                 </span>
 
                                 <div class="mt-3 pt-2 border-t flex items-center justify-between w-full">
                                     <div>
-                                        <div class="text-xs font-bold text-primary">
+                                        <div class="text-xs font-bold text-foreground">
                                             {formatRupiah(p.base_price)}
                                         </div>
                                         <div class="text-[10px] text-muted-foreground">
                                             /{p.unit}
                                         </div>
                                     </div>
-                                    <div class="size-6 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                        <Plus class="size-3.5" />
+                                    <div
+                                        class="size-6 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shadow-2xs"
+                                        style="background-color: {catColor}; color: #ffffff;"
+                                    >
+                                        <Plus class="size-3.5 stroke-[2.5]" />
                                     </div>
                                 </div>
                             </button>

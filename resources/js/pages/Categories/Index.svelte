@@ -32,6 +32,7 @@
     interface CategoryItem {
         id: number;
         name: string;
+        color?: string | null;
         slug: string;
         description: string | null;
         products_count: number;
@@ -51,14 +52,26 @@
         { key: 'actions', label: 'Aksi', align: 'right', sortable: false, hideable: false },
     ];
 
+    const PALETTE = [
+        '#2563EB', '#059669', '#D97706', '#7C3AED', '#DC2626',
+        '#DB2777', '#0891B2', '#4F46E5', '#EA580C', '#0D9488',
+        '#9333EA', '#16A34A',
+    ];
+
+    function getRandomPaletteColor() {
+        return PALETTE[Math.floor(Math.random() * PALETTE.length)];
+    }
+
     let showModal = $state(false);
     let editingCategory = $state<CategoryItem | null>(null);
     let formName = $state('');
+    let formColor = $state('#2563EB');
     let formDescription = $state('');
 
     function openCreate() {
         editingCategory = null;
         formName = '';
+        formColor = getRandomPaletteColor();
         formDescription = '';
         showModal = true;
     }
@@ -66,6 +79,7 @@
     function openEdit(cat: CategoryItem) {
         editingCategory = cat;
         formName = cat.name;
+        formColor = cat.color || getRandomPaletteColor();
         formDescription = cat.description || '';
         showModal = true;
     }
@@ -73,6 +87,7 @@
     function saveCategory() {
         const payload = {
             name: formName,
+            color: formColor,
             description: formDescription,
         };
 
@@ -132,7 +147,10 @@
             <TableRow class="hover:bg-muted/30 transition-colors">
                 {#if isVisible('name')}
                     <TableCell class="font-bold text-xs text-foreground">
-                        {cat.name}
+                        <div class="flex items-center gap-2">
+                            <span class="size-3.5 rounded-full shrink-0 shadow-2xs border border-white/20" style="background-color: {cat.color || '#2563EB'};"></span>
+                            <span style="color: {cat.color || 'inherit'};">{cat.name}</span>
+                        </div>
                     </TableCell>
                 {/if}
                 {#if isVisible('slug')}
@@ -193,6 +211,27 @@
             <div class="space-y-1">
                 <Label for="cat_name">Nama Kategori *</Label>
                 <Input id="cat_name" bind:value={formName} placeholder="Contoh: Digital Offset A3+" />
+            </div>
+            <div class="space-y-1">
+                <Label for="cat_color">Warna Kategori (POS)</Label>
+                <div class="flex items-center gap-2">
+                    <input
+                        type="color"
+                        id="cat_color"
+                        bind:value={formColor}
+                        class="size-8 rounded border p-0.5 cursor-pointer bg-background shrink-0"
+                    />
+                    <Input bind:value={formColor} placeholder="#2563EB" class="font-mono text-xs uppercase h-8" />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        class="h-8 text-xs shrink-0"
+                        onclick={() => (formColor = getRandomPaletteColor())}
+                    >
+                        Acak Warna
+                    </Button>
+                </div>
             </div>
             <div class="space-y-1">
                 <Label for="cat_desc">Deskripsi</Label>

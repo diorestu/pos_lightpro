@@ -24,6 +24,7 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'color' => 'nullable|string|max:25',
             'description' => 'nullable|string',
         ]);
 
@@ -38,6 +39,7 @@ class CategoryController extends Controller
 
         Category::create([
             'name' => $validated['name'],
+            'color' => $validated['color'] ?: Category::randomPaletteColor(),
             'slug' => $slug,
             'description' => $validated['description'] ?? null,
         ]);
@@ -49,8 +51,13 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'color' => 'nullable|string|max:25',
             'description' => 'nullable|string',
         ]);
+
+        if (empty($validated['color']) && empty($category->color)) {
+            $validated['color'] = Category::randomPaletteColor();
+        }
 
         $category->update($validated);
 
