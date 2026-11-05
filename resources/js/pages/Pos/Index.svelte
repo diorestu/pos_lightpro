@@ -397,10 +397,10 @@
         const unitPrice = Number(product.base_price);
 
         const defaultFinishing = isDimension
-            ? (finishings.find((f) => f.name.toLowerCase().includes('mata ayam 4')) || finishings[0])
-            : (finishings.find((f) => f.name.toLowerCase().includes('tanpa finishing') || f.name.toLowerCase().includes('standar')) || finishings[0]);
+            ? (finishings.find((f) => f.name.toLowerCase().includes('mata ayam 4')) || finishings.find((f) => f.name.toLowerCase().includes('tanpa finishing')) || finishings[0])
+            : (finishings.find((f) => f.name.toLowerCase().includes('tanpa finishing')) || null);
 
-        const initialFinishingName = defaultFinishing ? defaultFinishing.name : (isDimension ? 'Mata Ayam 4 Sudut' : 'Standar');
+        const initialFinishingName = defaultFinishing ? defaultFinishing.name : 'Tanpa Finishing';
         const initialFinishingPrice = defaultFinishing ? Number(defaultFinishing.price) : 0;
         const subtotal = Math.round(isDimension ? (unitPrice * area + initialFinishingPrice) : (unitPrice + initialFinishingPrice));
 
@@ -857,55 +857,60 @@
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- Finishing Dropdown -->
-                                    <div class="flex items-center gap-2 pt-1">
-                                        <div class="flex-1">
-                                            <span class="text-[10px] text-muted-foreground block">Finishing Cetak</span>
-                                            <select
-                                                bind:value={item.finishing_option}
-                                                onchange={() => {
-                                                    const found = finishings.find((f) => f.name === item.finishing_option);
-                                                    if (found) {
-                                                        item.finishing_price = Number(found.price) || 0;
-                                                    }
-                                                    updateItemCalculation(item);
-                                                }}
-                                                class="w-full h-7 pl-2 pr-8 text-xs rounded border bg-background"
-                                            >
-                                                {#if finishings && finishings.length > 0}
-                                                    {#each finishings as f}
-                                                        <option value={f.name}>
-                                                            {f.name} {f.price > 0 ? `(+${formatRupiah(f.price)})` : '(+Rp 0)'}
-                                                        </option>
-                                                    {/each}
-                                                    {#if item.finishing_option && !finishings.some((f) => f.name === item.finishing_option)}
-                                                        <option value={item.finishing_option}>{item.finishing_option}</option>
-                                                    {/if}
-                                                {:else}
-                                                    <option value="Mata Ayam 4 Sudut">Mata Ayam 4 Sudut (+Rp 0)</option>
-                                                    <option value="Mata Ayam Keliling">Mata Ayam Keliling (+Rp 10.000)</option>
-                                                    <option value="Selongsong">Selongsong Atas Bawah (+Rp 10.000)</option>
-                                                    <option value="Lebih Bahan 2.5cm">Lebih Bahan (+Rp 0)</option>
-                                                    <option value="Potong Pas">Potong Pas Gambar (+Rp 0)</option>
-                                                    <option value="Laminasi Glossy/Doff">Laminasi (+Rp 15.000)</option>
-                                                    <option value="Tanpa Finishing">Tanpa Finishing (+Rp 0)</option>
-                                                {/if}
-                                            </select>
-                                        </div>
-                                        <div class="w-24">
-                                            <span class="text-[10px] text-muted-foreground block">Biaya Fin</span>
-                                            <input
-                                                type="number"
-                                                bind:value={item.finishing_price}
-                                                oninput={() => updateItemCalculation(item)}
-                                                class="w-full h-7 px-2 text-xs rounded border bg-background"
-                                                placeholder="0"
-                                            />
-                                        </div>
-                                    </div>
                                 </div>
                             {/if}
+
+                            <!-- Finishing Dropdown & Biaya Fin (Tersedia untuk Semua Produk) -->
+                            <div class="flex items-center gap-2 pt-0.5">
+                                <div class="flex-1">
+                                    <span class="text-[10px] text-muted-foreground block">Finishing Cetak</span>
+                                    <select
+                                        bind:value={item.finishing_option}
+                                        onchange={() => {
+                                            if (item.finishing_option === 'Tanpa Finishing') {
+                                                item.finishing_price = 0;
+                                            } else {
+                                                const found = finishings.find((f) => f.name === item.finishing_option);
+                                                if (found) {
+                                                    item.finishing_price = Number(found.price) || 0;
+                                                }
+                                            }
+                                            updateItemCalculation(item);
+                                        }}
+                                        class="w-full h-7 pl-2 pr-8 text-xs rounded border bg-background"
+                                    >
+                                        <option value="Tanpa Finishing">Tanpa Finishing (+Rp 0)</option>
+                                        {#if finishings && finishings.length > 0}
+                                            {#each finishings.filter((f) => f.name.toLowerCase() !== 'tanpa finishing') as f}
+                                                <option value={f.name}>
+                                                    {f.name} {Number(f.price) > 0 ? `(+${formatRupiah(f.price)})` : '(+Rp 0)'}
+                                                </option>
+                                            {/each}
+                                            {#if item.finishing_option && item.finishing_option !== 'Tanpa Finishing' && !finishings.some((f) => f.name === item.finishing_option)}
+                                                <option value={item.finishing_option}>{item.finishing_option}</option>
+                                            {/if}
+                                        {:else}
+                                            <option value="Mata Ayam 4 Sudut">Mata Ayam 4 Sudut (+Rp 0)</option>
+                                            <option value="Mata Ayam Keliling">Mata Ayam Keliling (+Rp 10.000)</option>
+                                            <option value="Selongsong">Selongsong Atas Bawah (+Rp 10.000)</option>
+                                            <option value="Lebih Bahan 2.5cm">Lebih Bahan (+Rp 0)</option>
+                                            <option value="Potong Pas">Potong Pas Gambar (+Rp 0)</option>
+                                            <option value="Laminasi Glossy/Doff">Laminasi (+Rp 15.000)</option>
+                                        {/if}
+                                    </select>
+                                </div>
+                                <div class="w-24">
+                                    <span class="text-[10px] text-muted-foreground block">Biaya Fin</span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        bind:value={item.finishing_price}
+                                        oninput={() => updateItemCalculation(item)}
+                                        class="w-full h-7 px-2 text-xs rounded border bg-background text-right"
+                                        placeholder="0"
+                                    />
+                                </div>
+                            </div>
 
                             <!-- Catatan Desain & Subtotal -->
                             <div class="flex items-center gap-2 pt-0.5">

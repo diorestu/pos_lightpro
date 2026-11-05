@@ -1135,7 +1135,7 @@
                             </TableCell>
                             <TableCell class="text-xs">
                                 <Badge variant="outline" class="text-[11px]">
-                                    {item.finishing_option || 'Standar'}
+                                    {item.finishing_option || 'Tanpa Finishing'}
                                 </Badge>
                                 {#if item.finishing_price > 0}
                                     <span class="text-[10px] text-muted-foreground block mt-0.5">
