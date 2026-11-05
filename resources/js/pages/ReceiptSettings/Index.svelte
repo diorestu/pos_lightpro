@@ -313,10 +313,8 @@
                         border: none !important;
                         outline: none !important;
                     }
-                    .thermal-receipt-80mm, .thermal-receipt-80mm * {
-                        border-left: none !important;
-                        border-right: none !important;
-                        border-top: none !important;
+                    .thermal-receipt-80mm * {
+                        box-sizing: border-box;
                     }
                     .receipt-logo {
                         display: block;
@@ -327,36 +325,66 @@
                         filter: grayscale(100%) contrast(160%);
                     }
                     .border-b {
-                        border-bottom-width: 1px !important;
-                        border-bottom-color: #000000 !important;
-                        border-bottom-style: dashed !important;
+                        border-bottom: 1px solid #000000 !important;
+                    }
+                    .border-t {
+                        border-top: 1px solid #000000 !important;
+                    }
+                    .border-solid {
+                        border-style: solid !important;
                     }
                     .border-dashed {
-                        border-bottom-style: dashed !important;
+                        border-style: dashed !important;
+                    }
+                    .border-dotted {
+                        border-style: dotted !important;
                     }
                     .border-black {
-                        border-bottom-color: #000000 !important;
+                        border-color: #000000 !important;
                     }
                     .text-center { text-align: center; }
+                    .text-right { text-align: right; }
+                    .text-left { text-align: left; }
                     .font-bold { font-weight: 700; }
                     .font-semibold { font-weight: 600; }
+                    .font-medium { font-weight: 500; }
+                    .font-normal { font-weight: 400; }
                     .uppercase { text-transform: uppercase; }
                     .flex { display: flex; }
                     .justify-between { justify-content: space-between; }
-                    .space-y-0\\.5 > * + * { margin-top: 2px; }
+                    .justify-end { justify-content: flex-end; }
+                    .items-baseline { align-items: baseline; }
+                    .gap-1 { gap: 4px; }
+                    .grid { display: grid; }
+                    .grid-cols-\[75px_10px_1fr\] { grid-template-columns: 75px 10px 1fr; }
+                    .grid-cols-\[1fr_60px_28px_65px\] { grid-template-columns: 1fr 60px 28px 65px; }
+                    .gap-y-0\.5 { row-gap: 2px; }
+                    .space-y-0\.5 > * + * { margin-top: 2px; }
                     .space-y-1 > * + * { margin-top: 4px; }
-                    .space-y-1\\.5 > * + * { margin-top: 6px; }
+                    .py-1 { padding-top: 4px; padding-bottom: 4px; }
+                    .py-1\.5 { padding-top: 6px; padding-bottom: 6px; }
                     .py-2 { padding-top: 8px; padding-bottom: 8px; }
+                    .pb-1 { padding-bottom: 4px; }
                     .pb-2 { padding-bottom: 8px; }
+                    .pt-1 { padding-top: 4px; }
                     .pt-2 { padding-top: 8px; }
                     .pt-3 { padding-top: 12px; }
-                    .pb-1 { padding-bottom: 4px; }
-                    .mb-1\\.5 { margin-bottom: 6px; }
+                    .pb-4 { padding-bottom: 16px; }
+                    .pb-6 { padding-bottom: 24px; }
+                    .mt-1 { margin-top: 4px; }
+                    .mt-2 { margin-top: 8px; }
+                    .mt-3 { margin-top: 12px; }
+                    .mb-1\.5 { margin-bottom: 6px; }
                     .pl-2 { padding-left: 8px; }
-                    .text-\\[10px\\] { font-size: 10px; }
-                    .text-\\[9px\\] { font-size: 9px; }
+                    .pr-1 { padding-right: 4px; }
+                    .w-\[170px\] { width: 170px; }
+                    .text-\[9px\] { font-size: 9px; }
+                    .text-\[10px\] { font-size: 10px; }
+                    .text-\[11px\] { font-size: 11px; }
                     .text-xs { font-size: 12px; }
                     .text-sm { font-size: 14px; }
+                    .tracking-wide { letter-spacing: 0.025em; }
+                    .tracking-tight { letter-spacing: -0.025em; }
                     .whitespace-pre-line { white-space: pre-line; }
                     .leading-tight { line-height: 1.25; }
                 </style>
@@ -381,103 +409,148 @@
 
 <AppHead title="Pengaturan Nota Percetakan" />
 
-<!-- Print-Only Test Receipt Thermal 80mm View -->
+<!-- Print-Only Test Receipt Thermal 80mm View (Matching WhatsApp Image Format) -->
 <div id="test-thermal-receipt" class="thermal-receipt-80mm text-black font-sans text-xs">
     <!-- Store Header (Logo & Identitas Percetakan di Bawah Logo) -->
-    <div class="header-store text-center pb-2 border-b border-dashed border-black">
-        {#if showLogo && activeLogoDisplay}
-            <div class="flex justify-center mb-1.5">
-                <img
-                    src={activeLogoDisplay}
-                    alt="Logo Toko"
-                    class="receipt-logo max-h-14 max-w-[160px] object-contain filter grayscale contrast-125 mx-auto block"
-                />
-            </div>
-        {/if}
-        <h2 class="font-bold text-sm tracking-tight uppercase leading-tight m-0">{storeName || 'LightPrint Percetakan'}</h2>
-        {#if tagline}
-            <p class="text-[10px] text-neutral-800 leading-tight m-0">{tagline}</p>
-        {/if}
-        {#if address}
-            <p class="text-[10px] text-neutral-800 leading-tight m-0">{address}</p>
-        {/if}
-        {#if phone}
-            <p class="text-[10px] font-medium text-neutral-800 leading-tight m-0">Telp/WA: {phone}</p>
-        {/if}
-        {#if website}
-            <p class="text-[9px] text-neutral-700 leading-tight m-0">{website}</p>
-        {/if}
-    </div>
+    {#if (showLogo && activeLogoDisplay) || storeName}
+        <div class="header-store text-center pb-2 border-b border-black">
+            {#if showLogo && activeLogoDisplay}
+                <div class="flex justify-center mb-1.5">
+                    <img
+                        src={activeLogoDisplay}
+                        alt="Logo Toko"
+                        class="receipt-logo max-h-14 max-w-[160px] object-contain filter grayscale contrast-125 mx-auto block"
+                    />
+                </div>
+            {/if}
+            <h2 class="font-bold text-sm tracking-tight uppercase leading-tight m-0">{storeName || 'LightPrint Percetakan'}</h2>
+            {#if tagline}
+                <p class="text-[10px] text-neutral-800 leading-tight m-0">{tagline}</p>
+            {/if}
+            {#if address}
+                <p class="text-[10px] text-neutral-800 leading-tight m-0">{address}</p>
+            {/if}
+            {#if phone}
+                <p class="text-[10px] font-medium text-neutral-800 leading-tight m-0">Telp/WA: {phone}</p>
+            {/if}
+            {#if website}
+                <p class="text-[9px] text-neutral-700 leading-tight m-0">{website}</p>
+            {/if}
+        </div>
+    {/if}
 
-    <!-- Metadata Contoh -->
-    <div class="py-2 text-[10px] border-b border-dashed border-black space-y-0.5">
-        <div class="flex justify-between font-bold">
-            <span>No. Nota:</span>
-            <span>INV-20261019-0001 (TEST)</span>
-        </div>
-        <div class="flex justify-between">
-            <span>Tanggal:</span>
-            <span>19 Okt 2026 14:30</span>
-        </div>
-        {#if showCashierName}
-            <div class="flex justify-between">
-                <span>Kasir:</span>
-                <span>Siti Kasir (Shift Pagi)</span>
-            </div>
-        {/if}
-        {#if showCustomerInfo}
-            <div class="flex justify-between">
-                <span>Pelanggan:</span>
-                <span class="font-semibold">Berkah Adv (Reseller)</span>
-            </div>
-        {/if}
-        <div class="flex justify-between">
-            <span>Metode / Status:</span>
-            <span class="font-bold uppercase">TUNAI / LUNAS</span>
-        </div>
-    </div>
+    <!-- Metadata Contoh (Format persis gambar WhatsApp) -->
+    <div class="py-2 text-[11px] border-b border-black">
+        <div class="grid grid-cols-[75px_10px_1fr] gap-y-0.5 leading-tight">
+            <span>Kode Order</span>
+            <span>:</span>
+            <span class="font-medium">M261011207</span>
 
-    <!-- Items Contoh -->
-    <div class="py-2 border-b border-dashed border-black space-y-1.5 text-[10px]">
-        <div>
-            <div class="flex justify-between font-bold">
-                <span>1. Spanduk Flexi 280g</span>
-                <span>Rp 75.000</span>
-            </div>
-            <div class="text-[9px] text-neutral-600 pl-2">
-                3.00 x 1.00 m (3.00 m²) @ Rp 25.000
-            </div>
-        </div>
-        <div>
-            <div class="flex justify-between font-bold">
-                <span>2. Stiker Vinyl Ritrama</span>
-                <span>Rp 45.000</span>
-            </div>
-            <div class="text-[9px] text-neutral-600 pl-2">
-                1.00 x 0.50 m (0.50 m²) @ Rp 90.000
-            </div>
+            <span>Tanggal</span>
+            <span>:</span>
+            <span>10-10-2026 15:28</span>
+
+            <span>Deadline</span>
+            <span>:</span>
+            <span>12-10-2026</span>
+
+            {#if showCustomerInfo}
+                <span>Kepada</span>
+                <span>:</span>
+                <span class="font-bold">Farid</span>
+            {/if}
+
+            {#if showCashierName}
+                <span>Kasir Online</span>
+                <span>:</span>
+                <span class="uppercase">REVA TRI RAHMANIA</span>
+            {/if}
         </div>
     </div>
 
-    <!-- Totals -->
-    <div class="py-2 border-b border-dashed border-black space-y-1 text-[10px]">
-        <div class="flex justify-between font-bold">
-            <span>TOTAL:</span>
-            <span>Rp 120.000</span>
+    <!-- Items Table Header -->
+    <div class="pt-2">
+        <div class="grid grid-cols-[1fr_60px_28px_65px] text-[11px] font-bold pb-1 border-b border-black">
+            <span>Produk</span>
+            <span class="text-right">Harga</span>
+            <span class="text-center">Qty</span>
+            <span class="text-right">Total</span>
         </div>
-        <div class="flex justify-between">
-            <span>BAYAR (TUNAI):</span>
-            <span>Rp 150.000</span>
+
+        <!-- Item 1 -->
+        <div class="py-1.5 border-b border-black text-[10px]">
+            <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+                <span class="font-bold pr-1">Indoor Stiker Vinyl Latex</span>
+                <span class="text-right">18.000</span>
+                <span class="text-center">1</span>
+                <span class="text-right font-medium">18.000</span>
+            </div>
+            <div class="mt-1 space-y-0.5 text-[9px] text-neutral-800 leading-tight">
+                <div>- Ukuran P: 90 cm x L: 30 cm</div>
+                <div>- Lebar Bahan P: 100 cm x L: 30 cm</div>
+                <div>- Potong Pas Gambar</div>
+                <div>- Nama File: Farid</div>
+                <div>- Deadline: 12-10-2026 18:00:00</div>
+            </div>
         </div>
-        <div class="flex justify-between">
-            <span>KEMBALIAN:</span>
-            <span>Rp 30.000</span>
+
+        <!-- Item 2 -->
+        <div class="py-1.5 border-b border-black text-[10px]">
+            <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+                <span class="font-bold pr-1">Laminasi Cold (120 mic)</span>
+                <span class="text-right">10.800</span>
+                <span class="text-center">1</span>
+                <span class="text-right font-medium">10.800</span>
+            </div>
+            <div class="mt-1 space-y-0.5 text-[9px] text-neutral-800 leading-tight">
+                <div>- Ukuran P: 90 cm x L: 30 cm</div>
+                <div>- Lebar Bahan P: 120 cm x L: 30 cm</div>
+                <div>- Laminasi Glossy</div>
+                <div>- Deadline: 12-10-2026 18:00:00</div>
+            </div>
+        </div>
+
+        <!-- Item 3 -->
+        <div class="py-1.5 border-b border-black text-[10px]">
+            <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+                <span class="font-bold pr-1">Cutting Large Format</span>
+                <span class="text-right">10.800</span>
+                <span class="text-center">1</span>
+                <span class="text-right font-medium">10.800</span>
+            </div>
+            <div class="mt-1 space-y-0.5 text-[9px] text-neutral-800 leading-tight">
+                <div>- Ukuran P: 90 cm x L: 30 cm</div>
+                <div>- Deadline: 12-10-2026 18:00:00</div>
+                <div>- CUTTING SETENGAH PUTUS</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Totals Summary Section -->
+    <div class="pt-2 text-[11px]">
+        <div class="flex justify-end">
+            <div class="w-[170px] space-y-0.5 text-right">
+                <div class="flex justify-between font-bold">
+                    <span>Total :</span>
+                    <span>39.600</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Bayar :</span>
+                    <span>0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status LUNAS -->
+        <div class="mt-3 text-xs flex items-baseline gap-1">
+            <span class="font-normal">Keterangan : </span>
+            <span class="font-bold text-sm tracking-wide">LUNAS</span>
         </div>
     </div>
 
     <!-- Footer Terms -->
     {#if footerText}
-        <div class="pt-2 text-center text-[9px] whitespace-pre-line text-neutral-700 leading-tight">
+        <div class="pt-3 text-center text-[9px] whitespace-pre-line text-neutral-700 leading-tight">
             {footerText}
         </div>
     {/if}
@@ -680,9 +753,9 @@
             </CardHeader>
             <CardContent>
                 <!-- Thermal paper simulation -->
-                <div class="mx-auto bg-white text-black p-4 rounded shadow-md border border-neutral-300 text-[11px] {paperSize === '58mm' ? 'max-w-[270px]' : paperSize === '80mm' ? 'max-w-[340px]' : 'max-w-full'}">
+                <div class="mx-auto bg-white text-black p-4 rounded shadow-md border border-neutral-300 text-[11px] {paperSize === '58mm' ? 'max-w-[270px]' : paperSize === '80mm' ? 'max-w-[340px]' : 'max-w-full'} select-none">
                     {#if showLogo && activeLogoDisplay}
-                        <div class="text-center pb-2 mb-2 border-b border-dashed border-neutral-400">
+                        <div class="text-center pb-2 mb-2 border-b border-black">
                             <div class="flex justify-center">
                                 <img
                                     src={activeLogoDisplay}
@@ -694,7 +767,7 @@
                     {/if}
 
                     <!-- Store Header (Nama Toko & Identitas di Bawah Logo) -->
-                    <div class="header-store text-center pb-2 border-b border-dashed border-neutral-400">
+                    <div class="header-store text-center pb-2 border-b border-black">
                         <h3 class="font-bold text-sm uppercase tracking-tight leading-tight m-0">{storeName || 'Nama Toko'}</h3>
                         {#if tagline}
                             <p class="text-[9px] text-neutral-600 leading-tight m-0 mt-0.5">{tagline}</p>
@@ -710,61 +783,103 @@
                         {/if}
                     </div>
 
-                    <div class="py-2 border-b border-dashed border-neutral-400 space-y-0.5 text-[10px]">
-                        <div class="flex justify-between">
-                            <span>No: INV-20261019-0001</span>
-                            <span>19/10/2026 14:30</span>
+                    <!-- Metadata Contoh -->
+                    <div class="py-2 text-[11px] border-b border-black">
+                        <div class="grid grid-cols-[75px_10px_1fr] gap-y-0.5 leading-tight">
+                            <span>Kode Order</span>
+                            <span>:</span>
+                            <span class="font-medium">M261011207</span>
+
+                            <span>Tanggal</span>
+                            <span>:</span>
+                            <span>10-10-2026 15:28</span>
+
+                            <span>Deadline</span>
+                            <span>:</span>
+                            <span>12-10-2026</span>
+
+                            {#if showCustomerInfo}
+                                <span>Kepada</span>
+                                <span>:</span>
+                                <span class="font-bold">Farid</span>
+                            {/if}
+
+                            {#if showCashierName}
+                                <span>Kasir Online</span>
+                                <span>:</span>
+                                <span class="uppercase">REVA TRI RAHMANIA</span>
+                            {/if}
                         </div>
-                        {#if showCashierName}
-                            <div>Kasir: Siti Kasir (Shift Pagi)</div>
-                        {/if}
-                        {#if showCustomerInfo}
-                            <div>Pelanggan: Berkah Adv (Reseller)</div>
-                        {/if}
                     </div>
 
-                    <!-- Items -->
-                    <div class="py-2 border-b border-dashed border-neutral-400 space-y-1.5 text-[10px]">
-                        <div>
-                            <div class="font-bold">Spanduk Flexi 280g</div>
-                            <div class="text-[9px] text-neutral-600">3.00m × 1.00m (3 m²) × 1 pcs</div>
-                            <div class="text-[9px] text-neutral-600">Finishing: Mata Ayam 4 Sudut</div>
-                            <div class="text-right font-bold">Rp 75.000</div>
+                    <!-- Items Table Header -->
+                    <div class="pt-2">
+                        <div class="grid grid-cols-[1fr_60px_28px_65px] text-[11px] font-bold pb-1 border-b border-black">
+                            <span>Produk</span>
+                            <span class="text-right">Harga</span>
+                            <span class="text-center">Qty</span>
+                            <span class="text-right">Total</span>
                         </div>
-                        <div>
-                            <div class="font-bold">Stiker Vinyl A3+ Kiss Cut</div>
-                            <div class="text-[9px] text-neutral-600">5 lembar @ Rp 15.000</div>
-                            <div class="text-right font-bold">Rp 75.000</div>
+
+                        <!-- Item 1 -->
+                        <div class="py-1.5 border-b border-black text-[10px]">
+                            <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+                                <span class="font-bold pr-1">Indoor Stiker Vinyl Latex</span>
+                                <span class="text-right">18.000</span>
+                                <span class="text-center">1</span>
+                                <span class="text-right font-medium">18.000</span>
+                            </div>
+                            <div class="mt-1 space-y-0.5 text-[9px] text-neutral-700 leading-tight">
+                                <div>- Ukuran P: 90 cm x L: 30 cm</div>
+                                <div>- Lebar Bahan P: 100 cm x L: 30 cm</div>
+                                <div>- Potong Pas Gambar</div>
+                                <div>- Nama File: Farid</div>
+                                <div>- Deadline: 12-10-2026 18:00:00</div>
+                            </div>
+                        </div>
+
+                        <!-- Item 2 -->
+                        <div class="py-1.5 border-b border-black text-[10px]">
+                            <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+                                <span class="font-bold pr-1">Laminasi Cold (120 mic)</span>
+                                <span class="text-right">10.800</span>
+                                <span class="text-center">1</span>
+                                <span class="text-right font-medium">10.800</span>
+                            </div>
+                            <div class="mt-1 space-y-0.5 text-[9px] text-neutral-700 leading-tight">
+                                <div>- Ukuran P: 90 cm x L: 30 cm</div>
+                                <div>- Lebar Bahan P: 120 cm x L: 30 cm</div>
+                                <div>- Laminasi Glossy</div>
+                                <div>- Deadline: 12-10-2026 18:00:00</div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Totals -->
-                    <div class="py-2 border-b border-dashed border-neutral-400 space-y-0.5 text-[10px]">
-                        <div class="flex justify-between">
-                            <span>Subtotal:</span>
-                            <span>Rp 150.000</span>
+                    <div class="pt-2 text-[11px]">
+                        <div class="flex justify-end">
+                            <div class="w-[170px] space-y-0.5 text-right">
+                                <div class="flex justify-between font-bold">
+                                    <span>Total :</span>
+                                    <span>28.800</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Bayar :</span>
+                                    <span>0</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex justify-between text-neutral-600">
-                            <span>Diskon Reseller (15%):</span>
-                            <span>-Rp 22.500</span>
-                        </div>
-                        <div class="flex justify-between font-bold text-xs pt-1 border-t border-black">
-                            <span>TOTAL:</span>
-                            <span>Rp 127.500</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Bayar (TUNAI):</span>
-                            <span>Rp 150.000</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Kembalian:</span>
-                            <span>Rp 22.500</span>
+
+                        <!-- Status LUNAS -->
+                        <div class="mt-3 text-xs flex items-baseline gap-1">
+                            <span class="font-normal">Keterangan : </span>
+                            <span class="font-bold text-sm tracking-wide">LUNAS</span>
                         </div>
                     </div>
 
                     <!-- Footer note -->
                     {#if footerText}
-                        <div class="pt-2 text-center text-[8px] whitespace-pre-line text-neutral-600 leading-tight">
+                        <div class="pt-3 text-center text-[8px] whitespace-pre-line text-neutral-600 leading-tight">
                             {footerText}
                         </div>
                     {/if}

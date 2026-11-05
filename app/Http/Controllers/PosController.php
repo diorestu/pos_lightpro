@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CashierShift;
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\Finishing;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderPayment;
@@ -38,6 +39,7 @@ class PosController extends Controller
             ->get();
 
         $customers = Customer::orderBy('name')->get();
+        $finishings = Finishing::where('is_active', true)->orderBy('price')->orderBy('name')->get();
         $receiptSettings = ReceiptSetting::getActive();
 
         // Pending & unpaid orders for pickup OR courier waiting for pickup
@@ -70,6 +72,7 @@ class PosController extends Controller
             'categories' => $categories,
             'products' => $products,
             'customers' => $customers,
+            'finishings' => $finishings,
             'receiptSettings' => $receiptSettings,
             'nextInvoice' => $nextInvoice,
             'pendingOrders' => $pendingOrders,

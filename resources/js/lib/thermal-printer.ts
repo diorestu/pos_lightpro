@@ -14,6 +14,7 @@ export interface ReceiptItemData {
     quantity: number;
     unit_price: number;
     finishing_option?: string | null;
+    design_note?: string | null;
     subtotal: number;
 }
 
@@ -28,6 +29,7 @@ export interface OrderPaymentTermData {
 export interface ReceiptOrderData {
     invoice_number: string;
     created_at: string;
+    due_date?: string | null;
     user?: { name: string } | null;
     customer_name?: string | null;
     customer_phone?: string | null;
@@ -71,6 +73,34 @@ function formatRupiah(amount: number): string {
         currency: 'IDR',
         maximumFractionDigits: 0,
     }).format(amount).replace(/\s+/g, ' ');
+}
+
+function formatNum(amount: number): string {
+    return Number(amount || 0).toLocaleString('id-ID');
+}
+
+function formatReceiptDate(dateStr: string | null | undefined, includeTime = true): string {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    if (!includeTime) {
+        return `${day}-${month}-${year}`;
+    }
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day}-${month}-${year} ${hours}:${minutes}`;
+}
+
+function formatDim(val: number | null | undefined): string {
+    if (!val) return '0 cm';
+    const num = Number(val);
+    if (num < 1) {
+        return `${Math.round(num * 100)} cm`;
+    }
+    return `${num} m`;
 }
 
 function padLine(left: string, right: string, width = LINE_WIDTH_80MM): string {
@@ -253,100 +283,103 @@ export async function buildEscPos80mm(
     // Pembatas ganda
     write('='.repeat(LINE_WIDTH_80MM) + '\n');
 
-    // 4. Info Transaksi (Left)
+    // 4. Info Transaksi (Format sesuai gambar referensi WhatsApp)
     cmd(0x1b, 0x61, 0x00); // Align Left
-    const dateFormatted = new Date(order.created_at).toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-
-    write(padLine(`No. Nota : ${order.invoice_number}`, dateFormatted) + '\n');
-
-    if (settings.show_cashier_name !== false) {
-        write(`Kasir    : ${order.user?.name || 'Kasir Percetakan'}\n`);
+    write(`Kode Order : ${order.invoice_number}\n`);
+    write(`Tanggal    : ${formatReceiptDate(order.created_at)}\n`);
+    if (order.due_date) {
+        write(`Deadline   : ${formatReceiptDate(order.due_date, false)}\n`);
     }
     if (settings.show_customer_info !== false) {
         const custInfo = order.customer_name || 'Pelanggan Umum';
         const custPhone = order.customer_phone ? ` (${order.customer_phone})` : '';
-        write(`Pelanggan: ${custInfo}${custPhone}\n`);
+        write(`Kepada     : ${custInfo}${custPhone}\n`);
     }
-
-    const payStatusLabel = order.payment_status === 'paid'
-        ? 'LUNAS'
-        : order.payment_status === 'partial'
-        ? 'DP / PARSIAL'
-        : order.payment_method === 'pending'
-        ? 'BELUM LUNAS'
-        : 'BELUM LUNAS';
-    const methodUpper = order.payment_method === 'pending' ? 'SAAT AMBIL' : order.payment_method.toUpperCase();
-    write(padLine(`Metode   : ${methodUpper}`, `Status: ${payStatusLabel}`) + '\n');
-
+    if (settings.show_cashier_name !== false) {
+        write(`Kasir      : ${(order.user?.name || '-').toUpperCase()}\n`);
+    }
     if (order.delivery_type === 'courier') {
-        const cName = order.courier_name ? order.courier_name.toUpperCase() : 'KURIR/OJOL';
-        const bCode = order.booking_code ? `KODE: ${order.booking_code}` : 'BELUM ADA KODE';
-        write(padLine(`Kurir    : ${cName}`, bCode) + '\n');
+        const cName = order.courier_name ? order.courier_name.toUpperCase() : 'KURIR';
+        const bCode = order.booking_code ? ` (${order.booking_code})` : '';
+        write(`Kurir      : ${cName}${bCode}\n`);
     }
 
     // Garis pembatas
     write('-'.repeat(LINE_WIDTH_80MM) + '\n');
 
-    // 4. Daftar Item Pesanan
+    // 5. Header Tabel Item
     cmd(0x1b, 0x45, 0x01); // Bold ON
-    write(padLine('PRODUK / RINCIAN CETAK', 'SUBTOTAL') + '\n');
+    write('Produk' + ' '.repeat(18) + 'Harga'.padStart(10) + 'Qty'.padStart(4) + 'Total'.padStart(10) + '\n');
     cmd(0x1b, 0x45, 0x00); // Bold OFF
     write('-'.repeat(LINE_WIDTH_80MM) + '\n');
 
-    order.items.forEach((item, idx) => {
+    order.items.forEach((item) => {
         cmd(0x1b, 0x45, 0x01); // Bold ON
-        write(`${idx + 1}. ${item.product_name}\n`);
+        const priceStr = formatNum(item.unit_price).padStart(10);
+        const qtyStr = String(item.quantity).padStart(4);
+        const totalStr = formatNum(item.subtotal).padStart(10);
+        const rightCols = priceStr + qtyStr + totalStr; // 24 chars
+        const nameMax = LINE_WIDTH_80MM - rightCols.length; // 24 chars
+
+        if (item.product_name.length <= nameMax) {
+            write(item.product_name.padEnd(nameMax) + rightCols + '\n');
+        } else {
+            write(item.product_name + '\n');
+            write(' '.repeat(nameMax) + rightCols + '\n');
+        }
         cmd(0x1b, 0x45, 0x00); // Bold OFF
 
-        let detailText = '';
+        // Detail bullets
         if (item.pricing_type === 'dimension_sqm') {
-            detailText = `   ${item.length}m x ${item.width}m (${item.area}m2) x ${item.quantity} @ ${formatRupiah(item.unit_price)}`;
-        } else {
-            detailText = `   ${item.quantity} ${item.unit || 'pcs'} x @ ${formatRupiah(item.unit_price)}`;
+            write(`- Ukuran P: ${formatDim(item.length)} x L: ${formatDim(item.width)} (${item.area} m2)\n`);
         }
-
-        const subtotalStr = formatRupiah(item.subtotal);
-        write(padLine(detailText, subtotalStr) + '\n');
-
         if (item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing') {
-            write(`   Finishing: ${item.finishing_option}\n`);
+            write(`- ${item.finishing_option}\n`);
         }
+        if (item.design_note) {
+            write(`- Nama File: ${item.design_note}\n`);
+        }
+        if (order.due_date) {
+            write(`- Deadline: ${formatReceiptDate(order.due_date)}\n`);
+        }
+
+        write('-'.repeat(LINE_WIDTH_80MM) + '\n');
     });
 
-    write('-'.repeat(LINE_WIDTH_80MM) + '\n');
-
-    // 5. Total & Pembayaran
-    write(padLine('Subtotal:', formatRupiah(order.subtotal)) + '\n');
-
+    // 6. Total & Pembayaran (Rata Kanan)
     if (order.discount_amount > 0) {
-        write(padLine('Diskon:', '-' + formatRupiah(order.discount_amount)) + '\n');
+        write(padLine('Diskon :', '-' + formatNum(order.discount_amount)).padStart(LINE_WIDTH_80MM) + '\n');
     }
-
     if (order.tax_amount && order.tax_amount > 0) {
-        write(padLine('PPN / Pajak:', formatRupiah(order.tax_amount)) + '\n');
+        write(padLine('PPN :', formatNum(order.tax_amount)).padStart(LINE_WIDTH_80MM) + '\n');
     }
-
     cmd(0x1b, 0x45, 0x01); // Bold ON
-    write(padLine('TOTAL TAGIHAN:', formatRupiah(order.grand_total)) + '\n');
-    cmd(0x1b, 0x45, 0x00); // Bold OFF
-
-    const payMethodTitle = order.payment_method === 'pending' ? 'SAAT AMBIL' : order.payment_method.toUpperCase();
-    write(padLine(`Total Bayar (${payMethodTitle}):`, formatRupiah(order.paid_amount)) + '\n');
-    write(padLine('Kembalian:', formatRupiah(order.change_amount)) + '\n');
+    write(padLine('Total :', formatNum(order.grand_total)).padStart(LINE_WIDTH_80MM) + '\n');
+    cmd(0x1b, 0x45, 0x00);
+    write(padLine('Bayar :', formatNum(order.paid_amount)).padStart(LINE_WIDTH_80MM) + '\n');
+    if (order.change_amount > 0) {
+        write(padLine('Kembali :', formatNum(order.change_amount)).padStart(LINE_WIDTH_80MM) + '\n');
+    }
 
     const remaining = Math.max(0, order.grand_total - order.paid_amount);
     if (remaining > 0) {
         cmd(0x1b, 0x45, 0x01); // Bold ON
-        const remTitle = order.payment_method === 'pending' ? 'BAYAR SAAT AMBIL:' : 'SISA KEKURANGAN / TEMPO:';
-        write(padLine(remTitle, formatRupiah(remaining)) + '\n');
+        write(padLine('Sisa :', formatNum(remaining)).padStart(LINE_WIDTH_80MM) + '\n');
         cmd(0x1b, 0x45, 0x00); // Bold OFF
     }
+
+    // 7. Status Keterangan LUNAS / DP (Kiri Bawah)
+    write('\n');
+    cmd(0x1b, 0x45, 0x01); // Bold ON
+    const payStatusLabel = order.payment_status === 'paid'
+        ? 'LUNAS'
+        : order.payment_method === 'pending'
+        ? 'BAYAR SAAT AMBIL'
+        : order.payment_status === 'partial'
+        ? 'DP (PARSIAL)'
+        : 'BELUM LUNAS';
+    write(`Keterangan : ${payStatusLabel}\n`);
+    cmd(0x1b, 0x45, 0x00);
 
     // 6. Rincian Termin Split Payment (jika ada)
     if (order.payments && order.payments.length > 0) {

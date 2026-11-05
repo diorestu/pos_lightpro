@@ -3,6 +3,7 @@
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FinishingController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductController;
@@ -50,7 +51,10 @@ Route::middleware(['auth'])->group(function () {
     // 6. Bahan Baku (Raw Materials)
     Route::resource('raw-materials', RawMaterialController::class)->except(['create', 'edit', 'show']);
 
-    // 7. Pelanggan (Customers)
+    // 7. Finishing Cetak
+    Route::resource('finishings', FinishingController::class)->except(['create', 'edit', 'show']);
+
+    // 8. Pelanggan (Customers)
     Route::resource('customers', CustomerController::class)->except(['create', 'edit', 'show']);
 
     // 8. Shift Kasir (Multi Person, Roles, Permissions)

@@ -77,6 +77,14 @@
         discount_percent: number;
     }
 
+    interface FinishingItem {
+        id: number;
+        name: string;
+        price: number;
+        description?: string | null;
+        is_active?: boolean;
+    }
+
     interface CartItem {
         temp_id: string;
         product_id: number;
@@ -100,6 +108,7 @@
         categories = [],
         products = [],
         customers = [],
+        finishings = [],
         receiptSettings = {},
         nextInvoice = '',
         pendingOrders = [],
@@ -109,6 +118,7 @@
         categories: CategoryItem[];
         products: ProductItem[];
         customers: CustomerItem[];
+        finishings?: FinishingItem[];
         receiptSettings: any;
         nextInvoice: string;
         pendingOrders?: any[];
@@ -385,7 +395,14 @@
         const width = isDimension ? 1 : 1;
         const area = isDimension ? Math.max(product.min_order || 1, length * width) : 1;
         const unitPrice = Number(product.base_price);
-        const subtotal = Math.round(isDimension ? unitPrice * area : unitPrice);
+
+        const defaultFinishing = isDimension
+            ? (finishings.find((f) => f.name.toLowerCase().includes('mata ayam 4')) || finishings[0])
+            : (finishings.find((f) => f.name.toLowerCase().includes('tanpa finishing') || f.name.toLowerCase().includes('standar')) || finishings[0]);
+
+        const initialFinishingName = defaultFinishing ? defaultFinishing.name : (isDimension ? 'Mata Ayam 4 Sudut' : 'Standar');
+        const initialFinishingPrice = defaultFinishing ? Number(defaultFinishing.price) : 0;
+        const subtotal = Math.round(isDimension ? (unitPrice * area + initialFinishingPrice) : (unitPrice + initialFinishingPrice));
 
         const newItem: CartItem = {
             temp_id: Math.random().toString(36).substring(2, 9),
@@ -399,8 +416,8 @@
             width: width,
             area: area,
             quantity: 1,
-            finishing_option: isDimension ? 'Mata Ayam 4 Sudut' : 'Standar',
-            finishing_price: 0,
+            finishing_option: initialFinishingName,
+            finishing_price: initialFinishingPrice,
             subtotal: subtotal,
             design_note: '',
         };
@@ -848,21 +865,32 @@
                                             <select
                                                 bind:value={item.finishing_option}
                                                 onchange={() => {
-                                                    if (item.finishing_option === 'Mata Ayam Keliling') item.finishing_price = 10000;
-                                                    else if (item.finishing_option === 'Selongsong') item.finishing_price = 10000;
-                                                    else if (item.finishing_option === 'Laminasi Glossy/Doff') item.finishing_price = 15000;
-                                                    else item.finishing_price = 0;
+                                                    const found = finishings.find((f) => f.name === item.finishing_option);
+                                                    if (found) {
+                                                        item.finishing_price = Number(found.price) || 0;
+                                                    }
                                                     updateItemCalculation(item);
                                                 }}
                                                 class="w-full h-7 pl-2 pr-8 text-xs rounded border bg-background"
                                             >
-                                                <option value="Mata Ayam 4 Sudut">Mata Ayam 4 Sudut (+Rp 0)</option>
-                                                <option value="Mata Ayam Keliling">Mata Ayam Keliling (+Rp 10.000)</option>
-                                                <option value="Selongsong">Selongsong Atas Bawah (+Rp 10.000)</option>
-                                                <option value="Lebih Bahan 2.5cm">Lebih Bahan (+Rp 0)</option>
-                                                <option value="Potong Pas">Potong Pas Gambar (+Rp 0)</option>
-                                                <option value="Laminasi Glossy/Doff">Laminasi (+Rp 15.000)</option>
-                                                <option value="Tanpa Finishing">Tanpa Finishing (+Rp 0)</option>
+                                                {#if finishings && finishings.length > 0}
+                                                    {#each finishings as f}
+                                                        <option value={f.name}>
+                                                            {f.name} {f.price > 0 ? `(+${formatRupiah(f.price)})` : '(+Rp 0)'}
+                                                        </option>
+                                                    {/each}
+                                                    {#if item.finishing_option && !finishings.some((f) => f.name === item.finishing_option)}
+                                                        <option value={item.finishing_option}>{item.finishing_option}</option>
+                                                    {/if}
+                                                {:else}
+                                                    <option value="Mata Ayam 4 Sudut">Mata Ayam 4 Sudut (+Rp 0)</option>
+                                                    <option value="Mata Ayam Keliling">Mata Ayam Keliling (+Rp 10.000)</option>
+                                                    <option value="Selongsong">Selongsong Atas Bawah (+Rp 10.000)</option>
+                                                    <option value="Lebih Bahan 2.5cm">Lebih Bahan (+Rp 0)</option>
+                                                    <option value="Potong Pas">Potong Pas Gambar (+Rp 0)</option>
+                                                    <option value="Laminasi Glossy/Doff">Laminasi (+Rp 15.000)</option>
+                                                    <option value="Tanpa Finishing">Tanpa Finishing (+Rp 0)</option>
+                                                {/if}
                                             </select>
                                         </div>
                                         <div class="w-24">

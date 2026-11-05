@@ -186,6 +186,34 @@
         }).format(amount);
     }
 
+    function formatNumber(amount: number | string | null | undefined): string {
+        return Number(amount || 0).toLocaleString('id-ID');
+    }
+
+    function formatReceiptDate(dateStr: string | null | undefined, includeTime = true): string {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return String(dateStr);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        if (!includeTime) {
+            return `${day}-${month}-${year}`;
+        }
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return `${day}-${month}-${year} ${hours}:${minutes}`;
+    }
+
+    function formatDim(val: number | null | undefined): string {
+        if (!val) return '0 cm';
+        const num = Number(val);
+        if (num < 1) {
+            return `${Math.round(num * 100)} cm`;
+        }
+        return `${num} m`;
+    }
+
     async function handlePrintUSB() {
         isPrintingUSB = true;
         try {
@@ -263,10 +291,8 @@
                         border: none !important;
                         outline: none !important;
                     }
-                    .thermal-receipt-80mm, .thermal-receipt-80mm * {
-                        border-left: none !important;
-                        border-right: none !important;
-                        border-top: none !important;
+                    .thermal-receipt-80mm * {
+                        box-sizing: border-box;
                     }
                     .receipt-logo {
                         display: block;
@@ -277,36 +303,66 @@
                         filter: grayscale(100%) contrast(160%);
                     }
                     .border-b {
-                        border-bottom-width: 1px !important;
-                        border-bottom-color: #000000 !important;
-                        border-bottom-style: dashed !important;
+                        border-bottom: 1px solid #000000 !important;
+                    }
+                    .border-t {
+                        border-top: 1px solid #000000 !important;
+                    }
+                    .border-solid {
+                        border-style: solid !important;
                     }
                     .border-dashed {
-                        border-bottom-style: dashed !important;
+                        border-style: dashed !important;
+                    }
+                    .border-dotted {
+                        border-style: dotted !important;
                     }
                     .border-black {
-                        border-bottom-color: #000000 !important;
+                        border-color: #000000 !important;
                     }
                     .text-center { text-align: center; }
+                    .text-right { text-align: right; }
+                    .text-left { text-align: left; }
                     .font-bold { font-weight: 700; }
                     .font-semibold { font-weight: 600; }
+                    .font-medium { font-weight: 500; }
+                    .font-normal { font-weight: 400; }
                     .uppercase { text-transform: uppercase; }
                     .flex { display: flex; }
                     .justify-between { justify-content: space-between; }
-                    .space-y-0\\.5 > * + * { margin-top: 2px; }
+                    .justify-end { justify-content: flex-end; }
+                    .items-baseline { align-items: baseline; }
+                    .gap-1 { gap: 4px; }
+                    .grid { display: grid; }
+                    .grid-cols-\[75px_10px_1fr\] { grid-template-columns: 75px 10px 1fr; }
+                    .grid-cols-\[1fr_60px_28px_65px\] { grid-template-columns: 1fr 60px 28px 65px; }
+                    .gap-y-0\.5 { row-gap: 2px; }
+                    .space-y-0\.5 > * + * { margin-top: 2px; }
                     .space-y-1 > * + * { margin-top: 4px; }
-                    .space-y-1\\.5 > * + * { margin-top: 6px; }
+                    .py-1 { padding-top: 4px; padding-bottom: 4px; }
+                    .py-1\.5 { padding-top: 6px; padding-bottom: 6px; }
                     .py-2 { padding-top: 8px; padding-bottom: 8px; }
+                    .pb-1 { padding-bottom: 4px; }
                     .pb-2 { padding-bottom: 8px; }
+                    .pt-1 { padding-top: 4px; }
                     .pt-2 { padding-top: 8px; }
                     .pt-3 { padding-top: 12px; }
-                    .pb-1 { padding-bottom: 4px; }
-                    .mb-1\\.5 { margin-bottom: 6px; }
+                    .pb-4 { padding-bottom: 16px; }
+                    .pb-6 { padding-bottom: 24px; }
+                    .mt-1 { margin-top: 4px; }
+                    .mt-2 { margin-top: 8px; }
+                    .mt-3 { margin-top: 12px; }
+                    .mb-1\.5 { margin-bottom: 6px; }
                     .pl-2 { padding-left: 8px; }
-                    .text-\\[10px\\] { font-size: 10px; }
-                    .text-\\[9px\\] { font-size: 9px; }
+                    .pr-1 { padding-right: 4px; }
+                    .w-\[170px\] { width: 170px; }
+                    .text-\[9px\] { font-size: 9px; }
+                    .text-\[10px\] { font-size: 10px; }
+                    .text-\[11px\] { font-size: 11px; }
                     .text-xs { font-size: 12px; }
                     .text-sm { font-size: 14px; }
+                    .tracking-wide { letter-spacing: 0.025em; }
+                    .tracking-tight { letter-spacing: -0.025em; }
                     .whitespace-pre-line { white-space: pre-line; }
                     .leading-tight { line-height: 1.25; }
                 </style>
@@ -408,145 +464,176 @@
 
 <AppHead title="Detail Nota #{order.invoice_number}" />
 
-<!-- Print-Only Receipt Thermal 80mm View (Standard Font & 80mm Paper) -->
+<!-- Print-Only Receipt Thermal 80mm View (Matching WhatsApp Image Format) -->
 <div id="order-thermal-receipt" class="thermal-receipt-80mm text-black font-sans text-xs">
     <!-- Store Header (Logo & Identitas Toko di Bawah Logo) -->
-    <div class="header-store text-center pb-2 border-b border-dashed border-black">
-        {#if receiptSettings.show_logo !== false && receiptSettings.logo_url}
-            <div class="flex justify-center mb-1.5">
-                <img
-                    src={receiptSettings.logo_url}
-                    alt="Logo {receiptSettings.store_name || 'Toko'}"
-                    class="receipt-logo max-h-14 max-w-[160px] object-contain filter grayscale contrast-125 mx-auto block"
-                />
-            </div>
-        {/if}
-        <h2 class="font-bold text-sm tracking-tight uppercase leading-tight m-0">{receiptSettings.store_name || 'LightPrint Percetakan'}</h2>
-        {#if receiptSettings.tagline}
-            <p class="text-[10px] text-neutral-800 leading-tight m-0">{receiptSettings.tagline}</p>
-        {/if}
-        {#if receiptSettings.address}
-            <p class="text-[10px] text-neutral-800 leading-tight m-0">{receiptSettings.address}</p>
-        {/if}
-        {#if receiptSettings.phone}
-            <p class="text-[10px] font-medium text-neutral-800 leading-tight m-0">Telp/WA: {receiptSettings.phone}</p>
-        {/if}
-        {#if receiptSettings.website}
-            <p class="text-[9px] text-neutral-700 leading-tight m-0">{receiptSettings.website}</p>
-        {/if}
-    </div>
-
-    <!-- Order Metadata -->
-    <div class="py-2 text-[10px] border-b border-dashed border-black space-y-0.5">
-        <div class="flex justify-between font-bold">
-            <span>No. Nota:</span>
-            <span>{order.invoice_number}</span>
-        </div>
-        <div class="flex justify-between">
-            <span>Tanggal:</span>
-            <span>{new Date(order.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-        </div>
-        {#if receiptSettings.show_cashier_name !== false}
-            <div class="flex justify-between">
-                <span>Kasir:</span>
-                <span>{order.user?.name || '-'}</span>
-            </div>
-        {/if}
-        {#if receiptSettings.show_customer_info !== false}
-            <div class="flex justify-between">
-                <span>Pelanggan:</span>
-                <span class="font-semibold">{order.customer_name || 'Pelanggan Umum'}{order.customer_phone ? ` (${order.customer_phone})` : ''}</span>
-            </div>
-        {/if}
-        <div class="flex justify-between">
-            <span>Metode / Status:</span>
-            <span class="font-bold uppercase">
-                {order.payment_method === 'pending' ? 'BAYAR SAAT AMBIL' : order.payment_method} / {order.payment_status === 'paid' ? 'LUNAS' : order.payment_status === 'partial' ? 'DP (PARSIAL)' : 'BELUM BAYAR'}
-            </span>
-        </div>
-        {#if order.delivery_type === 'courier'}
-            <div class="flex justify-between font-bold border-t border-dotted border-black/50 pt-1 mt-1">
-                <span>Kurir / Booking:</span>
-                <span>{order.courier_name?.toUpperCase() || 'KURIR'}{order.booking_code ? ` (${order.booking_code})` : ''}</span>
-            </div>
-        {/if}
-    </div>
-
-    <!-- Items List (80mm Width) -->
-    <div class="py-2 border-b border-dashed border-black space-y-2 text-[10px]">
-        {#each order.items as item, idx}
-            <div>
-                <div class="font-bold flex justify-between">
-                    <span>{idx + 1}. {item.product_name}</span>
-                    <span class="font-bold">{formatRupiah(item.subtotal)}</span>
+    {#if (receiptSettings.show_logo !== false && receiptSettings.logo_url) || receiptSettings.store_name}
+        <div class="header-store text-center pb-2 border-b border-black">
+            {#if receiptSettings.show_logo !== false && receiptSettings.logo_url}
+                <div class="flex justify-center mb-1.5">
+                    <img
+                        src={receiptSettings.logo_url}
+                        alt="Logo {receiptSettings.store_name || 'Toko'}"
+                        class="receipt-logo max-h-14 max-w-[160px] object-contain filter grayscale contrast-125 mx-auto block"
+                    />
                 </div>
-                {#if item.pricing_type === 'dimension_sqm'}
-                    <div class="text-[9px] text-neutral-700 pl-2">
-                        Ukuran: {item.length}m × {item.width}m ({item.area} m²) × {item.quantity} pcs @ {formatRupiah(item.unit_price)}
-                    </div>
-                {:else}
-                    <div class="text-[9px] text-neutral-700 pl-2">
-                        Qty: {item.quantity} {item.unit || 'pcs'} × @ {formatRupiah(item.unit_price)}
-                    </div>
-                {/if}
-                {#if item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing'}
-                    <div class="text-[9px] text-neutral-700 pl-2 font-medium">
-                        Finishing: {item.finishing_option}
-                    </div>
-                {/if}
-                {#if item.design_note}
-                    <div class="text-[9px] italic text-neutral-600 pl-2">
-                        Catatan: {item.design_note}
-                    </div>
-                {/if}
+            {/if}
+            <h2 class="font-bold text-sm tracking-tight uppercase leading-tight m-0">{receiptSettings.store_name || 'LightPrint Percetakan'}</h2>
+            {#if receiptSettings.tagline}
+                <p class="text-[10px] text-neutral-800 leading-tight m-0">{receiptSettings.tagline}</p>
+            {/if}
+            {#if receiptSettings.address}
+                <p class="text-[10px] text-neutral-800 leading-tight m-0">{receiptSettings.address}</p>
+            {/if}
+            {#if receiptSettings.phone}
+                <p class="text-[10px] font-medium text-neutral-800 leading-tight m-0">Telp/WA: {receiptSettings.phone}</p>
+            {/if}
+            {#if receiptSettings.website}
+                <p class="text-[9px] text-neutral-700 leading-tight m-0">{receiptSettings.website}</p>
+            {/if}
+        </div>
+    {/if}
+
+    <!-- Order Metadata (Format persis gambar WhatsApp) -->
+    <div class="py-2 text-[11px] border-b border-black">
+        <div class="grid grid-cols-[75px_10px_1fr] gap-y-0.5 leading-tight">
+            <span>Kode Order</span>
+            <span>:</span>
+            <span class="font-medium">{order.invoice_number}</span>
+
+            <span>Tanggal</span>
+            <span>:</span>
+            <span>{formatReceiptDate(order.created_at)}</span>
+
+            {#if order.due_date}
+                <span>Deadline</span>
+                <span>:</span>
+                <span>{formatReceiptDate(order.due_date, false)}</span>
+            {/if}
+
+            {#if receiptSettings.show_customer_info !== false}
+                <span>Kepada</span>
+                <span>:</span>
+                <span class="font-bold">{order.customer_name || 'Pelanggan Umum'}{order.customer_phone ? ` (${order.customer_phone})` : ''}</span>
+            {/if}
+
+            {#if receiptSettings.show_cashier_name !== false}
+                <span>Kasir Online</span>
+                <span>:</span>
+                <span class="uppercase">{order.user?.name || '-'}</span>
+            {/if}
+
+            {#if order.delivery_type === 'courier'}
+                <span>Kurir</span>
+                <span>:</span>
+                <span class="font-bold uppercase">{order.courier_name || 'KURIR'}{order.booking_code ? ` (${order.booking_code})` : ''}</span>
+            {/if}
+        </div>
+    </div>
+
+    <!-- Items Table Header (Produk, Harga, Qty, Total) -->
+    <div class="pt-2">
+        <div class="grid grid-cols-[1fr_60px_28px_65px] text-[11px] font-bold pb-1 border-b border-black">
+            <span>Produk</span>
+            <span class="text-right">Harga</span>
+            <span class="text-center">Qty</span>
+            <span class="text-right">Total</span>
+        </div>
+
+        <!-- Items Rows with details and horizontal dividers -->
+        {#each order.items as item}
+            <div class="py-1.5 border-b border-black text-[10px]">
+                <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+                    <span class="font-bold pr-1">{item.product_name}</span>
+                    <span class="text-right">{formatNumber(item.unit_price)}</span>
+                    <span class="text-center">{formatNumber(item.quantity)}</span>
+                    <span class="text-right font-medium">{formatNumber(item.subtotal)}</span>
+                </div>
+
+                <!-- Bullets -->
+                <div class="mt-1 space-y-0.5 text-[9px] text-neutral-800 leading-tight">
+                    {#if item.pricing_type === 'dimension_sqm'}
+                        <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} ({item.area} m²)</div>
+                    {/if}
+                    {#if item.product?.raw_material?.name}
+                        <div>- Lebar Bahan: {item.product.raw_material.name}</div>
+                    {/if}
+                    {#if item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing'}
+                        <div>- {item.finishing_option}</div>
+                    {/if}
+                    {#if item.design_note}
+                        <div>- Nama File: {item.design_note}</div>
+                    {/if}
+                    {#if order.due_date}
+                        <div>- Deadline: {formatReceiptDate(order.due_date)}</div>
+                    {/if}
+                </div>
             </div>
         {/each}
     </div>
 
-    <!-- Totals -->
-    <div class="py-2 border-b border-dashed border-black space-y-0.5 text-[10px]">
-        <div class="flex justify-between">
-            <span>Subtotal:</span>
-            <span>{formatRupiah(order.subtotal)}</span>
-        </div>
-        {#if order.discount_amount > 0}
-            <div class="flex justify-between">
-                <span>Diskon:</span>
-                <span>-{formatRupiah(order.discount_amount)}</span>
+    <!-- Totals Summary Section -->
+    <div class="pt-2 text-[11px]">
+        <div class="flex justify-end">
+            <div class="w-[170px] space-y-0.5 text-right">
+                {#if order.discount_amount > 0}
+                    <div class="flex justify-between">
+                        <span>Diskon :</span>
+                        <span>-{formatNumber(order.discount_amount)}</span>
+                    </div>
+                {/if}
+                {#if order.tax_amount && order.tax_amount > 0}
+                    <div class="flex justify-between">
+                        <span>PPN :</span>
+                        <span>{formatNumber(order.tax_amount)}</span>
+                    </div>
+                {/if}
+                <div class="flex justify-between font-bold">
+                    <span>Total :</span>
+                    <span>{formatNumber(order.grand_total)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Bayar :</span>
+                    <span>{formatNumber(order.paid_amount)}</span>
+                </div>
+                {#if order.change_amount > 0}
+                    <div class="flex justify-between">
+                        <span>Kembali :</span>
+                        <span>{formatNumber(order.change_amount)}</span>
+                    </div>
+                {/if}
+                {#if remainingDebt > 0}
+                    <div class="flex justify-between font-bold text-red-600">
+                        <span>Sisa :</span>
+                        <span>{formatNumber(remainingDebt)}</span>
+                    </div>
+                {/if}
             </div>
-        {/if}
-        {#if order.tax_amount && order.tax_amount > 0}
-            <div class="flex justify-between">
-                <span>PPN / Pajak:</span>
-                <span>{formatRupiah(order.tax_amount)}</span>
-            </div>
-        {/if}
-        <div class="flex justify-between font-bold text-xs pt-1 border-t border-black">
-            <span>TOTAL:</span>
-            <span>{formatRupiah(order.grand_total)}</span>
         </div>
-        <div class="flex justify-between">
-            <span>Total Bayar ({order.payment_method === 'pending' ? 'BAYAR SAAT AMBIL' : order.payment_method.toUpperCase()}):</span>
-            <span class="font-bold">{formatRupiah(order.paid_amount)}</span>
+
+        <!-- Status LUNAS / DP / PENDING di kiri bawah persis seperti gambar -->
+        <div class="mt-3 text-xs flex items-baseline gap-1">
+            <span class="font-normal">Keterangan : </span>
+            <span class="font-bold text-sm tracking-wide">
+                {#if order.payment_status === 'paid'}
+                    LUNAS
+                {:else if order.payment_method === 'pending'}
+                    BAYAR SAAT AMBIL
+                {:else if order.payment_status === 'partial'}
+                    DP (PARSIAL)
+                {:else}
+                    BELUM LUNAS
+                {/if}
+            </span>
         </div>
-        <div class="flex justify-between">
-            <span>Kembalian:</span>
-            <span>{formatRupiah(order.change_amount)}</span>
-        </div>
-        {#if remainingDebt > 0}
-            <div class="flex justify-between font-bold text-red-600 pt-0.5 border-t border-dotted border-black">
-                <span>Sisa Tagihan / Tempo:</span>
-                <span>{formatRupiah(remainingDebt)}</span>
-            </div>
-        {/if}
 
         {#if order.payments && order.payments.length > 0}
-            <div class="pt-1.5 mt-1 border-t border-dotted border-black space-y-0.5">
-                <div class="font-bold text-[9px]">Rincian Termin / Tahapan Pembayaran:</div>
+            <div class="mt-2 pt-1 border-t border-dotted border-black text-[9px] space-y-0.5">
+                <div class="font-bold">Rincian Termin Pembayaran:</div>
                 {#each order.payments as p}
-                    <div class="flex justify-between text-[9px]">
+                    <div class="flex justify-between">
                         <span>{p.term_name}:</span>
-                        <span>{formatRupiah(p.status === 'paid' ? p.paid_amount : p.amount)} ({p.status === 'paid' ? 'Lunas ' + p.payment_method.toUpperCase() : 'Tempo'})</span>
+                        <span>{formatNumber(p.status === 'paid' ? p.paid_amount : p.amount)} ({p.status === 'paid' ? 'LUNAS' : 'TEMPO'})</span>
                     </div>
                 {/each}
             </div>
@@ -554,11 +641,8 @@
     </div>
 
     <!-- Footer Terms & Cut Area -->
-    <div class="pt-3 pb-6 text-center text-[9px] text-neutral-800 whitespace-pre-line leading-relaxed">
+    <div class="pt-3 pb-4 text-center text-[9px] text-neutral-800 whitespace-pre-line leading-relaxed">
         {receiptSettings.footer_text || 'Terima kasih telah mencetak di tempat kami!\nPeriksa kembali hasil cetakan Anda.'}
-        <div class="mt-2 text-[8px] text-neutral-500 font-semibold uppercase tracking-wider">
-            *** LIGHTPRINT POS 80MM ***
-        </div>
     </div>
 </div>
 
@@ -1252,137 +1336,182 @@
         <!-- Kertas Thermal 80mm Simulasi -->
         <div class="my-2 p-4 bg-white text-black rounded-lg border border-neutral-300 shadow-inner font-sans text-xs max-w-[340px] mx-auto select-none">
             <!-- Store Header (Logo & Identitas Toko) -->
-            <div class="header-store text-center pb-2 border-b border-dashed border-black">
-                {#if receiptSettings.show_logo !== false && receiptSettings.logo_url}
-                    <div class="flex justify-center mb-1.5">
-                        <img
-                            src={receiptSettings.logo_url}
-                            alt="Logo {receiptSettings.store_name || 'Toko'}"
-                            class="max-h-12 max-w-[150px] object-contain filter grayscale contrast-125 mx-auto block"
-                        />
-                    </div>
-                {/if}
-                <h3 class="font-bold text-sm uppercase leading-tight m-0">{receiptSettings.store_name || 'LightPrint Percetakan'}</h3>
-                {#if receiptSettings.tagline}
-                    <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.tagline}</p>
-                {/if}
-                {#if receiptSettings.address}
-                    <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.address}</p>
-                {/if}
-                {#if receiptSettings.phone}
-                    <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">Telp/WA: {receiptSettings.phone}</p>
-                {/if}
-                {#if receiptSettings.website}
-                    <p class="text-[9px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.website}</p>
-                {/if}
-            </div>
-
-            <div class="py-2 text-[10px] border-b border-dashed border-black space-y-0.5">
-                <div class="flex justify-between font-bold">
-                    <span>No. Nota:</span>
-                    <span>{order.invoice_number}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span>Tanggal:</span>
-                    <span>{new Date(order.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-                {#if receiptSettings.show_cashier_name !== false}
-                    <div class="flex justify-between">
-                        <span>Kasir:</span>
-                        <span>{order.user?.name || '-'}</span>
-                    </div>
-                {/if}
-                {#if receiptSettings.show_customer_info !== false}
-                    <div class="flex justify-between">
-                        <span>Pelanggan:</span>
-                        <span class="font-semibold">{order.customer_name || 'Pelanggan Umum'}</span>
-                    </div>
-                {/if}
-                <div class="flex justify-between">
-                    <span>Metode / Status:</span>
-                    <span class="font-bold uppercase">
-                        {order.payment_method === 'pending' ? 'BAYAR SAAT AMBIL' : order.payment_method} / {order.payment_status === 'paid' ? 'LUNAS' : order.payment_status === 'partial' ? 'DP' : 'BELUM'}
-                    </span>
-                </div>
-                {#if order.delivery_type === 'courier'}
-                    <div class="flex justify-between font-bold border-t border-dotted border-black pt-1 mt-1">
-                        <span>Kurir / Booking:</span>
-                        <span>{order.courier_name?.toUpperCase() || 'KURIR'}{order.booking_code ? ` (${order.booking_code})` : ''}</span>
-                    </div>
-                {/if}
-            </div>
-
-            <div class="py-2 border-b border-dashed border-black space-y-1.5 text-[10px]">
-                {#each order.items as item, idx}
-                    <div>
-                        <div class="font-bold flex justify-between">
-                            <span>{idx + 1}. {item.product_name}</span>
-                            <span>{formatRupiah(item.subtotal)}</span>
+            {#if (receiptSettings.show_logo !== false && receiptSettings.logo_url) || receiptSettings.store_name}
+                <div class="header-store text-center pb-2 border-b border-black">
+                    {#if receiptSettings.show_logo !== false && receiptSettings.logo_url}
+                        <div class="flex justify-center mb-1.5">
+                            <img
+                                src={receiptSettings.logo_url}
+                                alt="Logo {receiptSettings.store_name || 'Toko'}"
+                                class="max-h-12 max-w-[150px] object-contain filter grayscale contrast-125 mx-auto block"
+                            />
                         </div>
-                        {#if item.pricing_type === 'dimension_sqm'}
-                            <div class="text-[9px] text-neutral-600 pl-2">
-                                {item.length}m × {item.width}m ({item.area} m²) × {item.quantity} @ {formatRupiah(item.unit_price)}
-                            </div>
-                        {:else}
-                            <div class="text-[9px] text-neutral-600 pl-2">
-                                {item.quantity} {item.unit || 'pcs'} × @ {formatRupiah(item.unit_price)}
-                            </div>
-                        {/if}
-                        {#if item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing'}
-                            <div class="text-[9px] text-neutral-700 pl-2">Finishing: {item.finishing_option}</div>
-                        {/if}
+                    {/if}
+                    <h3 class="font-bold text-sm uppercase leading-tight m-0">{receiptSettings.store_name || 'LightPrint Percetakan'}</h3>
+                    {#if receiptSettings.tagline}
+                        <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.tagline}</p>
+                    {/if}
+                    {#if receiptSettings.address}
+                        <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.address}</p>
+                    {/if}
+                    {#if receiptSettings.phone}
+                        <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">Telp/WA: {receiptSettings.phone}</p>
+                    {/if}
+                    {#if receiptSettings.website}
+                        <p class="text-[9px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.website}</p>
+                    {/if}
+                </div>
+            {/if}
+
+            <!-- Order Metadata (Format persis gambar WhatsApp) -->
+            <div class="py-2 text-[11px] border-b border-black">
+                <div class="grid grid-cols-[75px_10px_1fr] gap-y-0.5 leading-tight">
+                    <span>Kode Order</span>
+                    <span>:</span>
+                    <span class="font-medium">{order.invoice_number}</span>
+
+                    <span>Tanggal</span>
+                    <span>:</span>
+                    <span>{formatReceiptDate(order.created_at)}</span>
+
+                    {#if order.due_date}
+                        <span>Deadline</span>
+                        <span>:</span>
+                        <span>{formatReceiptDate(order.due_date, false)}</span>
+                    {/if}
+
+                    {#if receiptSettings.show_customer_info !== false}
+                        <span>Kepada</span>
+                        <span>:</span>
+                        <span class="font-bold">{order.customer_name || 'Pelanggan Umum'}{order.customer_phone ? ` (${order.customer_phone})` : ''}</span>
+                    {/if}
+
+                    {#if receiptSettings.show_cashier_name !== false}
+                        <span>Kasir Online</span>
+                        <span>:</span>
+                        <span class="uppercase">{order.user?.name || '-'}</span>
+                    {/if}
+
+                    {#if order.delivery_type === 'courier'}
+                        <span>Kurir</span>
+                        <span>:</span>
+                        <span class="font-bold uppercase">{order.courier_name || 'KURIR'}{order.booking_code ? ` (${order.booking_code})` : ''}</span>
+                    {/if}
+                </div>
+            </div>
+
+            <!-- Items Table Header (Produk, Harga, Qty, Total) -->
+            <div class="pt-2">
+                <div class="grid grid-cols-[1fr_60px_28px_65px] text-[11px] font-bold pb-1 border-b border-black">
+                    <span>Produk</span>
+                    <span class="text-right">Harga</span>
+                    <span class="text-center">Qty</span>
+                    <span class="text-right">Total</span>
+                </div>
+
+                <!-- Items Rows with details and horizontal dividers -->
+                {#each order.items as item}
+                    <div class="py-1.5 border-b border-black text-[10px]">
+                        <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+                            <span class="font-bold pr-1">{item.product_name}</span>
+                            <span class="text-right">{formatNumber(item.unit_price)}</span>
+                            <span class="text-center">{formatNumber(item.quantity)}</span>
+                            <span class="text-right font-medium">{formatNumber(item.subtotal)}</span>
+                        </div>
+
+                        <!-- Bullets -->
+                        <div class="mt-1 space-y-0.5 text-[9px] text-neutral-700 leading-tight">
+                            {#if item.pricing_type === 'dimension_sqm'}
+                                <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} ({item.area} m²)</div>
+                            {/if}
+                            {#if item.product?.raw_material?.name}
+                                <div>- Lebar Bahan: {item.product.raw_material.name}</div>
+                            {/if}
+                            {#if item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing'}
+                                <div>- {item.finishing_option}</div>
+                            {/if}
+                            {#if item.design_note}
+                                <div>- Nama File: {item.design_note}</div>
+                            {/if}
+                            {#if order.due_date}
+                                <div>- Deadline: {formatReceiptDate(order.due_date)}</div>
+                            {/if}
+                        </div>
                     </div>
                 {/each}
             </div>
 
-            <div class="py-2 border-b border-dashed border-black space-y-0.5 text-[10px]">
-                <div class="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>{formatRupiah(order.subtotal)}</span>
-                </div>
-                {#if order.discount_amount > 0}
-                    <div class="flex justify-between">
-                        <span>Diskon:</span>
-                        <span>-{formatRupiah(order.discount_amount)}</span>
+            <!-- Totals Summary Section -->
+            <div class="pt-2 text-[11px]">
+                <div class="flex justify-end">
+                    <div class="w-[170px] space-y-0.5 text-right">
+                        {#if order.discount_amount > 0}
+                            <div class="flex justify-between">
+                                <span>Diskon :</span>
+                                <span>-{formatNumber(order.discount_amount)}</span>
+                            </div>
+                        {/if}
+                        {#if order.tax_amount && order.tax_amount > 0}
+                            <div class="flex justify-between">
+                                <span>PPN :</span>
+                                <span>{formatNumber(order.tax_amount)}</span>
+                            </div>
+                        {/if}
+                        <div class="flex justify-between font-bold">
+                            <span>Total :</span>
+                            <span>{formatNumber(order.grand_total)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Bayar :</span>
+                            <span>{formatNumber(order.paid_amount)}</span>
+                        </div>
+                        {#if order.change_amount > 0}
+                            <div class="flex justify-between">
+                                <span>Kembali :</span>
+                                <span>{formatNumber(order.change_amount)}</span>
+                            </div>
+                        {/if}
+                        {#if remainingDebt > 0}
+                            <div class="flex justify-between font-bold text-red-600">
+                                <span>Sisa :</span>
+                                <span>{formatNumber(remainingDebt)}</span>
+                            </div>
+                        {/if}
                     </div>
-                {/if}
-                <div class="flex justify-between font-bold text-xs pt-1 border-t border-black">
-                    <span>TOTAL:</span>
-                    <span>{formatRupiah(order.grand_total)}</span>
                 </div>
-                <div class="flex justify-between">
-                    <span>Total Bayar:</span>
-                    <span class="font-bold">{formatRupiah(order.paid_amount)}</span>
+
+                <!-- Status LUNAS / DP / PENDING di kiri bawah persis seperti gambar -->
+                <div class="mt-3 text-xs flex items-baseline gap-1">
+                    <span class="font-normal">Keterangan : </span>
+                    <span class="font-bold text-sm tracking-wide">
+                        {#if order.payment_status === 'paid'}
+                            LUNAS
+                        {:else if order.payment_method === 'pending'}
+                            BAYAR SAAT AMBIL
+                        {:else if order.payment_status === 'partial'}
+                            DP (PARSIAL)
+                        {:else}
+                            BELUM LUNAS
+                        {/if}
+                    </span>
                 </div>
-                <div class="flex justify-between">
-                    <span>Kembalian:</span>
-                    <span>{formatRupiah(order.change_amount)}</span>
-                </div>
-                {#if remainingDebt > 0}
-                    <div class="flex justify-between font-bold text-red-600 pt-0.5 border-t border-dotted border-black">
-                        <span>Sisa Tagihan / Tempo:</span>
-                        <span>{formatRupiah(remainingDebt)}</span>
-                    </div>
-                {/if}
 
                 {#if order.payments && order.payments.length > 0}
-                    <div class="pt-1 mt-1 border-t border-dotted border-black space-y-0.5">
-                        <div class="font-bold text-[9px]">Rincian Termin:</div>
+                    <div class="mt-2 pt-1 border-t border-dotted border-black text-[9px] space-y-0.5">
+                        <div class="font-bold">Rincian Termin:</div>
                         {#each order.payments as p}
-                            <div class="flex justify-between text-[9px]">
+                            <div class="flex justify-between">
                                 <span>{p.term_name}:</span>
-                                <span>{formatRupiah(p.status === 'paid' ? p.paid_amount : p.amount)}</span>
+                                <span>{formatNumber(p.status === 'paid' ? p.paid_amount : p.amount)} ({p.status === 'paid' ? 'LUNAS' : 'TEMPO'})</span>
                             </div>
                         {/each}
                     </div>
                 {/if}
             </div>
 
-            <div class="pt-2 text-center text-[9px] text-neutral-600 whitespace-pre-line leading-relaxed">
+            <!-- Footer Terms & Cut Area -->
+            <div class="pt-3 pb-4 text-center text-[9px] text-neutral-600 whitespace-pre-line leading-relaxed">
                 {receiptSettings.footer_text || 'Terima kasih atas pesanan cetak Anda!'}
-                <div class="mt-1 text-[8px] text-neutral-400 font-semibold tracking-wider">
-                    *** LIGHTPRINT POS 80MM ***
-                </div>
             </div>
         </div>
 

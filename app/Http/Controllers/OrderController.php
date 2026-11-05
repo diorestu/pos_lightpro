@@ -88,7 +88,7 @@ class OrderController extends Controller
 
     public function show(Order $order): Response
     {
-        $order->load(['user', 'customer', 'items.product', 'return.user', 'cancelledByUser', 'payments.user', 'payments.shift']);
+        $order->load(['user', 'customer', 'items.product.rawMaterial', 'return.user', 'cancelledByUser', 'payments.user', 'payments.shift']);
         $receiptSettings = ReceiptSetting::getActive();
 
         return Inertia::render('Orders/Show', [

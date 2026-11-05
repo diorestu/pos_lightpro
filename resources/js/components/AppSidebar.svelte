@@ -9,6 +9,7 @@
     import Printer from '@lucide/svelte/icons/printer';
     import Receipt from '@lucide/svelte/icons/receipt';
     import Ruler from '@lucide/svelte/icons/ruler';
+    import Scissors from '@lucide/svelte/icons/scissors';
     import ShoppingCart from '@lucide/svelte/icons/shopping-cart';
     import Tags from '@lucide/svelte/icons/tags';
     import Users from '@lucide/svelte/icons/users';
@@ -63,6 +64,7 @@
                           { title: 'Produk Percetakan', href: '/products', icon: Package },
                           { title: 'Kategori Produk', href: '/categories', icon: Tags },
                           { title: 'Bahan Baku', href: '/raw-materials', icon: Boxes },
+                          { title: 'Finishing Cetak', href: '/finishings', icon: Scissors },
                           { title: 'Pelanggan', href: '/customers', icon: Users },
                       ],
                   },
