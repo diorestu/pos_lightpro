@@ -303,12 +303,12 @@
                     }
                     .thermal-receipt-80mm {
                         display: block !important;
-                        width: 72mm !important;
-                        max-width: 72mm !important;
-                        min-width: 72mm !important;
+                        width: 74mm !important;
+                        max-width: 74mm !important;
+                        min-width: 74mm !important;
                         margin: 0 auto !important;
                         padding: 2mm 1mm !important;
-                        font-size: 11px !important;
+                        font-size: 13.2px !important;
                         color: #000000 !important;
                         border: none !important;
                         outline: none !important;
@@ -356,8 +356,10 @@
                     .items-baseline { align-items: baseline; }
                     .gap-1 { gap: 4px; }
                     .grid { display: grid; }
-                    .grid-cols-\[75px_10px_1fr\] { grid-template-columns: 75px 10px 1fr; }
-                    .grid-cols-\[1fr_60px_28px_65px\] { grid-template-columns: 1fr 60px 28px 65px; }
+                    .grid-cols-\[75px_10px_1fr\] { grid-template-columns: 82px 10px 1fr !important; }
+                    .grid-cols-\[82px_10px_1fr\] { grid-template-columns: 82px 10px 1fr !important; }
+                    .grid-cols-\[1fr_60px_28px_65px\] { grid-template-columns: 1fr 68px 30px 68px !important; }
+                    .grid-cols-\[1fr_68px_30px_68px\] { grid-template-columns: 1fr 68px 30px 68px !important; }
                     .gap-y-0\.5 { row-gap: 2px; }
                     .space-y-0\.5 > * + * { margin-top: 2px; }
                     .space-y-1 > * + * { margin-top: 4px; }
@@ -377,12 +379,14 @@
                     .mb-1\.5 { margin-bottom: 6px; }
                     .pl-2 { padding-left: 8px; }
                     .pr-1 { padding-right: 4px; }
-                    .w-\[170px\] { width: 170px; }
-                    .text-\[9px\] { font-size: 9px; }
-                    .text-\[10px\] { font-size: 10px; }
-                    .text-\[11px\] { font-size: 11px; }
-                    .text-xs { font-size: 12px; }
-                    .text-sm { font-size: 14px; }
+                    .w-\[170px\] { width: 195px !important; }
+                    .w-\[195px\] { width: 195px !important; }
+                    .text-\[9px\] { font-size: 11px !important; }
+                    .text-\[10px\] { font-size: 12px !important; }
+                    .text-\[11px\] { font-size: 13.2px !important; }
+                    .text-xs { font-size: 14.5px !important; }
+                    .text-sm { font-size: 17px !important; }
+                    .text-base { font-size: 19px !important; }
                     .tracking-wide { letter-spacing: 0.025em; }
                     .tracking-tight { letter-spacing: -0.025em; }
                     .whitespace-pre-line { white-space: pre-line; }
@@ -423,25 +427,25 @@
                     />
                 </div>
             {/if}
-            <h2 class="font-bold text-sm tracking-tight uppercase leading-tight m-0">{storeName || 'LightPrint Percetakan'}</h2>
+            <h2 class="font-bold text-base tracking-tight uppercase leading-tight m-0">{storeName || 'LightPrint Percetakan'}</h2>
             {#if tagline}
-                <p class="text-[10px] text-neutral-800 leading-tight m-0">{tagline}</p>
+                <p class="text-xs text-neutral-800 leading-tight m-0">{tagline}</p>
             {/if}
             {#if address}
-                <p class="text-[10px] text-neutral-800 leading-tight m-0">{address}</p>
+                <p class="text-xs text-neutral-800 leading-tight m-0">{address}</p>
             {/if}
             {#if phone}
-                <p class="text-[10px] font-medium text-neutral-800 leading-tight m-0">Telp/WA: {phone}</p>
+                <p class="text-xs font-medium text-neutral-800 leading-tight m-0">Telp/WA: {phone}</p>
             {/if}
             {#if website}
-                <p class="text-[9px] text-neutral-700 leading-tight m-0">{website}</p>
+                <p class="text-[11px] text-neutral-700 leading-tight m-0">{website}</p>
             {/if}
         </div>
     {/if}
 
-    <!-- Metadata Contoh (Format persis gambar WhatsApp) -->
-    <div class="py-2 text-[11px] border-b border-black">
-        <div class="grid grid-cols-[75px_10px_1fr] gap-y-0.5 leading-tight">
+    <!-- Metadata Contoh (Format persis gambar WhatsApp - Scaled +20%) -->
+    <div class="py-2 text-xs border-b border-black">
+        <div class="grid grid-cols-[82px_10px_1fr] gap-y-0.5 leading-tight">
             <span>Kode Order</span>
             <span>:</span>
             <span class="font-medium">M261011207</span>
@@ -470,7 +474,7 @@
 
     <!-- Items Table Header -->
     <div class="pt-2">
-        <div class="grid grid-cols-[1fr_60px_28px_65px] text-[11px] font-bold pb-1 border-b border-black">
+        <div class="grid grid-cols-[1fr_68px_30px_68px] text-xs font-bold pb-1 border-b border-black">
             <span>Produk</span>
             <span class="text-right">Harga</span>
             <span class="text-center">Qty</span>
@@ -478,14 +482,14 @@
         </div>
 
         <!-- Item 1 -->
-        <div class="py-1.5 border-b border-black text-[10px]">
-            <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+        <div class="py-1.5 border-b border-black text-xs">
+            <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
                 <span class="font-bold pr-1">Indoor Stiker Vinyl Latex</span>
                 <span class="text-right">18.000</span>
                 <span class="text-center">1</span>
                 <span class="text-right font-medium">18.000</span>
             </div>
-            <div class="mt-1 space-y-0.5 text-[9px] text-neutral-800 leading-tight">
+            <div class="mt-1 space-y-0.5 text-[11px] text-neutral-800 leading-tight">
                 <div>- Ukuran P: 90 cm x L: 30 cm</div>
                 <div>- Lebar Bahan P: 100 cm x L: 30 cm</div>
                 <div>- Potong Pas Gambar</div>
@@ -495,14 +499,14 @@
         </div>
 
         <!-- Item 2 -->
-        <div class="py-1.5 border-b border-black text-[10px]">
-            <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+        <div class="py-1.5 border-b border-black text-xs">
+            <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
                 <span class="font-bold pr-1">Laminasi Cold (120 mic)</span>
                 <span class="text-right">10.800</span>
                 <span class="text-center">1</span>
                 <span class="text-right font-medium">10.800</span>
             </div>
-            <div class="mt-1 space-y-0.5 text-[9px] text-neutral-800 leading-tight">
+            <div class="mt-1 space-y-0.5 text-[11px] text-neutral-800 leading-tight">
                 <div>- Ukuran P: 90 cm x L: 30 cm</div>
                 <div>- Lebar Bahan P: 120 cm x L: 30 cm</div>
                 <div>- Laminasi Glossy</div>
@@ -511,14 +515,14 @@
         </div>
 
         <!-- Item 3 -->
-        <div class="py-1.5 border-b border-black text-[10px]">
-            <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+        <div class="py-1.5 border-b border-black text-xs">
+            <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
                 <span class="font-bold pr-1">Cutting Large Format</span>
                 <span class="text-right">10.800</span>
                 <span class="text-center">1</span>
                 <span class="text-right font-medium">10.800</span>
             </div>
-            <div class="mt-1 space-y-0.5 text-[9px] text-neutral-800 leading-tight">
+            <div class="mt-1 space-y-0.5 text-[11px] text-neutral-800 leading-tight">
                 <div>- Ukuran P: 90 cm x L: 30 cm</div>
                 <div>- Deadline: 12-10-2026 18:00:00</div>
                 <div>- CUTTING SETENGAH PUTUS</div>
@@ -527,10 +531,10 @@
     </div>
 
     <!-- Totals Summary Section -->
-    <div class="pt-2 text-[11px]">
+    <div class="pt-2 text-xs">
         <div class="flex justify-end">
-            <div class="w-[170px] space-y-0.5 text-right">
-                <div class="flex justify-between font-bold">
+            <div class="w-[195px] space-y-0.5 text-right">
+                <div class="flex justify-between font-bold text-sm">
                     <span>Total :</span>
                     <span>39.600</span>
                 </div>
@@ -544,13 +548,13 @@
         <!-- Status LUNAS -->
         <div class="mt-3 text-xs flex items-baseline gap-1">
             <span class="font-normal">Keterangan : </span>
-            <span class="font-bold text-sm tracking-wide">LUNAS</span>
+            <span class="font-bold text-base tracking-wide">LUNAS</span>
         </div>
     </div>
 
     <!-- Footer Terms -->
     {#if footerText}
-        <div class="pt-3 text-center text-[9px] whitespace-pre-line text-neutral-700 leading-tight">
+        <div class="pt-3 text-center text-[11px] whitespace-pre-line text-neutral-700 leading-tight">
             {footerText}
         </div>
     {/if}
@@ -753,7 +757,7 @@
             </CardHeader>
             <CardContent>
                 <!-- Thermal paper simulation -->
-                <div class="mx-auto bg-white text-black p-4 rounded shadow-md border border-neutral-300 text-[11px] {paperSize === '58mm' ? 'max-w-[270px]' : paperSize === '80mm' ? 'max-w-[340px]' : 'max-w-full'} select-none">
+                <div class="mx-auto bg-white text-black p-4 rounded shadow-md border border-neutral-300 text-xs {paperSize === '58mm' ? 'max-w-[270px]' : paperSize === '80mm' ? 'max-w-[360px]' : 'max-w-full'} select-none">
                     {#if showLogo && activeLogoDisplay}
                         <div class="text-center pb-2 mb-2 border-b border-black">
                             <div class="flex justify-center">
@@ -768,24 +772,24 @@
 
                     <!-- Store Header (Nama Toko & Identitas di Bawah Logo) -->
                     <div class="header-store text-center pb-2 border-b border-black">
-                        <h3 class="font-bold text-sm uppercase tracking-tight leading-tight m-0">{storeName || 'Nama Toko'}</h3>
+                        <h3 class="font-bold text-base uppercase tracking-tight leading-tight m-0">{storeName || 'Nama Toko'}</h3>
                         {#if tagline}
-                            <p class="text-[9px] text-neutral-600 leading-tight m-0 mt-0.5">{tagline}</p>
+                            <p class="text-xs text-neutral-600 leading-tight m-0 mt-0.5">{tagline}</p>
                         {/if}
                         {#if address}
-                            <p class="text-[9px] text-neutral-600 leading-tight m-0 mt-0.5">{address}</p>
+                            <p class="text-xs text-neutral-600 leading-tight m-0 mt-0.5">{address}</p>
                         {/if}
                         {#if phone}
-                            <p class="text-[9px] text-neutral-600 leading-tight m-0 mt-0.5">Telp/WA: {phone}</p>
+                            <p class="text-xs text-neutral-600 leading-tight m-0 mt-0.5">Telp/WA: {phone}</p>
                         {/if}
                         {#if website}
-                            <p class="text-[9px] text-neutral-600 leading-tight m-0 mt-0.5">{website}</p>
+                            <p class="text-[11px] text-neutral-600 leading-tight m-0 mt-0.5">{website}</p>
                         {/if}
                     </div>
 
                     <!-- Metadata Contoh -->
-                    <div class="py-2 text-[11px] border-b border-black">
-                        <div class="grid grid-cols-[75px_10px_1fr] gap-y-0.5 leading-tight">
+                    <div class="py-2 text-xs border-b border-black">
+                        <div class="grid grid-cols-[82px_10px_1fr] gap-y-0.5 leading-tight">
                             <span>Kode Order</span>
                             <span>:</span>
                             <span class="font-medium">M261011207</span>
@@ -814,7 +818,7 @@
 
                     <!-- Items Table Header -->
                     <div class="pt-2">
-                        <div class="grid grid-cols-[1fr_60px_28px_65px] text-[11px] font-bold pb-1 border-b border-black">
+                        <div class="grid grid-cols-[1fr_68px_30px_68px] text-xs font-bold pb-1 border-b border-black">
                             <span>Produk</span>
                             <span class="text-right">Harga</span>
                             <span class="text-center">Qty</span>
@@ -822,14 +826,14 @@
                         </div>
 
                         <!-- Item 1 -->
-                        <div class="py-1.5 border-b border-black text-[10px]">
-                            <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+                        <div class="py-1.5 border-b border-black text-xs">
+                            <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
                                 <span class="font-bold pr-1">Indoor Stiker Vinyl Latex</span>
                                 <span class="text-right">18.000</span>
                                 <span class="text-center">1</span>
                                 <span class="text-right font-medium">18.000</span>
                             </div>
-                            <div class="mt-1 space-y-0.5 text-[9px] text-neutral-700 leading-tight">
+                            <div class="mt-1 space-y-0.5 text-[11px] text-neutral-700 leading-tight">
                                 <div>- Ukuran P: 90 cm x L: 30 cm</div>
                                 <div>- Lebar Bahan P: 100 cm x L: 30 cm</div>
                                 <div>- Potong Pas Gambar</div>
@@ -839,14 +843,14 @@
                         </div>
 
                         <!-- Item 2 -->
-                        <div class="py-1.5 border-b border-black text-[10px]">
-                            <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+                        <div class="py-1.5 border-b border-black text-xs">
+                            <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
                                 <span class="font-bold pr-1">Laminasi Cold (120 mic)</span>
                                 <span class="text-right">10.800</span>
                                 <span class="text-center">1</span>
                                 <span class="text-right font-medium">10.800</span>
                             </div>
-                            <div class="mt-1 space-y-0.5 text-[9px] text-neutral-700 leading-tight">
+                            <div class="mt-1 space-y-0.5 text-[11px] text-neutral-700 leading-tight">
                                 <div>- Ukuran P: 90 cm x L: 30 cm</div>
                                 <div>- Lebar Bahan P: 120 cm x L: 30 cm</div>
                                 <div>- Laminasi Glossy</div>
@@ -856,10 +860,10 @@
                     </div>
 
                     <!-- Totals -->
-                    <div class="pt-2 text-[11px]">
+                    <div class="pt-2 text-xs">
                         <div class="flex justify-end">
-                            <div class="w-[170px] space-y-0.5 text-right">
-                                <div class="flex justify-between font-bold">
+                            <div class="w-[195px] space-y-0.5 text-right">
+                                <div class="flex justify-between font-bold text-sm">
                                     <span>Total :</span>
                                     <span>28.800</span>
                                 </div>
@@ -873,13 +877,13 @@
                         <!-- Status LUNAS -->
                         <div class="mt-3 text-xs flex items-baseline gap-1">
                             <span class="font-normal">Keterangan : </span>
-                            <span class="font-bold text-sm tracking-wide">LUNAS</span>
+                            <span class="font-bold text-base tracking-wide">LUNAS</span>
                         </div>
                     </div>
 
                     <!-- Footer note -->
                     {#if footerText}
-                        <div class="pt-3 text-center text-[8px] whitespace-pre-line text-neutral-600 leading-tight">
+                        <div class="pt-3 text-center text-[11px] whitespace-pre-line text-neutral-600 leading-tight">
                             {footerText}
                         </div>
                     {/if}

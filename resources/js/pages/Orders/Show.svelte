@@ -281,12 +281,12 @@
                     }
                     .thermal-receipt-80mm {
                         display: block !important;
-                        width: 72mm !important;
-                        max-width: 72mm !important;
-                        min-width: 72mm !important;
+                        width: 74mm !important;
+                        max-width: 74mm !important;
+                        min-width: 74mm !important;
                         margin: 0 auto !important;
                         padding: 2mm 1mm !important;
-                        font-size: 11px !important;
+                        font-size: 13.2px !important;
                         color: #000000 !important;
                         border: none !important;
                         outline: none !important;
@@ -334,8 +334,10 @@
                     .items-baseline { align-items: baseline; }
                     .gap-1 { gap: 4px; }
                     .grid { display: grid; }
-                    .grid-cols-\[75px_10px_1fr\] { grid-template-columns: 75px 10px 1fr; }
-                    .grid-cols-\[1fr_60px_28px_65px\] { grid-template-columns: 1fr 60px 28px 65px; }
+                    .grid-cols-\[75px_10px_1fr\] { grid-template-columns: 82px 10px 1fr !important; }
+                    .grid-cols-\[82px_10px_1fr\] { grid-template-columns: 82px 10px 1fr !important; }
+                    .grid-cols-\[1fr_60px_28px_65px\] { grid-template-columns: 1fr 68px 30px 68px !important; }
+                    .grid-cols-\[1fr_68px_30px_68px\] { grid-template-columns: 1fr 68px 30px 68px !important; }
                     .gap-y-0\.5 { row-gap: 2px; }
                     .space-y-0\.5 > * + * { margin-top: 2px; }
                     .space-y-1 > * + * { margin-top: 4px; }
@@ -355,12 +357,14 @@
                     .mb-1\.5 { margin-bottom: 6px; }
                     .pl-2 { padding-left: 8px; }
                     .pr-1 { padding-right: 4px; }
-                    .w-\[170px\] { width: 170px; }
-                    .text-\[9px\] { font-size: 9px; }
-                    .text-\[10px\] { font-size: 10px; }
-                    .text-\[11px\] { font-size: 11px; }
-                    .text-xs { font-size: 12px; }
-                    .text-sm { font-size: 14px; }
+                    .w-\[170px\] { width: 195px !important; }
+                    .w-\[195px\] { width: 195px !important; }
+                    .text-\[9px\] { font-size: 11px !important; }
+                    .text-\[10px\] { font-size: 12px !important; }
+                    .text-\[11px\] { font-size: 13.2px !important; }
+                    .text-xs { font-size: 14.5px !important; }
+                    .text-sm { font-size: 17px !important; }
+                    .text-base { font-size: 19px !important; }
                     .tracking-wide { letter-spacing: 0.025em; }
                     .tracking-tight { letter-spacing: -0.025em; }
                     .whitespace-pre-line { white-space: pre-line; }
@@ -464,7 +468,7 @@
 
 <AppHead title="Detail Nota #{order.invoice_number}" />
 
-<!-- Print-Only Receipt Thermal 80mm View (Matching WhatsApp Image Format) -->
+<!-- Print-Only Receipt Thermal 80mm View (Matching WhatsApp Image Format - Scaled +20%) -->
 <div id="order-thermal-receipt" class="thermal-receipt-80mm text-black font-sans text-xs">
     <!-- Store Header (Logo & Identitas Toko di Bawah Logo) -->
     {#if (receiptSettings.show_logo !== false && receiptSettings.logo_url) || receiptSettings.store_name}
@@ -474,29 +478,29 @@
                     <img
                         src={receiptSettings.logo_url}
                         alt="Logo {receiptSettings.store_name || 'Toko'}"
-                        class="receipt-logo max-h-14 max-w-[160px] object-contain filter grayscale contrast-125 mx-auto block"
+                        class="receipt-logo max-h-14 max-w-[180px] object-contain filter grayscale contrast-125 mx-auto block"
                     />
                 </div>
             {/if}
-            <h2 class="font-bold text-sm tracking-tight uppercase leading-tight m-0">{receiptSettings.store_name || 'LightPrint Percetakan'}</h2>
+            <h2 class="font-bold text-base tracking-tight uppercase leading-tight m-0">{receiptSettings.store_name || 'LightPrint Percetakan'}</h2>
             {#if receiptSettings.tagline}
-                <p class="text-[10px] text-neutral-800 leading-tight m-0">{receiptSettings.tagline}</p>
+                <p class="text-xs text-neutral-800 leading-tight m-0">{receiptSettings.tagline}</p>
             {/if}
             {#if receiptSettings.address}
-                <p class="text-[10px] text-neutral-800 leading-tight m-0">{receiptSettings.address}</p>
+                <p class="text-xs text-neutral-800 leading-tight m-0">{receiptSettings.address}</p>
             {/if}
             {#if receiptSettings.phone}
-                <p class="text-[10px] font-medium text-neutral-800 leading-tight m-0">Telp/WA: {receiptSettings.phone}</p>
+                <p class="text-xs font-medium text-neutral-800 leading-tight m-0">Telp/WA: {receiptSettings.phone}</p>
             {/if}
             {#if receiptSettings.website}
-                <p class="text-[9px] text-neutral-700 leading-tight m-0">{receiptSettings.website}</p>
+                <p class="text-[11px] text-neutral-700 leading-tight m-0">{receiptSettings.website}</p>
             {/if}
         </div>
     {/if}
 
-    <!-- Order Metadata (Format persis gambar WhatsApp) -->
-    <div class="py-2 text-[11px] border-b border-black">
-        <div class="grid grid-cols-[75px_10px_1fr] gap-y-0.5 leading-tight">
+    <!-- Order Metadata (Format persis gambar WhatsApp - Scaled +20%) -->
+    <div class="py-2 text-xs border-b border-black">
+        <div class="grid grid-cols-[82px_10px_1fr] gap-y-0.5 leading-tight">
             <span>Kode Order</span>
             <span>:</span>
             <span class="font-medium">{order.invoice_number}</span>
@@ -533,7 +537,7 @@
 
     <!-- Items Table Header (Produk, Harga, Qty, Total) -->
     <div class="pt-2">
-        <div class="grid grid-cols-[1fr_60px_28px_65px] text-[11px] font-bold pb-1 border-b border-black">
+        <div class="grid grid-cols-[1fr_68px_30px_68px] text-xs font-bold pb-1 border-b border-black">
             <span>Produk</span>
             <span class="text-right">Harga</span>
             <span class="text-center">Qty</span>
@@ -542,8 +546,8 @@
 
         <!-- Items Rows with details and horizontal dividers -->
         {#each order.items as item}
-            <div class="py-1.5 border-b border-black text-[10px]">
-                <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+            <div class="py-1.5 border-b border-black text-xs">
+                <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
                     <span class="font-bold pr-1">{item.product_name}</span>
                     <span class="text-right">{formatNumber(item.unit_price)}</span>
                     <span class="text-center">{formatNumber(item.quantity)}</span>
@@ -551,7 +555,7 @@
                 </div>
 
                 <!-- Bullets -->
-                <div class="mt-1 space-y-0.5 text-[9px] text-neutral-800 leading-tight">
+                <div class="mt-1 space-y-0.5 text-[11px] text-neutral-800 leading-tight">
                     {#if item.pricing_type === 'dimension_sqm'}
                         <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} ({item.area} m²)</div>
                     {/if}
@@ -573,9 +577,9 @@
     </div>
 
     <!-- Totals Summary Section -->
-    <div class="pt-2 text-[11px]">
+    <div class="pt-2 text-xs">
         <div class="flex justify-end">
-            <div class="w-[170px] space-y-0.5 text-right">
+            <div class="w-[195px] space-y-0.5 text-right">
                 {#if order.discount_amount > 0}
                     <div class="flex justify-between">
                         <span>Diskon :</span>
@@ -588,7 +592,7 @@
                         <span>{formatNumber(order.tax_amount)}</span>
                     </div>
                 {/if}
-                <div class="flex justify-between font-bold">
+                <div class="flex justify-between font-bold text-sm">
                     <span>Total :</span>
                     <span>{formatNumber(order.grand_total)}</span>
                 </div>
@@ -613,8 +617,8 @@
 
         <!-- Status LUNAS / DP / PENDING di kiri bawah persis seperti gambar -->
         <div class="mt-3 text-xs flex items-baseline gap-1">
-            <span class="font-normal">Keterangan : </span>
-            <span class="font-bold text-sm tracking-wide">
+            <span class="font-normal text-xs">Keterangan : </span>
+            <span class="font-bold text-base tracking-wide">
                 {#if order.payment_status === 'paid'}
                     LUNAS
                 {:else if order.payment_method === 'pending'}
@@ -628,7 +632,7 @@
         </div>
 
         {#if order.payments && order.payments.length > 0}
-            <div class="mt-2 pt-1 border-t border-dotted border-black text-[9px] space-y-0.5">
+            <div class="mt-2 pt-1 border-t border-dotted border-black text-[11px] space-y-0.5">
                 <div class="font-bold">Rincian Termin Pembayaran:</div>
                 {#each order.payments as p}
                     <div class="flex justify-between">
@@ -641,7 +645,7 @@
     </div>
 
     <!-- Footer Terms & Cut Area -->
-    <div class="pt-3 pb-4 text-center text-[9px] text-neutral-800 whitespace-pre-line leading-relaxed">
+    <div class="pt-3 pb-4 text-center text-[11px] text-neutral-800 whitespace-pre-line leading-relaxed">
         {receiptSettings.footer_text || 'Terima kasih telah mencetak di tempat kami!\nPeriksa kembali hasil cetakan Anda.'}
     </div>
 </div>
@@ -1347,25 +1351,25 @@
                             />
                         </div>
                     {/if}
-                    <h3 class="font-bold text-sm uppercase leading-tight m-0">{receiptSettings.store_name || 'LightPrint Percetakan'}</h3>
+                    <h3 class="font-bold text-base uppercase leading-tight m-0">{receiptSettings.store_name || 'LightPrint Percetakan'}</h3>
                     {#if receiptSettings.tagline}
-                        <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.tagline}</p>
+                        <p class="text-xs text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.tagline}</p>
                     {/if}
                     {#if receiptSettings.address}
-                        <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.address}</p>
+                        <p class="text-xs text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.address}</p>
                     {/if}
                     {#if receiptSettings.phone}
-                        <p class="text-[10px] text-neutral-700 leading-tight m-0 mt-0.5">Telp/WA: {receiptSettings.phone}</p>
+                        <p class="text-xs text-neutral-700 leading-tight m-0 mt-0.5">Telp/WA: {receiptSettings.phone}</p>
                     {/if}
                     {#if receiptSettings.website}
-                        <p class="text-[9px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.website}</p>
+                        <p class="text-[11px] text-neutral-700 leading-tight m-0 mt-0.5">{receiptSettings.website}</p>
                     {/if}
                 </div>
             {/if}
 
-            <!-- Order Metadata (Format persis gambar WhatsApp) -->
-            <div class="py-2 text-[11px] border-b border-black">
-                <div class="grid grid-cols-[75px_10px_1fr] gap-y-0.5 leading-tight">
+            <!-- Order Metadata (Format persis gambar WhatsApp - Scaled +20%) -->
+            <div class="py-2 text-xs border-b border-black">
+                <div class="grid grid-cols-[82px_10px_1fr] gap-y-0.5 leading-tight">
                     <span>Kode Order</span>
                     <span>:</span>
                     <span class="font-medium">{order.invoice_number}</span>
@@ -1402,7 +1406,7 @@
 
             <!-- Items Table Header (Produk, Harga, Qty, Total) -->
             <div class="pt-2">
-                <div class="grid grid-cols-[1fr_60px_28px_65px] text-[11px] font-bold pb-1 border-b border-black">
+                <div class="grid grid-cols-[1fr_68px_30px_68px] text-xs font-bold pb-1 border-b border-black">
                     <span>Produk</span>
                     <span class="text-right">Harga</span>
                     <span class="text-center">Qty</span>
@@ -1411,8 +1415,8 @@
 
                 <!-- Items Rows with details and horizontal dividers -->
                 {#each order.items as item}
-                    <div class="py-1.5 border-b border-black text-[10px]">
-                        <div class="grid grid-cols-[1fr_60px_28px_65px] leading-tight">
+                    <div class="py-1.5 border-b border-black text-xs">
+                        <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
                             <span class="font-bold pr-1">{item.product_name}</span>
                             <span class="text-right">{formatNumber(item.unit_price)}</span>
                             <span class="text-center">{formatNumber(item.quantity)}</span>
@@ -1420,7 +1424,7 @@
                         </div>
 
                         <!-- Bullets -->
-                        <div class="mt-1 space-y-0.5 text-[9px] text-neutral-700 leading-tight">
+                        <div class="mt-1 space-y-0.5 text-[11px] text-neutral-700 leading-tight">
                             {#if item.pricing_type === 'dimension_sqm'}
                                 <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} ({item.area} m²)</div>
                             {/if}
@@ -1442,9 +1446,9 @@
             </div>
 
             <!-- Totals Summary Section -->
-            <div class="pt-2 text-[11px]">
+            <div class="pt-2 text-xs">
                 <div class="flex justify-end">
-                    <div class="w-[170px] space-y-0.5 text-right">
+                    <div class="w-[195px] space-y-0.5 text-right">
                         {#if order.discount_amount > 0}
                             <div class="flex justify-between">
                                 <span>Diskon :</span>
@@ -1457,7 +1461,7 @@
                                 <span>{formatNumber(order.tax_amount)}</span>
                             </div>
                         {/if}
-                        <div class="flex justify-between font-bold">
+                        <div class="flex justify-between font-bold text-sm">
                             <span>Total :</span>
                             <span>{formatNumber(order.grand_total)}</span>
                         </div>
@@ -1482,8 +1486,8 @@
 
                 <!-- Status LUNAS / DP / PENDING di kiri bawah persis seperti gambar -->
                 <div class="mt-3 text-xs flex items-baseline gap-1">
-                    <span class="font-normal">Keterangan : </span>
-                    <span class="font-bold text-sm tracking-wide">
+                    <span class="font-normal text-xs">Keterangan : </span>
+                    <span class="font-bold text-base tracking-wide">
                         {#if order.payment_status === 'paid'}
                             LUNAS
                         {:else if order.payment_method === 'pending'}
@@ -1497,7 +1501,7 @@
                 </div>
 
                 {#if order.payments && order.payments.length > 0}
-                    <div class="mt-2 pt-1 border-t border-dotted border-black text-[9px] space-y-0.5">
+                    <div class="mt-2 pt-1 border-t border-dotted border-black text-[11px] space-y-0.5">
                         <div class="font-bold">Rincian Termin:</div>
                         {#each order.payments as p}
                             <div class="flex justify-between">
@@ -1510,7 +1514,7 @@
             </div>
 
             <!-- Footer Terms & Cut Area -->
-            <div class="pt-3 pb-4 text-center text-[9px] text-neutral-600 whitespace-pre-line leading-relaxed">
+            <div class="pt-3 pb-4 text-center text-[11px] text-neutral-600 whitespace-pre-line leading-relaxed">
                 {receiptSettings.footer_text || 'Terima kasih atas pesanan cetak Anda!'}
             </div>
         </div>
