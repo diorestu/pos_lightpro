@@ -303,12 +303,12 @@
                     }
                     .thermal-receipt-80mm {
                         display: block !important;
-                        width: 74mm !important;
-                        max-width: 74mm !important;
-                        min-width: 74mm !important;
+                        width: 72mm !important;
+                        max-width: 72mm !important;
+                        min-width: 72mm !important;
                         margin: 0 auto !important;
                         padding: 2mm 1mm !important;
-                        font-size: 13.2px !important;
+                        font-size: 11.2px !important;
                         color: #000000 !important;
                         border: none !important;
                         outline: none !important;
@@ -356,10 +356,12 @@
                     .items-baseline { align-items: baseline; }
                     .gap-1 { gap: 4px; }
                     .grid { display: grid; }
-                    .grid-cols-\[75px_10px_1fr\] { grid-template-columns: 82px 10px 1fr !important; }
-                    .grid-cols-\[82px_10px_1fr\] { grid-template-columns: 82px 10px 1fr !important; }
-                    .grid-cols-\[1fr_60px_28px_65px\] { grid-template-columns: 1fr 68px 30px 68px !important; }
-                    .grid-cols-\[1fr_68px_30px_68px\] { grid-template-columns: 1fr 68px 30px 68px !important; }
+                    .grid-cols-\[75px_10px_1fr\] { grid-template-columns: 76px 10px 1fr !important; }
+                    .grid-cols-\[76px_10px_1fr\] { grid-template-columns: 76px 10px 1fr !important; }
+                    .grid-cols-\[82px_10px_1fr\] { grid-template-columns: 76px 10px 1fr !important; }
+                    .grid-cols-\[1fr_60px_28px_65px\] { grid-template-columns: 1fr 62px 28px 64px !important; }
+                    .grid-cols-\[1fr_62px_28px_64px\] { grid-template-columns: 1fr 62px 28px 64px !important; }
+                    .grid-cols-\[1fr_68px_30px_68px\] { grid-template-columns: 1fr 62px 28px 64px !important; }
                     .gap-y-0\.5 { row-gap: 2px; }
                     .space-y-0\.5 > * + * { margin-top: 2px; }
                     .space-y-1 > * + * { margin-top: 4px; }
@@ -379,14 +381,15 @@
                     .mb-1\.5 { margin-bottom: 6px; }
                     .pl-2 { padding-left: 8px; }
                     .pr-1 { padding-right: 4px; }
-                    .w-\[170px\] { width: 195px !important; }
-                    .w-\[195px\] { width: 195px !important; }
-                    .text-\[9px\] { font-size: 11px !important; }
-                    .text-\[10px\] { font-size: 12px !important; }
-                    .text-\[11px\] { font-size: 13.2px !important; }
-                    .text-xs { font-size: 14.5px !important; }
-                    .text-sm { font-size: 17px !important; }
-                    .text-base { font-size: 19px !important; }
+                    .w-\[170px\] { width: 175px !important; }
+                    .w-\[175px\] { width: 175px !important; }
+                    .w-\[195px\] { width: 175px !important; }
+                    .text-\[9px\] { font-size: 9.5px !important; }
+                    .text-\[10px\] { font-size: 10.2px !important; }
+                    .text-\[11px\] { font-size: 11.2px !important; }
+                    .text-xs { font-size: 12.3px !important; }
+                    .text-sm { font-size: 14.5px !important; }
+                    .text-base { font-size: 16px !important; }
                     .tracking-wide { letter-spacing: 0.025em; }
                     .tracking-tight { letter-spacing: -0.025em; }
                     .whitespace-pre-line { white-space: pre-line; }
@@ -443,9 +446,9 @@
         </div>
     {/if}
 
-    <!-- Metadata Contoh (Format persis gambar WhatsApp - Scaled +20%) -->
+    <!-- Metadata Contoh (Format persis gambar WhatsApp) -->
     <div class="py-2 text-xs border-b border-black">
-        <div class="grid grid-cols-[82px_10px_1fr] gap-y-0.5 leading-tight">
+        <div class="grid grid-cols-[76px_10px_1fr] gap-y-0.5 leading-tight">
             <span>Kode Order</span>
             <span>:</span>
             <span class="font-medium">M261011207</span>
@@ -474,7 +477,7 @@
 
     <!-- Items Table Header -->
     <div class="pt-2">
-        <div class="grid grid-cols-[1fr_68px_30px_68px] text-xs font-bold pb-1 border-b border-black">
+        <div class="grid grid-cols-[1fr_62px_28px_64px] text-xs font-bold pb-1 border-b border-black">
             <span>Produk</span>
             <span class="text-right">Harga</span>
             <span class="text-center">Qty</span>
@@ -483,7 +486,7 @@
 
         <!-- Item 1 -->
         <div class="py-1.5 border-b border-black text-xs">
-            <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
+            <div class="grid grid-cols-[1fr_62px_28px_64px] leading-tight">
                 <span class="font-bold pr-1">Indoor Stiker Vinyl Latex</span>
                 <span class="text-right">18.000</span>
                 <span class="text-center">1</span>
@@ -500,7 +503,7 @@
 
         <!-- Item 2 -->
         <div class="py-1.5 border-b border-black text-xs">
-            <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
+            <div class="grid grid-cols-[1fr_62px_28px_64px] leading-tight">
                 <span class="font-bold pr-1">Laminasi Cold (120 mic)</span>
                 <span class="text-right">10.800</span>
                 <span class="text-center">1</span>
@@ -516,7 +519,7 @@
 
         <!-- Item 3 -->
         <div class="py-1.5 border-b border-black text-xs">
-            <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
+            <div class="grid grid-cols-[1fr_62px_28px_64px] leading-tight">
                 <span class="font-bold pr-1">Cutting Large Format</span>
                 <span class="text-right">10.800</span>
                 <span class="text-center">1</span>
@@ -533,7 +536,7 @@
     <!-- Totals Summary Section -->
     <div class="pt-2 text-xs">
         <div class="flex justify-end">
-            <div class="w-[195px] space-y-0.5 text-right">
+            <div class="w-[175px] space-y-0.5 text-right">
                 <div class="flex justify-between font-bold text-sm">
                     <span>Total :</span>
                     <span>39.600</span>
@@ -757,7 +760,7 @@
             </CardHeader>
             <CardContent>
                 <!-- Thermal paper simulation -->
-                <div class="mx-auto bg-white text-black p-4 rounded shadow-md border border-neutral-300 text-xs {paperSize === '58mm' ? 'max-w-[270px]' : paperSize === '80mm' ? 'max-w-[360px]' : 'max-w-full'} select-none">
+                <div class="mx-auto bg-white text-black p-4 rounded shadow-md border border-neutral-300 text-xs {paperSize === '58mm' ? 'max-w-[270px]' : paperSize === '80mm' ? 'max-w-[340px]' : 'max-w-full'} select-none">
                     {#if showLogo && activeLogoDisplay}
                         <div class="text-center pb-2 mb-2 border-b border-black">
                             <div class="flex justify-center">
@@ -789,7 +792,7 @@
 
                     <!-- Metadata Contoh -->
                     <div class="py-2 text-xs border-b border-black">
-                        <div class="grid grid-cols-[82px_10px_1fr] gap-y-0.5 leading-tight">
+                        <div class="grid grid-cols-[76px_10px_1fr] gap-y-0.5 leading-tight">
                             <span>Kode Order</span>
                             <span>:</span>
                             <span class="font-medium">M261011207</span>
@@ -818,7 +821,7 @@
 
                     <!-- Items Table Header -->
                     <div class="pt-2">
-                        <div class="grid grid-cols-[1fr_68px_30px_68px] text-xs font-bold pb-1 border-b border-black">
+                        <div class="grid grid-cols-[1fr_62px_28px_64px] text-xs font-bold pb-1 border-b border-black">
                             <span>Produk</span>
                             <span class="text-right">Harga</span>
                             <span class="text-center">Qty</span>
@@ -827,7 +830,7 @@
 
                         <!-- Item 1 -->
                         <div class="py-1.5 border-b border-black text-xs">
-                            <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
+                            <div class="grid grid-cols-[1fr_62px_28px_64px] leading-tight">
                                 <span class="font-bold pr-1">Indoor Stiker Vinyl Latex</span>
                                 <span class="text-right">18.000</span>
                                 <span class="text-center">1</span>
@@ -844,7 +847,7 @@
 
                         <!-- Item 2 -->
                         <div class="py-1.5 border-b border-black text-xs">
-                            <div class="grid grid-cols-[1fr_68px_30px_68px] leading-tight">
+                            <div class="grid grid-cols-[1fr_62px_28px_64px] leading-tight">
                                 <span class="font-bold pr-1">Laminasi Cold (120 mic)</span>
                                 <span class="text-right">10.800</span>
                                 <span class="text-center">1</span>
@@ -862,7 +865,7 @@
                     <!-- Totals -->
                     <div class="pt-2 text-xs">
                         <div class="flex justify-end">
-                            <div class="w-[195px] space-y-0.5 text-right">
+                            <div class="w-[175px] space-y-0.5 text-right">
                                 <div class="flex justify-between font-bold text-sm">
                                     <span>Total :</span>
                                     <span>28.800</span>
