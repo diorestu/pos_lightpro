@@ -15,6 +15,12 @@ export interface ReceiptItemData {
     unit_price: number;
     finishing_option?: string | null;
     design_note?: string | null;
+    notes?: string | null;
+    description?: string | null;
+    product?: {
+        name?: string;
+        description?: string | null;
+    } | null;
     subtotal: number;
 }
 
@@ -46,6 +52,7 @@ export interface ReceiptOrderData {
     grand_total: number;
     paid_amount: number;
     change_amount: number;
+    notes?: string | null;
     items: ReceiptItemData[];
     payments?: OrderPaymentTermData[];
 }
@@ -330,14 +337,30 @@ export async function buildEscPos80mm(
         cmd(0x1b, 0x45, 0x00); // Bold OFF
 
         // Detail bullets
-        if (item.pricing_type === 'dimension_sqm') {
-            write(`- Ukuran P: ${formatDim(item.length)} x L: ${formatDim(item.width)} (${item.area} m2)\n`);
+        if (
+            item.pricing_type === 'dimension_sqm' ||
+            (Number(item.length) > 0 && Number(item.width) > 0)
+        ) {
+            const areaStr = item.area ? ` (${item.area} m2)` : '';
+            write(`- Ukuran P: ${formatDim(item.length)} x L: ${formatDim(item.width)}${areaStr}\n`);
         }
-        if (item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing') {
-            write(`- ${item.finishing_option}\n`);
+        if (
+            item.finishing_option &&
+            item.finishing_option !== '-' &&
+            item.finishing_option !== 'None' &&
+            item.finishing_option !== 'Standar' &&
+            item.finishing_option !== 'Tanpa Finishing'
+        ) {
+            write(`- Finishing: ${item.finishing_option}\n`);
         }
         if (item.design_note) {
-            write(`- Nama File: ${item.design_note}\n`);
+            write(`- Nama File/Desain: ${item.design_note}\n`);
+        }
+        if (item.notes) {
+            write(`- Catatan: ${item.notes}\n`);
+        }
+        if (item.description || item.product?.description) {
+            write(`- ${item.description || item.product?.description}\n`);
         }
         if (order.due_date) {
             write(`- Deadline: ${formatReceiptDate(order.due_date)}\n`);
@@ -345,6 +368,11 @@ export async function buildEscPos80mm(
 
         write('-'.repeat(LINE_WIDTH_80MM) + '\n');
     });
+
+    if (order.notes) {
+        write(`Catatan Order: ${order.notes}\n`);
+        write('-'.repeat(LINE_WIDTH_80MM) + '\n');
+    }
 
     // 6. Total & Pembayaran (Rata Kanan)
     if (order.discount_amount > 0) {

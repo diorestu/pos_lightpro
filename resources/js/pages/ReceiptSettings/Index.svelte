@@ -303,97 +303,165 @@
                     }
                     .thermal-receipt-80mm {
                         display: block !important;
-                        width: 72mm !important;
-                        max-width: 72mm !important;
-                        min-width: 72mm !important;
+                        width: 68mm !important;
+                        max-width: 68mm !important;
+                        min-width: 68mm !important;
                         margin: 0 auto !important;
-                        padding: 2mm 1mm !important;
-                        font-size: 11.2px !important;
+                        padding: 2mm 3mm 4mm 2mm !important;
+                        font-size: 9.5px !important;
+                        line-height: 1.25 !important;
                         color: #000000 !important;
                         border: none !important;
                         outline: none !important;
                     }
                     .thermal-receipt-80mm * {
-                        box-sizing: border-box;
+                        box-sizing: border-box !important;
+                        border-left: none !important;
+                        border-right: none !important;
                     }
-                    .receipt-logo {
-                        display: block;
-                        max-height: 54px;
-                        max-width: 180px;
-                        margin: 0 auto 6px auto;
-                        object-fit: contain;
-                        filter: grayscale(100%) contrast(160%);
-                    }
-                    .border-b {
+                    .header-store {
+                        text-align: center !important;
+                        padding-bottom: 5px !important;
                         border-bottom: 1px solid #000000 !important;
                     }
-                    .border-t {
-                        border-top: 1px solid #000000 !important;
+                    .header-store h2, .header-store h3 {
+                        font-size: 11.5px !important;
+                        font-weight: 700 !important;
+                        text-transform: uppercase !important;
+                        margin: 0 0 2px 0 !important;
+                        line-height: 1.25 !important;
                     }
-                    .border-solid {
-                        border-style: solid !important;
+                    .header-store p {
+                        font-size: 8.5px !important;
+                        color: #000000 !important;
+                        margin: 1px 0 0 0 !important;
+                        line-height: 1.2 !important;
                     }
-                    .border-dashed {
-                        border-style: dashed !important;
+                    .receipt-logo {
+                        display: block !important;
+                        max-height: 48px !important;
+                        max-width: 150px !important;
+                        margin: 0 auto 4px auto !important;
+                        object-fit: contain !important;
+                        filter: grayscale(100%) contrast(160%) !important;
                     }
-                    .border-dotted {
-                        border-style: dotted !important;
+                    .receipt-meta {
+                        padding: 5px 0 !important;
+                        border-bottom: 1px solid #000000 !important;
+                        font-size: 9px !important;
                     }
-                    .border-black {
-                        border-color: #000000 !important;
+                    .receipt-meta-grid {
+                        display: grid !important;
+                        grid-template-columns: 72px 8px 1fr !important;
+                        row-gap: 1.5px !important;
+                        line-height: 1.25 !important;
                     }
+                    .receipt-table-header {
+                        display: grid !important;
+                        grid-template-columns: 1fr 56px 24px 62px !important;
+                        padding: 5px 0 3px 0 !important;
+                        border-bottom: 1px solid #000000 !important;
+                        font-size: 9px !important;
+                        font-weight: 700 !important;
+                        line-height: 1.25 !important;
+                    }
+                    .receipt-item-row {
+                        padding: 4px 0 !important;
+                        border-bottom: 1px solid #000000 !important;
+                        font-size: 9px !important;
+                    }
+                    .receipt-item-grid {
+                        display: grid !important;
+                        grid-template-columns: 1fr 56px 24px 62px !important;
+                        align-items: start !important;
+                        line-height: 1.25 !important;
+                    }
+                    .receipt-col-product {
+                        font-weight: 700 !important;
+                        font-size: 9.5px !important;
+                        padding-right: 4px !important;
+                        word-break: break-word !important;
+                    }
+                    .receipt-col-price {
+                        text-align: right !important;
+                        white-space: nowrap !important;
+                    }
+                    .receipt-col-qty {
+                        text-align: center !important;
+                        white-space: nowrap !important;
+                    }
+                    .receipt-col-total {
+                        text-align: right !important;
+                        font-weight: 600 !important;
+                        white-space: nowrap !important;
+                        padding-right: 2px !important;
+                    }
+                    .receipt-item-bullets {
+                        margin-top: 2.5px !important;
+                        font-size: 8.5px !important;
+                        color: #000000 !important;
+                        line-height: 1.25 !important;
+                    }
+                    .receipt-item-bullets div {
+                        margin: 1px 0 !important;
+                        line-height: 1.25 !important;
+                    }
+                    .receipt-order-notes {
+                        margin-top: 4px !important;
+                        padding: 3px 0 !important;
+                        border-top: 1px dashed #000000 !important;
+                        font-size: 8.5px !important;
+                        color: #000000 !important;
+                        line-height: 1.25 !important;
+                    }
+                    .receipt-totals {
+                        padding-top: 5px !important;
+                        font-size: 9px !important;
+                    }
+                    .receipt-totals-box {
+                        margin-left: auto !important;
+                        width: 165px !important;
+                        margin-right: 2px !important;
+                    }
+                    .receipt-totals-row {
+                        display: flex !important;
+                        justify-content: space-between !important;
+                        margin-bottom: 2px !important;
+                        line-height: 1.25 !important;
+                    }
+                    .receipt-totals-row.grand-total {
+                        font-weight: 700 !important;
+                        font-size: 10.5px !important;
+                    }
+                    .receipt-status {
+                        margin-top: 7px !important;
+                        display: flex !important;
+                        align-items: baseline !important;
+                        gap: 4px !important;
+                        font-size: 9.5px !important;
+                    }
+                    .receipt-status-badge {
+                        font-weight: 700 !important;
+                        font-size: 12px !important;
+                        letter-spacing: 0.03em !important;
+                    }
+                    .receipt-footer {
+                        padding-top: 7px !important;
+                        padding-bottom: 7px !important;
+                        text-align: center !important;
+                        font-size: 8.5px !important;
+                        color: #000000 !important;
+                        white-space: pre-line !important;
+                        line-height: 1.25 !important;
+                    }
+                    .border-b { border-bottom: 1px solid #000000 !important; }
+                    .border-t { border-top: 1px solid #000000 !important; }
+                    .border-black { border-color: #000000 !important; }
                     .text-center { text-align: center; }
                     .text-right { text-align: right; }
-                    .text-left { text-align: left; }
                     .font-bold { font-weight: 700; }
-                    .font-semibold { font-weight: 600; }
-                    .font-medium { font-weight: 500; }
-                    .font-normal { font-weight: 400; }
                     .uppercase { text-transform: uppercase; }
-                    .flex { display: flex; }
-                    .justify-between { justify-content: space-between; }
-                    .justify-end { justify-content: flex-end; }
-                    .items-baseline { align-items: baseline; }
-                    .gap-1 { gap: 4px; }
-                    .grid { display: grid; }
-                    .grid-cols-\[75px_10px_1fr\] { grid-template-columns: 76px 10px 1fr !important; }
-                    .grid-cols-\[76px_10px_1fr\] { grid-template-columns: 76px 10px 1fr !important; }
-                    .grid-cols-\[82px_10px_1fr\] { grid-template-columns: 76px 10px 1fr !important; }
-                    .grid-cols-\[1fr_60px_28px_65px\] { grid-template-columns: 1fr 62px 28px 64px !important; }
-                    .grid-cols-\[1fr_62px_28px_64px\] { grid-template-columns: 1fr 62px 28px 64px !important; }
-                    .grid-cols-\[1fr_68px_30px_68px\] { grid-template-columns: 1fr 62px 28px 64px !important; }
-                    .gap-y-0\.5 { row-gap: 2px; }
-                    .space-y-0\.5 > * + * { margin-top: 2px; }
-                    .space-y-1 > * + * { margin-top: 4px; }
-                    .py-1 { padding-top: 4px; padding-bottom: 4px; }
-                    .py-1\.5 { padding-top: 6px; padding-bottom: 6px; }
-                    .py-2 { padding-top: 8px; padding-bottom: 8px; }
-                    .pb-1 { padding-bottom: 4px; }
-                    .pb-2 { padding-bottom: 8px; }
-                    .pt-1 { padding-top: 4px; }
-                    .pt-2 { padding-top: 8px; }
-                    .pt-3 { padding-top: 12px; }
-                    .pb-4 { padding-bottom: 16px; }
-                    .pb-6 { padding-bottom: 24px; }
-                    .mt-1 { margin-top: 4px; }
-                    .mt-2 { margin-top: 8px; }
-                    .mt-3 { margin-top: 12px; }
-                    .mb-1\.5 { margin-bottom: 6px; }
-                    .pl-2 { padding-left: 8px; }
-                    .pr-1 { padding-right: 4px; }
-                    .w-\[170px\] { width: 175px !important; }
-                    .w-\[175px\] { width: 175px !important; }
-                    .w-\[195px\] { width: 175px !important; }
-                    .text-\[9px\] { font-size: 9.5px !important; }
-                    .text-\[10px\] { font-size: 10.2px !important; }
-                    .text-\[11px\] { font-size: 11.2px !important; }
-                    .text-xs { font-size: 12.3px !important; }
-                    .text-sm { font-size: 14.5px !important; }
-                    .text-base { font-size: 16px !important; }
-                    .tracking-wide { letter-spacing: 0.025em; }
-                    .tracking-tight { letter-spacing: -0.025em; }
                     .whitespace-pre-line { white-space: pre-line; }
-                    .leading-tight { line-height: 1.25; }
                 </style>
             </head>
             <body>
@@ -417,41 +485,41 @@
 <AppHead title="Pengaturan Nota Percetakan" />
 
 <!-- Print-Only Test Receipt Thermal 80mm View (Matching WhatsApp Image Format) -->
-<div id="test-thermal-receipt" class="thermal-receipt-80mm text-black font-sans text-xs">
+<div id="test-thermal-receipt" class="thermal-receipt-80mm">
     <!-- Store Header (Logo & Identitas Percetakan di Bawah Logo) -->
     {#if (showLogo && activeLogoDisplay) || storeName}
-        <div class="header-store text-center pb-2 border-b border-black">
+        <div class="header-store">
             {#if showLogo && activeLogoDisplay}
-                <div class="flex justify-center mb-1.5">
+                <div class="flex justify-center mb-1">
                     <img
                         src={activeLogoDisplay}
                         alt="Logo Toko"
-                        class="receipt-logo max-h-14 max-w-[160px] object-contain filter grayscale contrast-125 mx-auto block"
+                        class="receipt-logo max-h-12 max-w-[150px] object-contain filter grayscale contrast-125 mx-auto block"
                     />
                 </div>
             {/if}
-            <h2 class="font-bold text-base tracking-tight uppercase leading-tight m-0">{storeName || 'LightPrint Percetakan'}</h2>
+            <h2>{storeName || 'LightPrint Percetakan'}</h2>
             {#if tagline}
-                <p class="text-xs text-neutral-800 leading-tight m-0">{tagline}</p>
+                <p>{tagline}</p>
             {/if}
             {#if address}
-                <p class="text-xs text-neutral-800 leading-tight m-0">{address}</p>
+                <p>{address}</p>
             {/if}
             {#if phone}
-                <p class="text-xs font-medium text-neutral-800 leading-tight m-0">Telp/WA: {phone}</p>
+                <p>Telp/WA: {phone}</p>
             {/if}
             {#if website}
-                <p class="text-[11px] text-neutral-700 leading-tight m-0">{website}</p>
+                <p>{website}</p>
             {/if}
         </div>
     {/if}
 
     <!-- Metadata Contoh (Format persis gambar WhatsApp) -->
-    <div class="py-2 text-xs border-b border-black">
-        <div class="grid grid-cols-[76px_10px_1fr] gap-y-0.5 leading-tight">
+    <div class="receipt-meta">
+        <div class="receipt-meta-grid">
             <span>Kode Order</span>
             <span>:</span>
-            <span class="font-medium">M261011207</span>
+            <span class="font-bold">M261011207</span>
 
             <span>Tanggal</span>
             <span>:</span>
@@ -470,99 +538,95 @@
             {#if showCashierName}
                 <span>Kasir Online</span>
                 <span>:</span>
-                <span class="uppercase">REVA TRI RAHMANIA</span>
+                <span>REVA TRI RAHMANIA</span>
             {/if}
         </div>
     </div>
 
     <!-- Items Table Header -->
-    <div class="pt-2">
-        <div class="grid grid-cols-[1fr_62px_28px_64px] text-xs font-bold pb-1 border-b border-black">
-            <span>Produk</span>
-            <span class="text-right">Harga</span>
-            <span class="text-center">Qty</span>
-            <span class="text-right">Total</span>
-        </div>
+    <div class="receipt-table-header">
+        <span>Produk</span>
+        <span class="text-right">Harga</span>
+        <span class="text-center">Qty</span>
+        <span class="text-right pr-[2px]">Total</span>
+    </div>
 
-        <!-- Item 1 -->
-        <div class="py-1.5 border-b border-black text-xs">
-            <div class="grid grid-cols-[1fr_62px_28px_64px] leading-tight">
-                <span class="font-bold pr-1">Indoor Stiker Vinyl Latex</span>
-                <span class="text-right">18.000</span>
-                <span class="text-center">1</span>
-                <span class="text-right font-medium">18.000</span>
-            </div>
-            <div class="mt-1 space-y-0.5 text-[11px] text-neutral-800 leading-tight">
-                <div>- Ukuran P: 90 cm x L: 30 cm</div>
-                <div>- Lebar Bahan P: 100 cm x L: 30 cm</div>
-                <div>- Potong Pas Gambar</div>
-                <div>- Nama File: Farid</div>
-                <div>- Deadline: 12-10-2026 18:00:00</div>
-            </div>
+    <!-- Item 1 -->
+    <div class="receipt-item-row">
+        <div class="receipt-item-grid">
+            <span class="receipt-col-product">Indoor Stiker Vinyl Latex</span>
+            <span class="receipt-col-price">18.000</span>
+            <span class="receipt-col-qty">1</span>
+            <span class="receipt-col-total">18.000</span>
         </div>
-
-        <!-- Item 2 -->
-        <div class="py-1.5 border-b border-black text-xs">
-            <div class="grid grid-cols-[1fr_62px_28px_64px] leading-tight">
-                <span class="font-bold pr-1">Laminasi Cold (120 mic)</span>
-                <span class="text-right">10.800</span>
-                <span class="text-center">1</span>
-                <span class="text-right font-medium">10.800</span>
-            </div>
-            <div class="mt-1 space-y-0.5 text-[11px] text-neutral-800 leading-tight">
-                <div>- Ukuran P: 90 cm x L: 30 cm</div>
-                <div>- Lebar Bahan P: 120 cm x L: 30 cm</div>
-                <div>- Laminasi Glossy</div>
-                <div>- Deadline: 12-10-2026 18:00:00</div>
-            </div>
+        <div class="receipt-item-bullets">
+            <div>- Ukuran P: 90 cm x L: 30 cm</div>
+            <div>- Lebar Bahan P: 100 cm x L: 30 cm</div>
+            <div>- Potong Pas Gambar</div>
+            <div>- Nama File: Farid</div>
+            <div>- Deadline: 12-10-2026 18:00:00</div>
         </div>
+    </div>
 
-        <!-- Item 3 -->
-        <div class="py-1.5 border-b border-black text-xs">
-            <div class="grid grid-cols-[1fr_62px_28px_64px] leading-tight">
-                <span class="font-bold pr-1">Cutting Large Format</span>
-                <span class="text-right">10.800</span>
-                <span class="text-center">1</span>
-                <span class="text-right font-medium">10.800</span>
-            </div>
-            <div class="mt-1 space-y-0.5 text-[11px] text-neutral-800 leading-tight">
-                <div>- Ukuran P: 90 cm x L: 30 cm</div>
-                <div>- Deadline: 12-10-2026 18:00:00</div>
-                <div>- CUTTING SETENGAH PUTUS</div>
-            </div>
+    <!-- Item 2 -->
+    <div class="receipt-item-row">
+        <div class="receipt-item-grid">
+            <span class="receipt-col-product">Laminasi Cold (120 mic)</span>
+            <span class="receipt-col-price">10.800</span>
+            <span class="receipt-col-qty">1</span>
+            <span class="receipt-col-total">10.800</span>
+        </div>
+        <div class="receipt-item-bullets">
+            <div>- Ukuran P: 90 cm x L: 30 cm</div>
+            <div>- Lebar Bahan P: 120 cm x L: 30 cm</div>
+            <div>- Laminasi Glossy</div>
+            <div>- Deadline: 12-10-2026 18:00:00</div>
+        </div>
+    </div>
+
+    <!-- Item 3 -->
+    <div class="receipt-item-row">
+        <div class="receipt-item-grid">
+            <span class="receipt-col-product">Cutting Large Format</span>
+            <span class="receipt-col-price">10.800</span>
+            <span class="receipt-col-qty">1</span>
+            <span class="receipt-col-total">10.800</span>
+        </div>
+        <div class="receipt-item-bullets">
+            <div>- Ukuran P: 90 cm x L: 30 cm</div>
+            <div>- Deadline: 12-10-2026 18:00:00</div>
+            <div>- CUTTING SETENGAH PUTUS</div>
         </div>
     </div>
 
     <!-- Totals Summary Section -->
-    <div class="pt-2 text-xs">
-        <div class="flex justify-end">
-            <div class="w-[175px] space-y-0.5 text-right">
-                <div class="flex justify-between font-bold text-sm">
-                    <span>Total :</span>
-                    <span>39.600</span>
-                </div>
-                <div class="flex justify-between">
-                    <span>Bayar :</span>
-                    <span>0</span>
-                </div>
+    <div class="receipt-totals">
+        <div class="receipt-totals-box">
+            <div class="receipt-totals-row receipt-totals-grand">
+                <span>Total :</span>
+                <span>39.600</span>
+            </div>
+            <div class="receipt-totals-row">
+                <span>Bayar :</span>
+                <span>0</span>
             </div>
         </div>
 
         <!-- Status LUNAS -->
-        <div class="mt-3 text-xs flex items-baseline gap-1">
-            <span class="font-normal">Keterangan : </span>
-            <span class="font-bold text-base tracking-wide">LUNAS</span>
+        <div class="receipt-status">
+            <span>Keterangan : </span>
+            <span class="receipt-status-badge">LUNAS</span>
         </div>
     </div>
 
     <!-- Footer Terms -->
     {#if footerText}
-        <div class="pt-3 text-center text-[11px] whitespace-pre-line text-neutral-700 leading-tight">
+        <div class="receipt-footer">
             {footerText}
         </div>
     {/if}
 
-    <div class="pt-3 pb-1 text-center text-[9px] font-bold">
+    <div class="pt-2 text-center text-[8.5px] font-bold">
         *** TEST PRINTING 80MM ***
     </div>
 </div>
@@ -760,42 +824,40 @@
             </CardHeader>
             <CardContent>
                 <!-- Thermal paper simulation -->
-                <div class="mx-auto bg-white text-black p-4 rounded shadow-md border border-neutral-300 text-xs {paperSize === '58mm' ? 'max-w-[270px]' : paperSize === '80mm' ? 'max-w-[340px]' : 'max-w-full'} select-none">
-                    {#if showLogo && activeLogoDisplay}
-                        <div class="text-center pb-2 mb-2 border-b border-black">
-                            <div class="flex justify-center">
-                                <img
-                                    src={activeLogoDisplay}
-                                    alt="Logo Toko"
-                                    class="max-h-12 max-w-[150px] object-contain filter grayscale contrast-125"
-                                />
-                            </div>
+                <div class="mx-auto bg-white text-black p-3 rounded shadow-md border border-neutral-300 thermal-receipt-80mm {paperSize === '58mm' ? 'max-w-[260px]' : 'max-w-[310px]'} select-none">
+                    {#if (showLogo && activeLogoDisplay) || storeName}
+                        <div class="header-store">
+                            {#if showLogo && activeLogoDisplay}
+                                <div class="flex justify-center mb-1">
+                                    <img
+                                        src={activeLogoDisplay}
+                                        alt="Logo Toko"
+                                        class="receipt-logo max-h-12 max-w-[150px] object-contain filter grayscale contrast-125 mx-auto block"
+                                    />
+                                </div>
+                            {/if}
+                            <h2>{storeName || 'Nama Toko'}</h2>
+                            {#if tagline}
+                                <p>{tagline}</p>
+                            {/if}
+                            {#if address}
+                                <p>{address}</p>
+                            {/if}
+                            {#if phone}
+                                <p>Telp/WA: {phone}</p>
+                            {/if}
+                            {#if website}
+                                <p>{website}</p>
+                            {/if}
                         </div>
                     {/if}
 
-                    <!-- Store Header (Nama Toko & Identitas di Bawah Logo) -->
-                    <div class="header-store text-center pb-2 border-b border-black">
-                        <h3 class="font-bold text-base uppercase tracking-tight leading-tight m-0">{storeName || 'Nama Toko'}</h3>
-                        {#if tagline}
-                            <p class="text-xs text-neutral-600 leading-tight m-0 mt-0.5">{tagline}</p>
-                        {/if}
-                        {#if address}
-                            <p class="text-xs text-neutral-600 leading-tight m-0 mt-0.5">{address}</p>
-                        {/if}
-                        {#if phone}
-                            <p class="text-xs text-neutral-600 leading-tight m-0 mt-0.5">Telp/WA: {phone}</p>
-                        {/if}
-                        {#if website}
-                            <p class="text-[11px] text-neutral-600 leading-tight m-0 mt-0.5">{website}</p>
-                        {/if}
-                    </div>
-
                     <!-- Metadata Contoh -->
-                    <div class="py-2 text-xs border-b border-black">
-                        <div class="grid grid-cols-[76px_10px_1fr] gap-y-0.5 leading-tight">
+                    <div class="receipt-meta">
+                        <div class="receipt-meta-grid">
                             <span>Kode Order</span>
                             <span>:</span>
-                            <span class="font-medium">M261011207</span>
+                            <span class="font-bold">M261011207</span>
 
                             <span>Tanggal</span>
                             <span>:</span>
@@ -814,79 +876,75 @@
                             {#if showCashierName}
                                 <span>Kasir Online</span>
                                 <span>:</span>
-                                <span class="uppercase">REVA TRI RAHMANIA</span>
+                                <span>REVA TRI RAHMANIA</span>
                             {/if}
                         </div>
                     </div>
 
                     <!-- Items Table Header -->
-                    <div class="pt-2">
-                        <div class="grid grid-cols-[1fr_62px_28px_64px] text-xs font-bold pb-1 border-b border-black">
-                            <span>Produk</span>
-                            <span class="text-right">Harga</span>
-                            <span class="text-center">Qty</span>
-                            <span class="text-right">Total</span>
-                        </div>
+                    <div class="receipt-table-header">
+                        <span>Produk</span>
+                        <span class="text-right">Harga</span>
+                        <span class="text-center">Qty</span>
+                        <span class="text-right pr-[2px]">Total</span>
+                    </div>
 
-                        <!-- Item 1 -->
-                        <div class="py-1.5 border-b border-black text-xs">
-                            <div class="grid grid-cols-[1fr_62px_28px_64px] leading-tight">
-                                <span class="font-bold pr-1">Indoor Stiker Vinyl Latex</span>
-                                <span class="text-right">18.000</span>
-                                <span class="text-center">1</span>
-                                <span class="text-right font-medium">18.000</span>
-                            </div>
-                            <div class="mt-1 space-y-0.5 text-[11px] text-neutral-700 leading-tight">
-                                <div>- Ukuran P: 90 cm x L: 30 cm</div>
-                                <div>- Lebar Bahan P: 100 cm x L: 30 cm</div>
-                                <div>- Potong Pas Gambar</div>
-                                <div>- Nama File: Farid</div>
-                                <div>- Deadline: 12-10-2026 18:00:00</div>
-                            </div>
+                    <!-- Item 1 -->
+                    <div class="receipt-item-row">
+                        <div class="receipt-item-grid">
+                            <span class="receipt-col-product">Indoor Stiker Vinyl Latex</span>
+                            <span class="receipt-col-price">18.000</span>
+                            <span class="receipt-col-qty">1</span>
+                            <span class="receipt-col-total">18.000</span>
                         </div>
+                        <div class="receipt-item-bullets">
+                            <div>- Ukuran P: 90 cm x L: 30 cm</div>
+                            <div>- Lebar Bahan P: 100 cm x L: 30 cm</div>
+                            <div>- Potong Pas Gambar</div>
+                            <div>- Nama File: Farid</div>
+                            <div>- Deadline: 12-10-2026 18:00:00</div>
+                        </div>
+                    </div>
 
-                        <!-- Item 2 -->
-                        <div class="py-1.5 border-b border-black text-xs">
-                            <div class="grid grid-cols-[1fr_62px_28px_64px] leading-tight">
-                                <span class="font-bold pr-1">Laminasi Cold (120 mic)</span>
-                                <span class="text-right">10.800</span>
-                                <span class="text-center">1</span>
-                                <span class="text-right font-medium">10.800</span>
-                            </div>
-                            <div class="mt-1 space-y-0.5 text-[11px] text-neutral-700 leading-tight">
-                                <div>- Ukuran P: 90 cm x L: 30 cm</div>
-                                <div>- Lebar Bahan P: 120 cm x L: 30 cm</div>
-                                <div>- Laminasi Glossy</div>
-                                <div>- Deadline: 12-10-2026 18:00:00</div>
-                            </div>
+                    <!-- Item 2 -->
+                    <div class="receipt-item-row">
+                        <div class="receipt-item-grid">
+                            <span class="receipt-col-product">Laminasi Cold (120 mic)</span>
+                            <span class="receipt-col-price">10.800</span>
+                            <span class="receipt-col-qty">1</span>
+                            <span class="receipt-col-total">10.800</span>
+                        </div>
+                        <div class="receipt-item-bullets">
+                            <div>- Ukuran P: 90 cm x L: 30 cm</div>
+                            <div>- Lebar Bahan P: 120 cm x L: 30 cm</div>
+                            <div>- Laminasi Glossy</div>
+                            <div>- Deadline: 12-10-2026 18:00:00</div>
                         </div>
                     </div>
 
                     <!-- Totals -->
-                    <div class="pt-2 text-xs">
-                        <div class="flex justify-end">
-                            <div class="w-[175px] space-y-0.5 text-right">
-                                <div class="flex justify-between font-bold text-sm">
-                                    <span>Total :</span>
-                                    <span>28.800</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span>Bayar :</span>
-                                    <span>0</span>
-                                </div>
+                    <div class="receipt-totals">
+                        <div class="receipt-totals-box">
+                            <div class="receipt-totals-row receipt-totals-grand">
+                                <span>Total :</span>
+                                <span>28.800</span>
+                            </div>
+                            <div class="receipt-totals-row">
+                                <span>Bayar :</span>
+                                <span>0</span>
                             </div>
                         </div>
 
                         <!-- Status LUNAS -->
-                        <div class="mt-3 text-xs flex items-baseline gap-1">
-                            <span class="font-normal">Keterangan : </span>
-                            <span class="font-bold text-base tracking-wide">LUNAS</span>
+                        <div class="receipt-status">
+                            <span>Keterangan : </span>
+                            <span class="receipt-status-badge">LUNAS</span>
                         </div>
                     </div>
 
                     <!-- Footer note -->
                     {#if footerText}
-                        <div class="pt-3 text-center text-[11px] whitespace-pre-line text-neutral-600 leading-tight">
+                        <div class="receipt-footer">
                             {footerText}
                         </div>
                     {/if}
