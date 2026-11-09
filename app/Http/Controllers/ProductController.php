@@ -17,7 +17,7 @@ class ProductController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Product::with(['category', 'rawMaterial']);
+        $query = Product::with(['category', 'rawMaterial', 'priceTiers']);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -67,9 +67,34 @@ class ProductController extends Controller
             'is_stock_managed' => 'boolean',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'price_tiers' => 'nullable|array',
+            'price_tiers.*.min_quantity' => 'required|numeric|min:0.01',
+            'price_tiers.*.max_quantity' => 'nullable|numeric|gte:price_tiers.*.min_quantity',
+            'price_tiers.*.price' => 'required|numeric|min:0',
+        ], [
+            'price_tiers.*.min_quantity.required' => 'Nilai minimal quantity grosir wajib diisi.',
+            'price_tiers.*.min_quantity.min' => 'Nilai minimal quantity grosir minimal 0.01.',
+            'price_tiers.*.max_quantity.gte' => 'Nilai maksimal quantity harus lebih besar atau sama dengan nilai minimal.',
+            'price_tiers.*.price.required' => 'Harga grosir satuan wajib diisi.',
+            'price_tiers.*.price.min' => 'Harga grosir satuan tidak boleh kurang dari 0.',
         ]);
 
-        Product::create($validated);
+        DB::transaction(function () use ($validated) {
+            $productData = collect($validated)->except('price_tiers')->toArray();
+            $product = Product::create($productData);
+
+            if (! empty($validated['price_tiers'])) {
+                foreach ($validated['price_tiers'] as $tier) {
+                    if (isset($tier['min_quantity']) && isset($tier['price'])) {
+                        $product->priceTiers()->create([
+                            'min_quantity' => $tier['min_quantity'],
+                            'max_quantity' => ! empty($tier['max_quantity']) ? $tier['max_quantity'] : null,
+                            'price' => $tier['price'],
+                        ]);
+                    }
+                }
+            }
+        });
 
         return back()->with('success', "Produk {$validated['name']} berhasil ditambahkan!");
     }
@@ -90,9 +115,36 @@ class ProductController extends Controller
             'is_stock_managed' => 'boolean',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
+            'price_tiers' => 'nullable|array',
+            'price_tiers.*.min_quantity' => 'required|numeric|min:0.01',
+            'price_tiers.*.max_quantity' => 'nullable|numeric|gte:price_tiers.*.min_quantity',
+            'price_tiers.*.price' => 'required|numeric|min:0',
+        ], [
+            'price_tiers.*.min_quantity.required' => 'Nilai minimal quantity grosir wajib diisi.',
+            'price_tiers.*.min_quantity.min' => 'Nilai minimal quantity grosir minimal 0.01.',
+            'price_tiers.*.max_quantity.gte' => 'Nilai maksimal quantity harus lebih besar atau sama dengan nilai minimal.',
+            'price_tiers.*.price.required' => 'Harga grosir satuan wajib diisi.',
+            'price_tiers.*.price.min' => 'Harga grosir satuan tidak boleh kurang dari 0.',
         ]);
 
-        $product->update($validated);
+        DB::transaction(function () use ($validated, $product) {
+            $productData = collect($validated)->except('price_tiers')->toArray();
+            $product->update($productData);
+
+            $product->priceTiers()->delete();
+
+            if (! empty($validated['price_tiers'])) {
+                foreach ($validated['price_tiers'] as $tier) {
+                    if (isset($tier['min_quantity']) && isset($tier['price'])) {
+                        $product->priceTiers()->create([
+                            'min_quantity' => $tier['min_quantity'],
+                            'max_quantity' => ! empty($tier['max_quantity']) ? $tier['max_quantity'] : null,
+                            'price' => $tier['price'],
+                        ]);
+                    }
+                }
+            }
+        });
 
         return back()->with('success', "Produk {$product->name} berhasil diperbarui!");
     }

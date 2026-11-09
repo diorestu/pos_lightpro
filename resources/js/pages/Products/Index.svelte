@@ -34,6 +34,14 @@
     import { DataTable, type ColumnDef, TableCell, TableRow } from '@/components/ui/table';
     import { Textarea } from '@/components/ui/textarea';
 
+    interface PriceTier {
+        id?: number;
+        product_id?: number;
+        min_quantity: number;
+        max_quantity: number | null;
+        price: number;
+    }
+
     interface ProductItem {
         id: number;
         category_id: number;
@@ -51,6 +59,7 @@
         description: string | null;
         category?: { id: number; name: string };
         raw_material?: { id: number; name: string };
+        price_tiers?: PriceTier[];
     }
 
     let {
@@ -114,6 +123,27 @@
     let formStock = $state('0');
     let formIsStockManaged = $state(false);
     let formDescription = $state('');
+    let formPriceTiers = $state<Array<{ min_quantity: string; max_quantity: string; price: string }>>([]);
+
+    function addPriceTier() {
+        let nextMin = '10';
+        if (formPriceTiers.length > 0) {
+            const last = formPriceTiers[formPriceTiers.length - 1];
+            if (last.max_quantity && Number(last.max_quantity) > 0) {
+                nextMin = String(Number(last.max_quantity) + 1);
+            } else if (last.min_quantity && Number(last.min_quantity) > 0) {
+                nextMin = String(Number(last.min_quantity) + 10);
+            }
+        }
+        formPriceTiers = [
+            ...formPriceTiers,
+            { min_quantity: nextMin, max_quantity: '', price: '' },
+        ];
+    }
+
+    function removePriceTier(index: number) {
+        formPriceTiers = formPriceTiers.filter((_, i) => i !== index);
+    }
 
     function applyFilter(newSearch?: string) {
         if (newSearch !== undefined) {
@@ -153,6 +183,7 @@
         formStock = '0';
         formIsStockManaged = false;
         formDescription = '';
+        formPriceTiers = [];
         showModal = true;
     }
 
@@ -170,10 +201,23 @@
         formStock = formatStockInput(p.stock);
         formIsStockManaged = p.is_stock_managed;
         formDescription = p.description || '';
+        formPriceTiers = (p.price_tiers || []).map((t) => ({
+            min_quantity: String(t.min_quantity),
+            max_quantity: t.max_quantity != null ? String(t.max_quantity) : '',
+            price: String(t.price),
+        }));
         showModal = true;
     }
 
     function saveProduct() {
+        const cleanTiers = formPriceTiers
+            .filter((t) => t.min_quantity !== '' && t.price !== '')
+            .map((t) => ({
+                min_quantity: parseFloat(t.min_quantity),
+                max_quantity: t.max_quantity !== '' && !isNaN(parseFloat(t.max_quantity)) ? parseFloat(t.max_quantity) : null,
+                price: parseFloat(t.price),
+            }));
+
         const payload = {
             category_id: formCategoryId,
             raw_material_id: formRawMaterialId || null,
@@ -188,6 +232,7 @@
             is_stock_managed: formIsStockManaged,
             description: formDescription,
             is_active: true,
+            price_tiers: cleanTiers,
         };
 
         if (editingProduct) {
@@ -317,9 +362,18 @@
                     </TableCell>
                 {/if}
                 {#if isVisible('base_price')}
-                    <TableCell class="text-xs text-right font-bold text-primary">
-                        {formatRupiah(p.base_price)}
-                        <span class="text-[10px] text-muted-foreground font-normal">/{p.unit}</span>
+                    <TableCell class="text-xs text-right">
+                        <div class="font-bold text-primary">
+                            {formatRupiah(p.base_price)}
+                            <span class="text-[10px] text-muted-foreground font-normal">/{p.unit}</span>
+                        </div>
+                        {#if p.price_tiers && p.price_tiers.length > 0}
+                            <div class="flex justify-end gap-1 mt-0.5" title="Tersedia harga grosir berjenjang">
+                                <Badge variant="outline" class="text-[9px] px-1.5 py-0 bg-emerald-50 text-emerald-700 border-emerald-300 font-semibold">
+                                    Grosir ({p.price_tiers.length} Level)
+                                </Badge>
+                            </div>
+                        {/if}
                     </TableCell>
                 {/if}
                 {#if isVisible('cost_price')}
@@ -346,14 +400,14 @@
 
 <!-- Modal: Tambah / Edit Produk -->
 <Dialog open={showModal} onOpenChange={(open) => (showModal = open)}>
-    <DialogContent class="sm:max-w-lg">
+    <DialogContent class="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
                 <Package class="size-5 text-primary" />
                 {editingProduct ? 'Edit Produk Cetak' : 'Tambah Produk Cetak'}
             </DialogTitle>
             <DialogDescription class="text-xs">
-                Konfigurasi harga per meter (m²) atau fixed per pcs, serta hubungkan bahan baku terkait.
+                Konfigurasi harga per meter (m²) atau fixed per pcs, harga grosir bertingkat, serta hubungkan bahan baku terkait.
             </DialogDescription>
         </DialogHeader>
 
@@ -424,6 +478,96 @@
                     <Label for="p_min">Min. Hitung Order</Label>
                     <Input id="p_min" type="number" step="0.1" bind:value={formMinOrder} />
                 </div>
+            </div>
+
+            <!-- Harga Grosir / Berjenjang (Tiered Quantity Pricing) -->
+            <div class="rounded-lg border bg-muted/20 p-3 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <Label class="font-bold text-xs flex items-center gap-1.5 text-foreground">
+                            <span>Harga Grosir / Berjenjang (Berdasarkan Qty)</span>
+                            {#if formPriceTiers.length > 0}
+                                <Badge variant="secondary" class="text-[10px] px-1.5 py-0 bg-primary/10 text-primary">
+                                    {formPriceTiers.length} Level
+                                </Badge>
+                            {/if}
+                        </Label>
+                        <p class="text-[11px] text-muted-foreground mt-0.5">
+                            Sistem kasir otomatis mendeteksi dan mengubah harga satuan ketika kuantitas belanja mencapai rentang ini.
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        class="h-7 text-xs font-semibold px-2.5 border-primary/30 text-primary hover:bg-primary/10"
+                        onclick={addPriceTier}
+                    >
+                        <Plus class="size-3 mr-1" />
+                        Tambah Rentang
+                    </Button>
+                </div>
+
+                {#if formPriceTiers.length === 0}
+                    <div class="py-2.5 px-3 text-center text-[11px] text-muted-foreground bg-background rounded border border-dashed">
+                        Belum ada harga grosir untuk produk ini. Klik <strong class="text-foreground">+ Tambah Rentang</strong> untuk menetapkan harga berjenjang (contoh: 10 - 50 pcs, &gt; 50 pcs).
+                    </div>
+                {:else}
+                    <div class="space-y-1.5">
+                        <div class="grid grid-cols-[1fr_1fr_1.3fr_32px] gap-2 text-[10px] font-semibold text-muted-foreground px-1">
+                            <span>Min. Qty *</span>
+                            <span>Max. Qty (opsional)</span>
+                            <span>Harga Satuan (Rp) *</span>
+                            <span></span>
+                        </div>
+                        {#each formPriceTiers as tier, idx}
+                            <div class="grid grid-cols-[1fr_1fr_1.3fr_32px] gap-2 items-center bg-background p-1.5 rounded border">
+                                <div>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        placeholder="Min (cth: 10)"
+                                        bind:value={tier.min_quantity}
+                                        class="h-7 text-xs"
+                                    />
+                                </div>
+                                <div>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        placeholder="Max (cth: 50)"
+                                        bind:value={tier.max_quantity}
+                                        class="h-7 text-xs"
+                                        title="Kosongkan jika berlaku tanpa batas maksimal (misal: kuantitas 50 ke atas)"
+                                    />
+                                </div>
+                                <div>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        placeholder="Harga khusus (Rp)"
+                                        bind:value={tier.price}
+                                        class="h-7 text-xs font-bold text-primary"
+                                    />
+                                </div>
+                                <div class="flex justify-center">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        class="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                        onclick={() => removePriceTier(idx)}
+                                        title="Hapus rentang grosir"
+                                    >
+                                        <Trash2 class="size-3.5" />
+                                    </Button>
+                                </div>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
             </div>
 
             <div class="space-y-1">

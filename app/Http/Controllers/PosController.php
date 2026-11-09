@@ -33,7 +33,7 @@ class PosController extends Controller
 
         $categories = Category::withCount('products')->get();
 
-        $products = Product::with(['category', 'rawMaterial'])
+        $products = Product::with(['category', 'rawMaterial', 'priceTiers'])
             ->where('is_active', true)
             ->orderBy('name')
             ->get();

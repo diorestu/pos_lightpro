@@ -67,6 +67,15 @@
         is_stock_managed: boolean;
         category?: { id: number; name: string; color?: string | null };
         raw_material?: { id: number; name: string; stock: number; unit: string };
+        price_tiers?: PriceTier[];
+    }
+
+    interface PriceTier {
+        id?: number;
+        product_id?: number;
+        min_quantity: number;
+        max_quantity: number | null;
+        price: number;
     }
 
     interface CustomerItem {
@@ -92,6 +101,8 @@
         pricing_type: 'fixed' | 'dimension_sqm';
         unit: string;
         base_price: number;
+        original_base_price: number;
+        is_wholesale: boolean;
         cost_price: number;
         length: number; // in meters
         width: number;  // in meters
@@ -383,6 +394,34 @@
         paymentTerms = newTerms;
     }
 
+    function getEffectiveUnitPrice(product: ProductItem | undefined, quantity: number): { price: number; isWholesale: boolean } {
+        if (!product) return { price: 0, isWholesale: false };
+
+        const basePrice = Number(product.base_price) || 0;
+        const tiers = product.price_tiers || [];
+        const qty = Number(quantity) || 1;
+
+        if (tiers.length === 0) {
+            return { price: basePrice, isWholesale: false };
+        }
+
+        const matchedTiers = tiers.filter((t) => {
+            const min = Number(t.min_quantity);
+            const max = t.max_quantity != null ? Number(t.max_quantity) : null;
+            const minMatches = qty >= min;
+            const maxMatches = max == null || qty <= max;
+            return minMatches && maxMatches;
+        });
+
+        if (matchedTiers.length > 0) {
+            matchedTiers.sort((a, b) => Number(b.min_quantity) - Number(a.min_quantity));
+            const matchedPrice = Number(matchedTiers[0].price);
+            return { price: matchedPrice, isWholesale: true };
+        }
+
+        return { price: basePrice, isWholesale: false };
+    }
+
     // Add product to cart
     function addToCart(product: ProductItem) {
         if (!activeShift) {
@@ -394,7 +433,9 @@
         const length = isDimension ? 1 : 1;
         const width = isDimension ? 1 : 1;
         const area = isDimension ? Math.max(product.min_order || 1, length * width) : 1;
-        const unitPrice = Number(product.base_price);
+
+        const effective = getEffectiveUnitPrice(product, 1);
+        const unitPrice = effective.price;
 
         const defaultFinishing = isDimension
             ? (finishings.find((f) => f.name.toLowerCase().includes('mata ayam 4')) || finishings.find((f) => f.name.toLowerCase().includes('tanpa finishing')) || finishings[0])
@@ -411,6 +452,8 @@
             pricing_type: product.pricing_type,
             unit: product.unit,
             base_price: unitPrice,
+            original_base_price: Number(product.base_price) || 0,
+            is_wholesale: effective.isWholesale,
             cost_price: Number(product.cost_price || 0),
             length: length,
             width: width,
@@ -425,16 +468,25 @@
         cart = [...cart, newItem];
     }
 
-    // Recalculate item subtotal
+    // Recalculate item subtotal and automatically check tiered/wholesale pricing
     function updateItemCalculation(item: CartItem) {
+        const qty = Number(item.quantity) || 1;
+        const product = products.find((p) => p.id === item.product_id);
+
+        if (product) {
+            const effective = getEffectiveUnitPrice(product, qty);
+            item.base_price = effective.price;
+            item.is_wholesale = effective.isWholesale;
+        }
+
         if (item.pricing_type === 'dimension_sqm') {
             const rawArea = (Number(item.length) || 0) * (Number(item.width) || 0);
             item.area = Math.round(rawArea * 100) / 100;
             // Area calculated with min order 1 if applicable
             const billedArea = Math.max(1, item.area);
-            item.subtotal = Math.round((billedArea * item.base_price + (Number(item.finishing_price) || 0)) * (Number(item.quantity) || 1));
+            item.subtotal = Math.round((billedArea * item.base_price + (Number(item.finishing_price) || 0)) * qty);
         } else {
-            item.subtotal = Math.round((item.base_price + (Number(item.finishing_price) || 0)) * (Number(item.quantity) || 1));
+            item.subtotal = Math.round((item.base_price + (Number(item.finishing_price) || 0)) * qty);
         }
         cart = [...cart];
     }
@@ -713,8 +765,13 @@
                                         <div class="text-xs font-bold text-foreground">
                                             {formatRupiah(p.base_price)}
                                         </div>
-                                        <div class="text-[10px] text-muted-foreground">
-                                            /{p.unit}
+                                        <div class="text-[10px] text-muted-foreground flex items-center gap-1">
+                                            <span>/{p.unit}</span>
+                                            {#if p.price_tiers && p.price_tiers.length > 0}
+                                                <span class="inline-block text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">
+                                                    Grosir
+                                                </span>
+                                            {/if}
                                         </div>
                                     </div>
                                     <div
@@ -770,9 +827,26 @@
                         <div class="p-3 rounded-lg border bg-background/80 shadow-2xs space-y-2">
                             <!-- Top Row: Item Title & Quantity + Delete button -->
                             <div class="flex items-center justify-between gap-2">
-                                <span class="font-semibold text-xs text-foreground truncate flex-1" title={item.product_name}>
-                                    {item.product_name}
-                                </span>
+                                <div class="flex-1 min-w-0">
+                                    <span class="font-semibold text-xs text-foreground truncate block" title={item.product_name}>
+                                        {item.product_name}
+                                    </span>
+                                    <div class="flex items-center gap-1.5 mt-0.5">
+                                        <span class="text-[11px] {item.is_wholesale ? 'font-bold text-emerald-600' : 'text-muted-foreground'}">
+                                            {formatRupiah(item.base_price)}/{item.unit}
+                                        </span>
+                                        {#if item.is_wholesale}
+                                            {#if item.original_base_price && item.original_base_price > item.base_price}
+                                                <span class="text-[10px] text-muted-foreground line-through">
+                                                    {formatRupiah(item.original_base_price)}
+                                                </span>
+                                            {/if}
+                                            <span class="inline-flex items-center px-1 py-0.2 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                                Grosir Aktif
+                                            </span>
+                                        {/if}
+                                    </div>
+                                </div>
 
                                 <!-- Input quantity di sebelah tombol delete item -->
                                 <div class="flex items-center gap-1.5 shrink-0">

@@ -53,4 +53,25 @@ class Product extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    public function priceTiers(): HasMany
+    {
+        return $this->hasMany(ProductPriceTier::class)->orderBy('min_quantity');
+    }
+
+    public function getPriceForQuantity(float $quantity): float
+    {
+        $tiers = $this->relationLoaded('priceTiers') ? $this->priceTiers : $this->priceTiers()->get();
+
+        $matchedTier = $tiers
+            ->filter(function ($tier) use ($quantity) {
+                $minMatches = $quantity >= (float) $tier->min_quantity;
+                $maxMatches = is_null($tier->max_quantity) || $quantity <= (float) $tier->max_quantity;
+                return $minMatches && $maxMatches;
+            })
+            ->sortByDesc('min_quantity')
+            ->first();
+
+        return $matchedTier ? (float) $matchedTier->price : (float) $this->base_price;
+    }
 }
