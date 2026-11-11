@@ -336,47 +336,56 @@
         </div>
     {/snippet}
 
-    <!-- Head Table Card: Filter Pencarian (Kiri) & Filter Kolom, Pagination, View Record Per Page (Kanan) -->
-    <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-card p-3 rounded-t-lg border border-b-0 shadow-2xs">
-        <!-- Sisi Kiri: Filter Pencarian & Filter Kustom Halaman -->
-        <div class="flex flex-1 flex-wrap items-center gap-2.5">
-            {#if searchable}
-                <div class="relative w-full sm:w-64 md:w-72">
-                    <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-                    <Input
-                        type="text"
-                        value={searchValue}
-                        oninput={handleSearchInput}
-                        placeholder={searchPlaceholder}
-                        class="h-9 pl-8 pr-8 text-xs sm:text-sm bg-background rounded-xl"
-                    />
-                    {#if searchValue}
-                        <button
-                            type="button"
-                            onclick={clearSearch}
-                            class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
-                            title="Hapus pencarian"
-                        >
-                            <X class="size-3.5" />
-                        </button>
-                    {/if}
-                </div>
-            {/if}
+    <!-- Head Table Card:
+         Baris 1: Live search (kiri) dan pagination, action button, view records (kanan)
+         Baris 2: Filter data (jika filtersSnippet tersedia)
+    -->
+    <div class="flex flex-col gap-2.5 bg-card p-3 rounded-t-lg border border-b-0 shadow-2xs">
+        <!-- Baris Pertama: Live Search (Kiri) & Pagination, Action Button, View Records (Kanan) -->
+        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <!-- Sisi Kiri: Live Search -->
+            <div class="flex items-center gap-2.5">
+                {#if searchable}
+                    <div class="relative w-full sm:w-64 md:w-72">
+                        <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                        <Input
+                            type="text"
+                            value={searchValue}
+                            oninput={handleSearchInput}
+                            placeholder={searchPlaceholder}
+                            class="h-9 pl-8 pr-8 text-xs sm:text-sm bg-background rounded-xl"
+                        />
+                        {#if searchValue}
+                            <button
+                                type="button"
+                                onclick={clearSearch}
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded-sm"
+                                title="Hapus pencarian"
+                            >
+                                <X class="size-3.5" />
+                            </button>
+                        {/if}
+                    </div>
+                {/if}
+            </div>
 
-            {#if filtersSnippet}
+            <!-- Sisi Kanan: Action Button, Pagination & View Records -->
+            <div class="flex flex-wrap items-center justify-end gap-3 shrink-0">
+                {#if headerRightSnippet}
+                    {@render headerRightSnippet()}
+                {/if}
+
+                <!-- View Record Per Page & Pagination -->
+                {@render paginationControls()}
+            </div>
+        </div>
+
+        <!-- Baris Kedua: Filter Data -->
+        {#if filtersSnippet}
+            <div class="flex flex-wrap items-center gap-2.5 pt-2.5 border-t border-border/60">
                 {@render filtersSnippet()}
-            {/if}
-        </div>
-
-        <!-- Sisi Kanan: View Record Per Page & Pagination -->
-        <div class="flex flex-wrap items-center justify-end gap-3 shrink-0">
-            {#if headerRightSnippet}
-                {@render headerRightSnippet()}
-            {/if}
-
-            <!-- View Record Per Page & Pagination (Screenshot specification) -->
-            {@render paginationControls()}
-        </div>
+            </div>
+        {/if}
     </div>
 
     <!-- Table Container -->

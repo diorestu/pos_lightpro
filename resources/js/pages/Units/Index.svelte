@@ -219,6 +219,7 @@
     <DialogContent class="sm:max-w-md">
         <DialogHeader>
             <DialogTitle>
+                <Ruler class="size-5 text-primary" />
                 {editingUnit ? 'Ubah Satuan Barang' : 'Tambah Satuan Barang'}
             </DialogTitle>
             <DialogDescription>

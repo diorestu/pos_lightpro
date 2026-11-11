@@ -202,17 +202,33 @@
         emptyMessage="Tidak ada data pelanggan ditemukan."
     >
         {#snippet filtersSnippet()}
-            <select
-                bind:value={typeFilter}
-                onchange={() => applyFilter()}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-48 cursor-pointer font-medium"
-            >
-                <option value="">Semua Tipe Pelanggan</option>
-                <option value="regular">Regular (Umum)</option>
-                <option value="member">Member Setia</option>
-                <option value="reseller">Reseller Percetakan</option>
-                <option value="corporate">Corporate / Instansi</option>
-            </select>
+            <div class="flex flex-wrap items-center gap-2 text-xs w-full">
+                <select
+                    bind:value={typeFilter}
+                    onchange={() => applyFilter()}
+                    class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-48 cursor-pointer font-medium"
+                >
+                    <option value="">Semua Tipe Pelanggan</option>
+                    <option value="regular">Regular (Umum)</option>
+                    <option value="member">Member Setia</option>
+                    <option value="reseller">Reseller Percetakan</option>
+                    <option value="corporate">Corporate / Instansi</option>
+                </select>
+
+                {#if typeFilter}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        class="h-8 text-xs text-muted-foreground hover:text-foreground ml-auto"
+                        onclick={() => {
+                            typeFilter = '';
+                            applyFilter();
+                        }}
+                    >
+                        Reset Filter
+                    </Button>
+                {/if}
+            </div>
         {/snippet}
 
         {#snippet rowSnippet({ item: c, isVisible })}

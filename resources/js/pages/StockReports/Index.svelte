@@ -239,26 +239,52 @@
         emptyMessage="Tidak ada log mutasi stok sesuai filter yang dipilih."
     >
         {#snippet filtersSnippet()}
-            <select
-                bind:value={itemType}
-                onchange={() => applyFilter()}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
-            >
-                <option value="">Semua Jenis Item</option>
-                <option value="raw_material">Bahan Baku Percetakan</option>
-                <option value="product">Produk Siap Jual</option>
-            </select>
+            <div class="flex flex-wrap items-center gap-2 text-xs w-full">
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[11px] text-muted-foreground whitespace-nowrap">Tanggal:</span>
+                    <Input type="date" bind:value={dateFrom} onchange={() => applyFilter()} class="h-8 text-xs bg-background w-32" />
+                    <span class="text-muted-foreground">-</span>
+                    <Input type="date" bind:value={dateTo} onchange={() => applyFilter()} class="h-8 text-xs bg-background w-32" />
+                </div>
 
-            <select
-                bind:value={mutationType}
-                onchange={() => applyFilter()}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
-            >
-                <option value="">Semua Tipe Mutasi</option>
-                <option value="in">Stok Masuk (+)</option>
-                <option value="out">Stok Keluar (-)</option>
-                <option value="adjustment">Stock Opname (=)</option>
-            </select>
+                <select
+                    bind:value={itemType}
+                    onchange={() => applyFilter()}
+                    class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
+                >
+                    <option value="">Semua Jenis Item</option>
+                    <option value="raw_material">Bahan Baku Percetakan</option>
+                    <option value="product">Produk Siap Jual</option>
+                </select>
+
+                <select
+                    bind:value={mutationType}
+                    onchange={() => applyFilter()}
+                    class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
+                >
+                    <option value="">Semua Tipe Mutasi</option>
+                    <option value="in">Stok Masuk (+)</option>
+                    <option value="out">Stok Keluar (-)</option>
+                    <option value="adjustment">Stock Opname (=)</option>
+                </select>
+
+                {#if dateFrom || dateTo || itemType || mutationType}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        class="h-8 text-xs text-muted-foreground ml-auto"
+                        onclick={() => {
+                            dateFrom = '';
+                            dateTo = '';
+                            itemType = '';
+                            mutationType = '';
+                            applyFilter();
+                        }}
+                    >
+                        Reset Filter
+                    </Button>
+                {/if}
+            </div>
         {/snippet}
 
         {#snippet rowSnippet({ item: mut, isVisible })}

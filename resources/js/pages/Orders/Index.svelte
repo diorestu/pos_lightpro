@@ -524,66 +524,6 @@
         </div>
     </div>
 
-    <!-- Filters Bar -->
-    <Card class="border shadow-2xs">
-        <CardContent class="p-3.5 space-y-2.5">
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
-                <!-- Date From -->
-                <div class="space-y-1">
-                    <Label class="text-[11px] text-muted-foreground">Dari Tanggal</Label>
-                    <Input type="date" bind:value={dateFrom} class="h-8 text-xs bg-background" />
-                </div>
-
-                <!-- Date To -->
-                <div class="space-y-1">
-                    <Label class="text-[11px] text-muted-foreground">Sampai Tanggal</Label>
-                    <Input type="date" bind:value={dateTo} class="h-8 text-xs bg-background" />
-                </div>
-
-                <!-- Payment Method -->
-                <div class="space-y-1">
-                    <Label class="text-[11px] text-muted-foreground">Metode Bayar</Label>
-                    <select
-                        bind:value={paymentMethod}
-                        class="h-8 text-xs rounded-md border border-input bg-background px-2 pr-8 w-full cursor-pointer font-medium"
-                    >
-                        <option value="">Semua Metode</option>
-                        <option value="cash">Tunai</option>
-                        <option value="qris">QRIS</option>
-                        <option value="transfer">Transfer Bank</option>
-                        <option value="tempo">Tempo / DP</option>
-                        <option value="split">Split / Termin</option>
-                        <option value="pending">Bayar Saat Ambil</option>
-                    </select>
-                </div>
-
-                <!-- Delivery Type -->
-                <div class="space-y-1">
-                    <Label class="text-[11px] text-muted-foreground">Pengambilan</Label>
-                    <select
-                        bind:value={deliveryType}
-                        class="h-8 text-xs rounded-md border border-input bg-background px-2 pr-8 w-full cursor-pointer font-medium"
-                    >
-                        <option value="">Semua Pengambilan</option>
-                        <option value="pickup">Ambil di Toko</option>
-                        <option value="courier">Kurir / Ojol (Gojek/Grab)</option>
-                    </select>
-                </div>
-
-                <!-- Actions -->
-                <div class="flex items-end gap-2">
-                    <Button size="sm" class="h-8 text-xs flex-1" onclick={() => applyFilters()}>
-                        <Filter class="size-3 mr-1" />
-                        Terapkan Filter
-                    </Button>
-                    <Button variant="outline" size="sm" class="h-8 text-xs text-muted-foreground" onclick={resetFilters}>
-                        Reset
-                    </Button>
-                </div>
-            </div>
-        </CardContent>
-    </Card>
-
     <!-- Reusable DataTable -->
     <DataTable
         {columns}
@@ -605,28 +545,78 @@
         emptyMessage="Tidak ada riwayat transaksi penjualan ditemukan."
     >
         {#snippet filtersSnippet()}
-            <select
-                bind:value={orderStatus}
-                onchange={() => applyFilters()}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2 pr-8 w-full sm:w-36 cursor-pointer font-medium"
-            >
-                <option value="">Semua Status Cetak</option>
-                <option value="pending">Antrian (Pending)</option>
-                <option value="processing">Sedang Dicetak</option>
-                <option value="ready">Siap Diambil</option>
-                <option value="completed">Selesai</option>
-                <option value="cancelled">Dibatalkan</option>
-            </select>
-            <select
-                bind:value={paymentStatus}
-                onchange={() => applyFilters()}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2 pr-8 w-full sm:w-36 cursor-pointer font-medium"
-            >
-                <option value="">Semua Status Bayar</option>
-                <option value="paid">Lunas</option>
-                <option value="partial">DP (Parsial)</option>
-                <option value="unpaid">Belum Bayar</option>
-            </select>
+            <div class="flex flex-wrap items-center gap-2 text-xs w-full">
+                <!-- Date Range -->
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[11px] text-muted-foreground whitespace-nowrap">Tanggal:</span>
+                    <Input type="date" bind:value={dateFrom} onchange={() => applyFilters()} class="h-8 text-xs bg-background w-32" />
+                    <span class="text-muted-foreground">-</span>
+                    <Input type="date" bind:value={dateTo} onchange={() => applyFilters()} class="h-8 text-xs bg-background w-32" />
+                </div>
+
+                <!-- Status Cetak -->
+                <select
+                    bind:value={orderStatus}
+                    onchange={() => applyFilters()}
+                    class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 cursor-pointer font-medium"
+                >
+                    <option value="">Semua Status Cetak</option>
+                    <option value="pending">Antrian (Pending)</option>
+                    <option value="processing">Sedang Dicetak</option>
+                    <option value="ready">Siap Diambil</option>
+                    <option value="completed">Selesai</option>
+                    <option value="cancelled">Dibatalkan</option>
+                </select>
+
+                <!-- Status Bayar -->
+                <select
+                    bind:value={paymentStatus}
+                    onchange={() => applyFilters()}
+                    class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 cursor-pointer font-medium"
+                >
+                    <option value="">Semua Status Bayar</option>
+                    <option value="paid">Lunas</option>
+                    <option value="partial">DP (Parsial)</option>
+                    <option value="unpaid">Belum Bayar</option>
+                </select>
+
+                <!-- Metode Bayar -->
+                <select
+                    bind:value={paymentMethod}
+                    onchange={() => applyFilters()}
+                    class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 cursor-pointer font-medium"
+                >
+                    <option value="">Semua Metode Bayar</option>
+                    <option value="cash">Tunai</option>
+                    <option value="qris">QRIS</option>
+                    <option value="transfer">Transfer Bank</option>
+                    <option value="tempo">Tempo / DP</option>
+                    <option value="split">Split / Termin</option>
+                    <option value="pending">Bayar Saat Ambil</option>
+                </select>
+
+                <!-- Delivery Type -->
+                <select
+                    bind:value={deliveryType}
+                    onchange={() => applyFilters()}
+                    class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 cursor-pointer font-medium"
+                >
+                    <option value="">Semua Pengambilan</option>
+                    <option value="pickup">Ambil di Toko</option>
+                    <option value="courier">Kurir / Ojol</option>
+                </select>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-1.5 ml-auto">
+                    <Button size="sm" class="h-8 text-xs" onclick={() => applyFilters()}>
+                        <Filter class="size-3 mr-1" />
+                        Terapkan
+                    </Button>
+                    <Button variant="outline" size="sm" class="h-8 text-xs text-muted-foreground" onclick={resetFilters}>
+                        Reset
+                    </Button>
+                </div>
+            </div>
         {/snippet}
 
         {#snippet rowSnippet({ item: order, isVisible })}

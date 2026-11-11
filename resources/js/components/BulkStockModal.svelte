@@ -224,23 +224,19 @@
 <Dialog bind:open>
     <DialogContent class="max-w-5xl lg:max-w-6xl w-[96vw] max-h-[92vh] flex flex-col p-0 overflow-hidden shadow-2xl">
         <!-- Header Dialog -->
-        <DialogHeader class="px-6 sm:px-8 py-5 pb-4 border-b bg-muted/20">
+        <DialogHeader class="px-6 sm:px-8 py-4 border-b bg-muted/20">
             <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                    <div class="p-2 rounded-lg bg-primary/10 text-primary">
-                        <Boxes class="size-5" />
-                    </div>
-                    <div>
-                        <DialogTitle class="text-lg font-bold flex items-center gap-2">
-                            Kelola Stok Multi Produk
-                            <Badge variant="outline" class="text-[10px] bg-primary/5 text-primary border-primary/20">
-                                Batch Mode
-                            </Badge>
-                        </DialogTitle>
-                        <DialogDescription class="text-xs text-muted-foreground mt-0.5">
-                            Input stok masuk (restock), pengurangan pemakaian/rusak, atau opname fisik untuk banyak produk sekaligus.
-                        </DialogDescription>
-                    </div>
+                <div>
+                    <DialogTitle class="text-lg font-bold">
+                        <Boxes class="size-5 text-primary" />
+                        Kelola Stok Multi Produk
+                        <Badge variant="outline" class="text-[10px] bg-primary/5 text-primary border-primary/20 ml-1">
+                            Batch Mode
+                        </Badge>
+                    </DialogTitle>
+                    <DialogDescription class="mb-0">
+                        Input stok masuk (restock), pengurangan pemakaian/rusak, atau opname fisik untuk banyak produk sekaligus.
+                    </DialogDescription>
                 </div>
             </div>
         </DialogHeader>

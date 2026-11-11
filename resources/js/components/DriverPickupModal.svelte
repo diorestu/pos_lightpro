@@ -171,20 +171,14 @@
 <Dialog bind:open>
     <DialogContent class="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
         <!-- Header -->
-        <DialogHeader class="p-6 pb-4 border-b bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-primary/10">
-            <div class="flex items-center gap-2">
-                <div class="p-2 rounded-lg bg-emerald-600 text-white shadow-xs">
-                    <Motorbike class="size-5" />
-                </div>
-                <div>
-                    <DialogTitle class="text-base font-bold flex items-center gap-2">
-                        Pencocokan Kode Pick-up Driver (Gojek / Grab / Kurir)
-                    </DialogTitle>
-                    <DialogDescription class="text-xs text-muted-foreground mt-0.5">
-                        Cocokkan kode booking dari driver untuk verifikasi barang cetakan sebelum diserahkan.
-                    </DialogDescription>
-                </div>
-            </div>
+        <DialogHeader class="p-6 pb-3 border-b bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-primary/10">
+            <DialogTitle class="text-base font-bold">
+                <Motorbike class="size-5 text-emerald-600" />
+                Pencocokan Kode Pick-up Driver (Gojek / Grab / Kurir)
+            </DialogTitle>
+            <DialogDescription class="mb-0">
+                Cocokkan kode booking dari driver untuk verifikasi barang cetakan sebelum diserahkan.
+            </DialogDescription>
         </DialogHeader>
 
         <div class="p-6 space-y-4">

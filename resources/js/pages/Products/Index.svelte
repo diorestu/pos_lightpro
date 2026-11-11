@@ -304,25 +304,42 @@
         emptyMessage="Tidak ada produk ditemukan."
     >
         {#snippet filtersSnippet()}
-            <select
-                bind:value={categoryFilter}
-                onchange={() => applyFilter()}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
-            >
-                <option value="">Semua Kategori</option>
-                {#each categories as cat}
-                    <option value={cat.id}>{cat.name}</option>
-                {/each}
-            </select>
-            <select
-                bind:value={pricingTypeFilter}
-                onchange={() => applyFilter()}
-                class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
-            >
-                <option value="">Semua Skema Harga</option>
-                <option value="dimension_sqm">Meteran (m²)</option>
-                <option value="fixed">Fixed (Pcs/Box)</option>
-            </select>
+            <div class="flex flex-wrap items-center gap-2 text-xs w-full">
+                <select
+                    bind:value={categoryFilter}
+                    onchange={() => applyFilter()}
+                    class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
+                >
+                    <option value="">Semua Kategori</option>
+                    {#each categories as cat}
+                        <option value={cat.id}>{cat.name}</option>
+                    {/each}
+                </select>
+                <select
+                    bind:value={pricingTypeFilter}
+                    onchange={() => applyFilter()}
+                    class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
+                >
+                    <option value="">Semua Skema Harga</option>
+                    <option value="dimension_sqm">Meteran (m²)</option>
+                    <option value="fixed">Fixed (Pcs/Box)</option>
+                </select>
+
+                {#if categoryFilter || pricingTypeFilter}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        class="h-8 text-xs text-muted-foreground hover:text-foreground ml-auto"
+                        onclick={() => {
+                            categoryFilter = '';
+                            pricingTypeFilter = '';
+                            applyFilter();
+                        }}
+                    >
+                        Reset Filter
+                    </Button>
+                {/if}
+            </div>
         {/snippet}
 
         {#snippet rowSnippet({ item: p, isVisible })}
@@ -482,7 +499,7 @@
 
             <!-- Harga Grosir / Berjenjang (Tiered Quantity Pricing) -->
             <div class="rounded-lg border bg-muted/20 p-3 space-y-2.5">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between gap-2">
                     <div>
                         <Label class="font-bold text-xs flex items-center gap-1.5 text-foreground">
                             <span>Harga Grosir / Berjenjang (Berdasarkan Qty)</span>
@@ -500,17 +517,17 @@
                         type="button"
                         size="sm"
                         variant="outline"
-                        class="h-7 text-xs font-semibold px-2.5 border-primary/30 text-primary hover:bg-primary/10"
+                        class="h-7 text-xs font-semibold px-2.5 shrink-0 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800"
                         onclick={addPriceTier}
                     >
                         <Plus class="size-3 mr-1" />
-                        Tambah Rentang
+                        Tambah
                     </Button>
                 </div>
 
                 {#if formPriceTiers.length === 0}
                     <div class="py-2.5 px-3 text-center text-[11px] text-muted-foreground bg-background rounded border border-dashed">
-                        Belum ada harga grosir untuk produk ini. Klik <strong class="text-foreground">+ Tambah Rentang</strong> untuk menetapkan harga berjenjang (contoh: 10 - 50 pcs, &gt; 50 pcs).
+                        Belum ada harga grosir untuk produk ini. Klik <strong class="text-foreground">+ Tambah</strong> untuk menetapkan harga berjenjang (contoh: 10 - 50 pcs, &gt; 50 pcs).
                     </div>
                 {:else}
                     <div class="space-y-1.5">
