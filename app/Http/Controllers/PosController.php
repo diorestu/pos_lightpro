@@ -26,7 +26,7 @@ class PosController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
-        $activeShift = CashierShift::where('user_id', $user->id)
+        $activeShift = CashierShift::with('user')->where('user_id', $user->id)
             ->where('status', 'open')
             ->latest('opened_at')
             ->first();
@@ -83,7 +83,7 @@ class PosController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $user = $request->user();
-        $activeShift = CashierShift::where('user_id', $user->id)
+        $activeShift = CashierShift::with('user')->where('user_id', $user->id)
             ->where('status', 'open')
             ->latest('opened_at')
             ->first();

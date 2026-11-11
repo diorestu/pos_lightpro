@@ -43,6 +43,7 @@
     import { Label } from '@/components/ui/label';
     import { Textarea } from '@/components/ui/textarea';
     import { useSidebar } from '@/components/ui/sidebar';
+    import { toast } from 'svelte-sonner';
 
     interface CategoryItem {
         id: number;
@@ -306,6 +307,14 @@
     }
 
     let showCartReceiptPreviewModal = $state(false);
+
+    function openCartReceiptPreview() {
+        if (cart.length === 0) {
+            toast.error('Keranjang pesanan masih kosong. Tambahkan produk cetak terlebih dahulu.');
+            return;
+        }
+        showCartReceiptPreviewModal = true;
+    }
 
     function formatNumber(num: number | null | undefined): string {
         if (!num && num !== 0) return '0';
@@ -1574,8 +1583,7 @@
                         variant="outline"
                         size="sm"
                         class="h-9 px-3 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/10"
-                        onclick={() => (showCartReceiptPreviewModal = true)}
-                        disabled={cart.length === 0}
+                        onclick={openCartReceiptPreview}
                         title="Lihat preview nota thermal sebelum proses cetak/bayar"
                     >
                         <Eye class="size-4 mr-1.5" />
@@ -1827,7 +1835,7 @@
 <DriverPickupModal bind:open={showDriverPickupModal} />
 
 <!-- Modal: Preview Nota Sebelum Cetak / Bayar Kasir -->
-<Dialog open={showCartReceiptPreviewModal} onOpenChange={(open) => (showCartReceiptPreviewModal = open)}>
+<Dialog bind:open={showCartReceiptPreviewModal}>
     <DialogContent class="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
@@ -1891,7 +1899,7 @@
                         {#if receiptSettings.show_cashier_name !== false}
                             <span>Kasir Online</span>
                             <span>:</span>
-                            <span class="uppercase">{$page.props.auth?.user?.name || '-'}</span>
+                            <span class="uppercase">{(activeShift?.user?.name || (page.props as any)?.auth?.user?.name || 'Kasir').toUpperCase()}</span>
                         {/if}
 
                         {#if deliveryType === 'courier'}

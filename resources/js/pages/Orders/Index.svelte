@@ -883,7 +883,7 @@
 <DriverPickupModal bind:open={showDriverPickupModal} />
 
 <!-- Modal: Preview & Cetak Nota Thermal 80mm -->
-<Dialog open={showReceiptPreviewModal} onOpenChange={(open) => (showReceiptPreviewModal = open)}>
+<Dialog bind:open={showReceiptPreviewModal}>
     <DialogContent class="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
