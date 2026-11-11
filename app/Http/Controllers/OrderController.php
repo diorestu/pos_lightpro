@@ -23,7 +23,7 @@ class OrderController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Order::with(['user', 'customer', 'items', 'return']);
+        $query = Order::with(['user', 'customer', 'items.product', 'return', 'payments']);
 
         // Search
         if ($search = $request->input('search')) {
@@ -81,6 +81,7 @@ class OrderController extends Controller
 
         return Inertia::render('Orders/Index', [
             'orders' => $orders,
+            'receiptSettings' => ReceiptSetting::getActive(),
             'courierWaitingCount' => $courierWaitingCount,
             'filters' => $request->only(['search', 'date_from', 'date_to', 'order_status', 'payment_status', 'payment_method', 'delivery_type', 'delivery_status', 'per_page']),
         ]);

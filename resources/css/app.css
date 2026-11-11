@@ -228,7 +228,7 @@
 .thermal-receipt-80mm .header-store {
     text-align: center;
     padding-bottom: 5px;
-    border-bottom: 1px solid #000000;
+    border-bottom: 0.5px solid #000000;
 }
 
 .thermal-receipt-80mm .header-store h2,
@@ -260,7 +260,7 @@
 
 .thermal-receipt-80mm .receipt-meta {
     padding: 5px 0;
-    border-bottom: 1px solid #000000;
+    border-bottom: 0.5px solid #000000;
     font-size: 9px;
 }
 
@@ -275,7 +275,7 @@
     display: grid;
     grid-template-columns: 1fr 56px 24px 62px;
     padding: 5px 0 3px 0;
-    border-bottom: 1px solid #000000;
+    border-bottom: 0.5px solid #000000;
     font-size: 9px;
     font-weight: 700;
     line-height: 1.25;
@@ -283,7 +283,7 @@
 
 .thermal-receipt-80mm .receipt-item-row {
     padding: 4px 0;
-    border-bottom: 1px solid #000000;
+    border-bottom: 0.5px solid #000000;
     font-size: 9px;
 }
 
@@ -333,7 +333,7 @@
 .thermal-receipt-80mm .receipt-order-notes {
     margin-top: 4px;
     padding: 3px 0;
-    border-top: 1px dashed #000000;
+    border-top: 0.5px dashed #000000;
     font-size: 8.5px;
     color: #000000;
     line-height: 1.25;

@@ -107,7 +107,7 @@ function formatDim(val: number | null | undefined): string {
     if (num < 1) {
         return `${Math.round(num * 100)} cm`;
     }
-    return `${num} m`;
+    return `${num} cm`;
 }
 
 function padLine(left: string, right: string, width = LINE_WIDTH_80MM): string {
@@ -287,8 +287,8 @@ export async function buildEscPos80mm(
         write(`${settings.website}\n`);
     }
 
-    // Pembatas ganda
-    write('='.repeat(LINE_WIDTH_80MM) + '\n');
+    // Pembatas garis
+    write('-'.repeat(LINE_WIDTH_80MM) + '\n');
 
     // 4. Info Transaksi (Format sesuai gambar referensi WhatsApp)
     cmd(0x1b, 0x61, 0x00); // Align Left
@@ -424,7 +424,7 @@ export async function buildEscPos80mm(
     }
 
     // 7. Footer & Catatan
-    write('='.repeat(LINE_WIDTH_80MM) + '\n');
+    write('-'.repeat(LINE_WIDTH_80MM) + '\n');
     cmd(0x1b, 0x61, 0x01); // Center
 
     if (settings.footer_text) {

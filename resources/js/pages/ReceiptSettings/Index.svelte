@@ -322,7 +322,7 @@
                     .header-store {
                         text-align: center !important;
                         padding-bottom: 5px !important;
-                        border-bottom: 1px solid #000000 !important;
+                        border-bottom: 0.5px solid #000000 !important;
                     }
                     .header-store h2, .header-store h3 {
                         font-size: 11.5px !important;
@@ -347,7 +347,7 @@
                     }
                     .receipt-meta {
                         padding: 5px 0 !important;
-                        border-bottom: 1px solid #000000 !important;
+                        border-bottom: 0.5px solid #000000 !important;
                         font-size: 9px !important;
                     }
                     .receipt-meta-grid {
@@ -360,14 +360,14 @@
                         display: grid !important;
                         grid-template-columns: 1fr 56px 24px 62px !important;
                         padding: 5px 0 3px 0 !important;
-                        border-bottom: 1px solid #000000 !important;
+                        border-bottom: 0.5px solid #000000 !important;
                         font-size: 9px !important;
                         font-weight: 700 !important;
                         line-height: 1.25 !important;
                     }
                     .receipt-item-row {
                         padding: 4px 0 !important;
-                        border-bottom: 1px solid #000000 !important;
+                        border-bottom: 0.5px solid #000000 !important;
                         font-size: 9px !important;
                     }
                     .receipt-item-grid {
@@ -409,7 +409,7 @@
                     .receipt-order-notes {
                         margin-top: 4px !important;
                         padding: 3px 0 !important;
-                        border-top: 1px dashed #000000 !important;
+                        border-top: 0.5px dashed #000000 !important;
                         font-size: 8.5px !important;
                         color: #000000 !important;
                         line-height: 1.25 !important;
@@ -454,8 +454,8 @@
                         white-space: pre-line !important;
                         line-height: 1.25 !important;
                     }
-                    .border-b { border-bottom: 1px solid #000000 !important; }
-                    .border-t { border-top: 1px solid #000000 !important; }
+                    .border-b { border-bottom: 0.5px solid #000000 !important; }
+                    .border-t { border-top: 0.5px solid #000000 !important; }
                     .border-black { border-color: #000000 !important; }
                     .text-center { text-align: center; }
                     .text-right { text-align: right; }
