@@ -309,10 +309,6 @@
     let showCartReceiptPreviewModal = $state(false);
 
     function openCartReceiptPreview() {
-        if (cart.length === 0) {
-            toast.error('Keranjang pesanan masih kosong. Tambahkan produk cetak terlebih dahulu.');
-            return;
-        }
         showCartReceiptPreviewModal = true;
     }
 
@@ -1582,9 +1578,9 @@
                     <Button
                         variant="outline"
                         size="sm"
-                        class="h-9 px-3 text-xs font-semibold text-primary border-primary/30 hover:bg-primary/10"
+                        class="h-9 px-3 text-xs font-bold text-primary border-primary/40 bg-primary/5 hover:bg-primary/10 shadow-2xs"
                         onclick={openCartReceiptPreview}
-                        title="Lihat preview nota thermal sebelum proses cetak/bayar"
+                        title="Lihat preview nota thermal 80mm sebelum proses cetak/bayar"
                     >
                         <Eye class="size-4 mr-1.5" />
                         Preview Nota
@@ -1835,7 +1831,7 @@
 <DriverPickupModal bind:open={showDriverPickupModal} />
 
 <!-- Modal: Preview Nota Sebelum Cetak / Bayar Kasir -->
-<Dialog bind:open={showCartReceiptPreviewModal}>
+<Dialog open={showCartReceiptPreviewModal} onOpenChange={(open) => (showCartReceiptPreviewModal = open)}>
     <DialogContent class="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
             <DialogTitle class="flex items-center gap-2">
@@ -1850,9 +1846,9 @@
         <div class="my-2 bg-neutral-100 dark:bg-neutral-900 p-3 rounded-lg flex justify-center">
             <div id="cart-thermal-receipt-preview" class="thermal-receipt-80mm shadow-sm border border-neutral-200 dark:border-neutral-800 rounded-sm">
                 <!-- Store Header -->
-                {#if receiptSettings.show_logo && receiptSettings.logo_path}
+                {#if (receiptSettings.show_logo !== false && (receiptSettings.logo_url || receiptSettings.logo_path))}
                     <img
-                        src={receiptSettings.logo_path}
+                        src={receiptSettings.logo_url || receiptSettings.logo_path}
                         alt="Logo"
                         class="receipt-logo"
                     />
@@ -1920,31 +1916,41 @@
                     </div>
 
                     <!-- Items Rows -->
-                    {#each cart as item}
-                        <div class="receipt-item-row">
-                            <div class="receipt-item-grid">
-                                <span class="receipt-col-product">{item.product_name}</span>
-                                <span class="receipt-col-price">{formatNumber(item.base_price)}</span>
-                                <span class="receipt-col-qty">{formatNumber(item.quantity)}</span>
-                                <span class="receipt-col-total">{formatNumber(item.subtotal)}</span>
-                            </div>
-
-                            <div class="receipt-item-bullets">
-                                {#if item.pricing_type === 'dimension_sqm' || (Number(item.length) > 0 && Number(item.width) > 0)}
-                                    <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} m²)` : ''}</div>
-                                {/if}
-                                {#if item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing'}
-                                    <div>- {item.finishing_option}{Number(item.finishing_price) > 0 ? ` (+${formatNumber(item.finishing_price)})` : ''}</div>
-                                {/if}
-                                {#if item.design_note}
-                                    <div>- Nama File: {item.design_note}</div>
-                                {/if}
-                                {#if dueDate}
-                                    <div>- Deadline: {formatReceiptDate(dueDate, false)}</div>
-                                {/if}
+                    {#if cart.length === 0}
+                        <div class="py-5 px-3 my-2 text-center bg-neutral-50 dark:bg-neutral-800/60 rounded border border-dashed border-neutral-300 dark:border-neutral-700 text-xs text-neutral-600 dark:text-neutral-400">
+                            <ShoppingBag class="size-6 text-muted-foreground mx-auto mb-1 opacity-50" />
+                            <div class="font-bold text-foreground">Keranjang Belanja Masih Kosong</div>
+                            <div class="text-[10px] text-muted-foreground mt-0.5 leading-snug">
+                                Pilih produk cetak di menu kasir sebelah kiri untuk melihat rincian item, ukuran banner (cm), finishing, dan total harga pada nota ini.
                             </div>
                         </div>
-                    {/each}
+                    {:else}
+                        {#each cart as item}
+                            <div class="receipt-item-row">
+                                <div class="receipt-item-grid">
+                                    <span class="receipt-col-product">{item.product_name}</span>
+                                    <span class="receipt-col-price">{formatNumber(item.base_price)}</span>
+                                    <span class="receipt-col-qty">{formatNumber(item.quantity)}</span>
+                                    <span class="receipt-col-total">{formatNumber(item.subtotal)}</span>
+                                </div>
+
+                                <div class="receipt-item-bullets">
+                                    {#if item.pricing_type === 'dimension_sqm' || (Number(item.length) > 0 && Number(item.width) > 0)}
+                                        <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} m²)` : ''}</div>
+                                    {/if}
+                                    {#if item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing'}
+                                        <div>- {item.finishing_option}{Number(item.finishing_price) > 0 ? ` (+${formatNumber(item.finishing_price)})` : ''}</div>
+                                    {/if}
+                                    {#if item.design_note}
+                                        <div>- Nama File: {item.design_note}</div>
+                                    {/if}
+                                    {#if dueDate}
+                                        <div>- Deadline: {formatReceiptDate(dueDate, false)}</div>
+                                    {/if}
+                                </div>
+                            </div>
+                        {/each}
+                    {/if}
 
                     {#if orderNotes}
                         <div class="receipt-order-notes">
@@ -1988,7 +1994,9 @@
                     <div class="receipt-status">
                         <span>Keterangan : </span>
                         <span class="receipt-status-badge">
-                            {#if paymentMethod === 'pending'}
+                            {#if cart.length === 0}
+                                MENUNGGU ITEM
+                            {:else if paymentMethod === 'pending'}
                                 BAYAR SAAT AMBIL
                             {:else if paymentMethod === 'split'}
                                 {totalPaidTermsNow >= grandTotal ? 'LUNAS (TERMIN)' : 'DP (TERMIN)'}
@@ -2036,7 +2044,7 @@
                         showCartReceiptPreviewModal = false;
                         submitOrder();
                     }}
-                    disabled={isSubmitting}
+                    disabled={cart.length === 0 || isSubmitting}
                 >
                     {#if isSubmitting}
                         <LoaderCircle class="size-4 mr-1.5 animate-spin" />

@@ -84,7 +84,7 @@
 
             <Button
                 type="submit"
-                class="mt-4 w-full"
+                class="mt-4 w-full bg-[#A326A9] hover:bg-[#8e1d94] text-white font-bold shadow-md transition-all hover:shadow-lg"
                 disabled={processing}
                 data-test="login-button"
             >
