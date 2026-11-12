@@ -2030,12 +2030,12 @@
 
         <DialogFooter class="flex flex-col sm:flex-row gap-2 justify-between items-center w-full">
             <Button variant="outline" size="sm" onclick={() => (showCartReceiptPreviewModal = false)}>
-                Tutup / Edit Keranjang
+                Tutup
             </Button>
             <div class="flex items-center gap-2">
                 <Button variant="outline" size="sm" onclick={printCurrentCartReceipt}>
                     <Printer class="size-4 mr-1.5" />
-                    Cetak Preview
+                    Cetak
                 </Button>
                 <Button
                     size="sm"
@@ -2051,7 +2051,7 @@
                         Memproses...
                     {:else}
                         <Check class="size-4 mr-1.5" />
-                        Lanjut Bayar & Cetak Nota
+                        Bayar & Cetak
                     {/if}
                 </Button>
             </div>
