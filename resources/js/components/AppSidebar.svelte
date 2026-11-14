@@ -3,6 +3,7 @@
     import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
     import BarChart3 from '@lucide/svelte/icons/bar-chart-3';
     import Boxes from '@lucide/svelte/icons/boxes';
+    import Calculator from '@lucide/svelte/icons/calculator';
     import Clock from '@lucide/svelte/icons/clock';
     import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
     import Package from '@lucide/svelte/icons/package';
@@ -63,6 +64,7 @@
                       items: [
                           { title: 'Produk Percetakan', href: '/products', icon: Package },
                           { title: 'Kategori Produk', href: '/categories', icon: Tags },
+                          { title: 'Skema Perhitungan', href: '/pricing-schemes', icon: Calculator },
                           { title: 'Bahan Baku', href: '/raw-materials', icon: Boxes },
                           { title: 'Finishing Cetak', href: '/finishings', icon: Scissors },
                           { title: 'Pelanggan', href: '/customers', icon: Users },

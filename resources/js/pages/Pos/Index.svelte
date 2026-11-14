@@ -59,7 +59,7 @@
         raw_material_id?: number | null;
         name: string;
         code: string;
-        pricing_type: 'fixed' | 'dimension_sqm';
+        pricing_type?: string | null;
         unit: string;
         base_price: number;
         min_order: number;
@@ -99,7 +99,7 @@
         temp_id: string;
         product_id: number;
         product_name: string;
-        pricing_type: 'fixed' | 'dimension_sqm';
+        pricing_type?: string | null;
         unit: string;
         base_price: number;
         original_base_price: number;
@@ -701,7 +701,7 @@
             temp_id: Math.random().toString(36).substring(2, 9),
             product_id: product.id,
             product_name: product.name,
-            pricing_type: product.pricing_type,
+            pricing_type: product.pricing_type || 'none',
             unit: product.unit,
             base_price: unitPrice,
             original_base_price: Number(product.base_price) || 0,

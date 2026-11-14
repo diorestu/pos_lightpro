@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinishingController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PosController;
+use App\Http\Controllers\PricingSchemeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RawMaterialController;
 use App\Http\Controllers\ReceiptSettingController;
@@ -47,6 +48,10 @@ Route::middleware(['auth'])->group(function () {
 
     // 5. Kategori Produk
     Route::resource('categories', CategoryController::class)->except(['create', 'edit', 'show']);
+
+    // 5b. Skema Perhitungan (Pricing Schemes)
+    Route::patch('/pricing-schemes/{pricing_scheme}/toggle', [PricingSchemeController::class, 'toggle'])->name('pricing-schemes.toggle');
+    Route::resource('pricing-schemes', PricingSchemeController::class)->except(['create', 'edit', 'show']);
 
     // 6. Bahan Baku (Raw Materials)
     Route::resource('raw-materials', RawMaterialController::class)->except(['create', 'edit', 'show']);

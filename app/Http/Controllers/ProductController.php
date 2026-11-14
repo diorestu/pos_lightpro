@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\PricingScheme;
 use App\Models\Product;
 use App\Models\RawMaterial;
 use App\Models\StockMutation;
@@ -31,7 +32,15 @@ class ProductController extends Controller
         }
 
         if ($pricingType = $request->input('pricing_type')) {
-            $query->where('pricing_type', $pricingType);
+            if ($pricingType === 'none') {
+                $query->where(function ($q) {
+                    $q->whereNull('pricing_type')
+                        ->orWhere('pricing_type', '')
+                        ->orWhere('pricing_type', 'none');
+                });
+            } else {
+                $query->where('pricing_type', $pricingType);
+            }
         }
 
         $perPage = min(max($request->integer('per_page', 15), 5), 100);
@@ -39,6 +48,7 @@ class ProductController extends Controller
         $categories = Category::orderBy('name')->get();
         $rawMaterials = RawMaterial::orderBy('name')->get();
         $units = Unit::where('is_active', true)->orderBy('name')->get();
+        $pricingSchemes = PricingScheme::orderBy('name')->get();
         $allProducts = Product::orderBy('name')->get(['id', 'name', 'code', 'stock', 'unit', 'pricing_type', 'is_stock_managed']);
 
         return Inertia::render('Products/Index', [
@@ -47,6 +57,7 @@ class ProductController extends Controller
             'categories' => $categories,
             'rawMaterials' => $rawMaterials,
             'units' => $units,
+            'pricingSchemes' => $pricingSchemes,
             'filters' => $request->only(['search', 'category_id', 'pricing_type', 'per_page']),
         ]);
     }
@@ -58,7 +69,7 @@ class ProductController extends Controller
             'raw_material_id' => 'nullable|exists:raw_materials,id',
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:50|unique:products,code',
-            'pricing_type' => 'required|string|in:fixed,dimension_sqm',
+            'pricing_type' => 'nullable|string|max:50',
             'unit' => 'required|string|max:50',
             'base_price' => 'required|numeric|min:0',
             'min_order' => 'required|numeric|min:0.01',
@@ -81,6 +92,9 @@ class ProductController extends Controller
 
         DB::transaction(function () use ($validated) {
             $productData = collect($validated)->except('price_tiers')->toArray();
+            $productData['pricing_type'] = (! empty($validated['pricing_type']) && $validated['pricing_type'] !== 'none')
+                ? $validated['pricing_type']
+                : 'none';
             $product = Product::create($productData);
 
             if (! empty($validated['price_tiers'])) {
@@ -106,7 +120,7 @@ class ProductController extends Controller
             'raw_material_id' => 'nullable|exists:raw_materials,id',
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:50|unique:products,code,' . $product->id,
-            'pricing_type' => 'required|string|in:fixed,dimension_sqm',
+            'pricing_type' => 'nullable|string|max:50',
             'unit' => 'required|string|max:50',
             'base_price' => 'required|numeric|min:0',
             'min_order' => 'required|numeric|min:0.01',
@@ -129,6 +143,9 @@ class ProductController extends Controller
 
         DB::transaction(function () use ($validated, $product) {
             $productData = collect($validated)->except('price_tiers')->toArray();
+            $productData['pricing_type'] = (! empty($validated['pricing_type']) && $validated['pricing_type'] !== 'none')
+                ? $validated['pricing_type']
+                : 'none';
             $product->update($productData);
 
             $product->priceTiers()->delete();

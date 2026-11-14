@@ -42,13 +42,23 @@
         price: number;
     }
 
+    interface PricingSchemeItem {
+        id: number;
+        code: string;
+        name: string;
+        calculation_type: string;
+        default_unit: string | null;
+        is_active: boolean;
+        description: string | null;
+    }
+
     interface ProductItem {
         id: number;
         category_id: number;
         raw_material_id: number | null;
         name: string;
         code: string;
-        pricing_type: 'fixed' | 'dimension_sqm';
+        pricing_type: string | null;
         unit: string;
         base_price: number;
         min_order: number;
@@ -68,6 +78,7 @@
         categories = [],
         rawMaterials = [],
         units = [],
+        pricingSchemes = [],
         filters = {},
     }: {
         products: any;
@@ -75,6 +86,7 @@
         categories: any[];
         rawMaterials: any[];
         units?: Array<{ id: number; name: string; symbol: string }>;
+        pricingSchemes?: PricingSchemeItem[];
         filters: Record<string, string>;
     } = $props();
 
@@ -115,8 +127,9 @@
     let formRawMaterialId = $state<number | string>('');
     let formName = $state('');
     let formCode = $state('');
-    let formPricingType = $state<'fixed' | 'dimension_sqm'>('dimension_sqm');
-    let formUnit = $state('m²');
+    // By default nonaktif keduanya (tanpa skema)
+    let formPricingType = $state<string>('none');
+    let formUnit = $state('pcs');
     let formBasePrice = $state('');
     let formMinOrder = $state('1');
     let formCostPrice = $state('0');
@@ -161,6 +174,10 @@
         );
     }
 
+    let selectableSchemes = $derived(
+        pricingSchemes.filter((s) => s.is_active || s.code === formPricingType)
+    );
+
     function formatRupiah(amount: number): string {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -175,11 +192,12 @@
         formRawMaterialId = '';
         formName = '';
         formCode = 'PRD-' + Math.floor(1000 + Math.random() * 9000);
-        formPricingType = 'dimension_sqm';
-        formUnit = 'm²';
-        formBasePrice = '25000';
+        // By default nonaktif keduanya (Tanpa Skema)
+        formPricingType = 'none';
+        formUnit = 'pcs';
+        formBasePrice = '0';
         formMinOrder = '1';
-        formCostPrice = '12000';
+        formCostPrice = '0';
         formStock = '0';
         formIsStockManaged = false;
         formDescription = '';
@@ -193,7 +211,7 @@
         formRawMaterialId = p.raw_material_id || '';
         formName = p.name;
         formCode = p.code;
-        formPricingType = p.pricing_type;
+        formPricingType = p.pricing_type || 'none';
         formUnit = p.unit;
         formBasePrice = formatStockInput(p.base_price);
         formMinOrder = formatStockInput(p.min_order);
@@ -223,7 +241,7 @@
             raw_material_id: formRawMaterialId || null,
             name: formName,
             code: formCode,
-            pricing_type: formPricingType,
+            pricing_type: formPricingType || 'none',
             unit: formUnit,
             base_price: parseFloat(formBasePrice) || 0,
             min_order: parseFloat(formMinOrder) || 1,
@@ -321,8 +339,10 @@
                     class="h-8 text-xs rounded-md border border-input bg-background px-2.5 pr-8 w-full sm:w-44 cursor-pointer font-medium"
                 >
                     <option value="">Semua Skema Harga</option>
-                    <option value="dimension_sqm">Meteran (m²)</option>
-                    <option value="fixed">Fixed (Pcs/Box)</option>
+                    <option value="none">Tanpa Skema (Nonaktif)</option>
+                    {#each pricingSchemes as s}
+                        <option value={s.code}>{s.name}</option>
+                    {/each}
                 </select>
 
                 {#if categoryFilter || pricingTypeFilter}
@@ -363,12 +383,20 @@
                 {#if isVisible('pricing_type')}
                     <TableCell class="text-xs">
                         {#if p.pricing_type === 'dimension_sqm'}
+                            <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px]">
+                                Per Meter Luas (m²)
+                            </Badge>
+                        {:else if p.pricing_type === 'fixed'}
                             <Badge class="bg-blue-600 hover:bg-blue-600 text-white text-[10px]">
-                                Meteran (m²)
+                                Per Pcs ({p.unit})
+                            </Badge>
+                        {:else if p.pricing_type && p.pricing_type !== 'none'}
+                            <Badge variant="secondary" class="text-[10px]">
+                                {pricingSchemes.find((s) => s.code === p.pricing_type)?.name || p.pricing_type}
                             </Badge>
                         {:else}
-                            <Badge variant="secondary" class="text-[10px]">
-                                Fixed ({p.unit})
+                            <Badge variant="outline" class="text-[10px] text-muted-foreground border-dashed bg-muted/20">
+                                Tanpa Skema (Nonaktif)
                             </Badge>
                         {/if}
                     </TableCell>
@@ -449,24 +477,78 @@
                 <Input id="p_name" bind:value={formName} placeholder="Contoh: Banner Spanduk Flexi 280g" />
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-                <div class="space-y-1">
-                    <Label for="p_type">Skema Perhitungan Harga *</Label>
-                    <select
-                        id="p_type"
-                        bind:value={formPricingType}
-                        onchange={() => {
-                            if (formPricingType === 'dimension_sqm') formUnit = 'm²';
-                            else formUnit = 'pcs';
-                        }}
-                        class="w-full h-9 rounded-md border border-input bg-background px-3 pr-8"
-                    >
-                        <option value="dimension_sqm">Meteran (Panjang × Lebar / m²)</option>
-                        <option value="fixed">Fixed (Pcs / Box / Rim / Lembar)</option>
-                    </select>
+            <!-- Skema Perhitungan Harga (Maks 1 atau Nonaktif keduanya) -->
+            <div class="rounded-lg border p-3 bg-muted/20 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <Label class="font-bold text-xs flex items-center gap-1.5 text-foreground">
+                            <span>Skema Perhitungan Harga</span>
+                            {#if formPricingType === 'none' || !formPricingType}
+                                <Badge variant="outline" class="text-[10px] text-muted-foreground border-dashed">
+                                    Nonaktif / Tanpa Skema
+                                </Badge>
+                            {:else}
+                                <Badge class="text-[10px] bg-primary text-primary-foreground">
+                                    {pricingSchemes.find((s) => s.code === formPricingType)?.name || formPricingType}
+                                </Badge>
+                            {/if}
+                        </Label>
+                        <p class="text-[11px] text-muted-foreground mt-0.5">
+                            Pilih salah satu skema perhitungan aktif, atau nonaktifkan keduanya (default: nonaktif).
+                        </p>
+                    </div>
                 </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <!-- Opsi 1: Nonaktif / Tanpa Skema (Default) -->
+                    <button
+                        type="button"
+                        class="flex flex-col text-left p-2.5 rounded-md border transition-all text-xs {formPricingType === 'none' || !formPricingType ? 'border-primary bg-primary/10 ring-1 ring-primary font-medium text-foreground' : 'border-border/80 bg-background hover:bg-muted/50 text-muted-foreground'}"
+                        onclick={() => {
+                            formPricingType = 'none';
+                            if (!formUnit || formUnit === 'm²') formUnit = 'pcs';
+                        }}
+                    >
+                        <div class="flex items-center gap-1.5 font-semibold text-foreground">
+                            <span class="inline-block size-2 rounded-full {formPricingType === 'none' || !formPricingType ? 'bg-primary' : 'bg-muted-foreground/40'}"></span>
+                            Nonaktif (Tanpa Skema)
+                        </div>
+                        <span class="text-[10px] text-muted-foreground mt-1 leading-tight">
+                            Perhitungan standar qty biasa tanpa rumus/luas (Default).
+                        </span>
+                    </button>
+
+                    <!-- Opsi Skema dari Master -->
+                    {#each selectableSchemes as scheme}
+                        <button
+                            type="button"
+                            class="flex flex-col text-left p-2.5 rounded-md border transition-all text-xs {formPricingType === scheme.code ? 'border-primary bg-primary/10 ring-1 ring-primary font-medium text-foreground' : 'border-border/80 bg-background hover:bg-muted/50 text-muted-foreground'}"
+                            onclick={() => {
+                                formPricingType = scheme.code;
+                                if (scheme.default_unit) {
+                                    formUnit = scheme.default_unit;
+                                } else if (scheme.code === 'dimension_sqm') {
+                                    formUnit = 'm²';
+                                } else if (scheme.code === 'fixed') {
+                                    formUnit = 'pcs';
+                                }
+                            }}
+                        >
+                            <div class="flex items-center gap-1.5 font-semibold text-foreground">
+                                <span class="inline-block size-2 rounded-full {formPricingType === scheme.code ? 'bg-primary' : 'bg-muted-foreground/40'}"></span>
+                                {scheme.name}
+                            </div>
+                            <span class="text-[10px] text-muted-foreground mt-1 leading-tight">
+                                {scheme.description || (scheme.code === 'dimension_sqm' ? 'Panjang × Lebar × Qty' : 'Satuan tetap per item')}
+                            </span>
+                        </button>
+                    {/each}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div class="space-y-1">
-                    <Label for="p_unit">Satuan Penjualan</Label>
+                    <Label for="p_unit">Satuan Penjualan *</Label>
                     {#if units && units.length > 0}
                         <select id="p_unit" bind:value={formUnit} class="w-full h-9 rounded-md border border-input bg-background px-3 pr-8">
                             {#each units as u}
@@ -480,9 +562,6 @@
                         <Input id="p_unit" bind:value={formUnit} placeholder="m², pcs, box, rim" />
                     {/if}
                 </div>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2">
                 <div class="space-y-1">
                     <Label for="p_base">Harga Jual (Rp) *</Label>
                     <Input id="p_base" type="number" bind:value={formBasePrice} class="font-bold" />
@@ -492,7 +571,9 @@
                     <Input id="p_cost" type="number" bind:value={formCostPrice} />
                 </div>
                 <div class="space-y-1">
-                    <Label for="p_min">Min. Hitung Order</Label>
+                    <Label for="p_min">
+                        {formPricingType === 'dimension_sqm' ? 'Min. Luas (m²)' : 'Min. Order'}
+                    </Label>
                     <Input id="p_min" type="number" step="0.1" bind:value={formMinOrder} />
                 </div>
             </div>

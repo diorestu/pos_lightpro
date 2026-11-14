@@ -49,6 +49,11 @@ class Product extends Model
         return $this->belongsTo(RawMaterial::class);
     }
 
+    public function pricingScheme(): BelongsTo
+    {
+        return $this->belongsTo(PricingScheme::class, 'pricing_type', 'code');
+    }
+
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
