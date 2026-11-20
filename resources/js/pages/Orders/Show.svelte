@@ -625,8 +625,10 @@
 
                 <!-- Bullets Detail Produk (Ukuran, Bahan, Finishing, File, Deskripsi, Deadline) -->
                 <div class="receipt-item-bullets">
-                    {#if Number(item.length) > 0 && Number(item.width) > 0}
+                    {#if item.pricing_type === 'dimension_sqm' && Number(item.length) > 0 && Number(item.width) > 0}
                         <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} m²)` : ''}</div>
+                    {:else if item.pricing_type === 'fixed'}
+                        <div>- Skema: Per Pcs ({item.unit || 'pcs'})</div>
                     {/if}
                     {#if item.product?.raw_material?.name}
                         <div>- Bahan: {item.product.raw_material.name}</div>
@@ -1500,8 +1502,10 @@
 
                         <!-- Bullets Detail Produk (Ukuran, Bahan, Finishing, File, Deskripsi, Deadline) -->
                         <div class="receipt-item-bullets">
-                            {#if Number(item.length) > 0 && Number(item.width) > 0}
+                            {#if item.pricing_type === 'dimension_sqm' && Number(item.length) > 0 && Number(item.width) > 0}
                                 <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} m²)` : ''}</div>
+                            {:else if item.pricing_type === 'fixed'}
+                                <div>- Skema: Per Pcs ({item.unit || 'pcs'})</div>
                             {/if}
                             {#if item.product?.raw_material?.name}
                                 <div>- Bahan: {item.product.raw_material.name}</div>

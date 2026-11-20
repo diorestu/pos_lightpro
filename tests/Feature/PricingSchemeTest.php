@@ -239,6 +239,79 @@ class PricingSchemeTest extends TestCase
             'pricing_type' => 'none',
             'quantity' => 5,
             'unit_price' => 3000,
+            'length' => null,
+            'width' => null,
+            'area' => null,
+        ]);
+    }
+
+    public function test_pos_transaction_with_fixed_per_pcs_pricing_type(): void
+    {
+        $product = Product::create([
+            'category_id' => $this->category->id,
+            'name' => 'Mug Keramik Custom',
+            'code' => 'MUG-001',
+            'pricing_type' => 'fixed',
+            'unit' => 'pcs',
+            'base_price' => 25000,
+            'min_order' => 1,
+            'cost_price' => 12000,
+            'stock' => 50,
+            'is_stock_managed' => true,
+            'is_active' => true,
+        ]);
+
+        CashierShift::create([
+            'user_id' => $this->kasir->id,
+            'opened_at' => now(),
+            'starting_cash' => 100000,
+            'expected_cash' => 100000,
+            'status' => 'open',
+        ]);
+
+        $payload = [
+            'customer_name' => 'Budi',
+            'customer_phone' => '08123456789',
+            'payment_method' => 'cash',
+            'paid_amount' => 50000,
+            'subtotal' => 50000,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'grand_total' => 50000,
+            'change_amount' => 0,
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'pricing_type' => 'fixed',
+                    'unit' => 'pcs',
+                    'length' => null,
+                    'width' => null,
+                    'area' => null,
+                    'quantity' => 2,
+                    'unit_price' => 25000,
+                    'cost_price' => 12000,
+                    'subtotal' => 50000,
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->kasir)->post('/pos', $payload);
+        $response->assertRedirect();
+
+        $this->assertDatabaseHas('orders', [
+            'grand_total' => 50000,
+            'paid_amount' => 50000,
+        ]);
+
+        $this->assertDatabaseHas('order_items', [
+            'product_id' => $product->id,
+            'pricing_type' => 'fixed',
+            'quantity' => 2,
+            'unit_price' => 25000,
+            'length' => null,
+            'width' => null,
+            'area' => null,
         ]);
     }
 }

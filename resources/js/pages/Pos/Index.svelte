@@ -115,10 +115,21 @@
         design_note: string;
     }
 
+    interface PricingSchemeItem {
+        id: number;
+        code: string;
+        name: string;
+        calculation_type: string;
+        default_unit: string | null;
+        is_active: boolean;
+        description: string | null;
+    }
+
     let {
         activeShift = null,
         categories = [],
         products = [],
+        pricingSchemes = [],
         customers = [],
         finishings = [],
         receiptSettings = {},
@@ -129,6 +140,7 @@
         activeShift: any;
         categories: CategoryItem[];
         products: ProductItem[];
+        pricingSchemes?: PricingSchemeItem[];
         customers: CustomerItem[];
         finishings?: FinishingItem[];
         receiptSettings: any;
@@ -681,10 +693,10 @@
         }
 
         const isDimension = product.pricing_type === 'dimension_sqm';
-        const length = isDimension ? 100 : 1;
-        const width = isDimension ? 100 : 1;
-        const rawArea = isDimension ? (length * width) / 10000 : 1;
-        const area = isDimension ? Math.round(Math.max(product.min_order || 1, rawArea) * 100) / 100 : 1;
+        const length = isDimension ? 100 : 0;
+        const width = isDimension ? 100 : 0;
+        const rawArea = isDimension ? (length * width) / 10000 : 0;
+        const area = isDimension ? Math.round(Math.max(product.min_order || 1, rawArea) * 100) / 100 : 0;
 
         const effective = getEffectiveUnitPrice(product, 1);
         const unitPrice = effective.price;
@@ -738,9 +750,38 @@
             const billedArea = Math.max(product?.min_order || 1, item.area);
             item.subtotal = Math.round((billedArea * item.base_price + (Number(item.finishing_price) || 0)) * qty);
         } else {
+            item.length = 0;
+            item.width = 0;
+            item.area = 0;
             item.subtotal = Math.round((item.base_price + (Number(item.finishing_price) || 0)) * qty);
         }
         cart = [...cart];
+    }
+
+    // Allow changing the pricing scheme directly on a cart item
+    function changeItemPricingScheme(item: CartItem, newScheme: string) {
+        item.pricing_type = newScheme;
+        const product = products.find((p) => p.id === item.product_id);
+
+        if (newScheme === 'dimension_sqm') {
+            item.unit = 'm²';
+            item.length = Number(item.length) > 0 ? Number(item.length) : 100;
+            item.width = Number(item.width) > 0 ? Number(item.width) : 100;
+            const rawArea = (item.length * item.width) / 10000;
+            item.area = Math.round(Math.max(product?.min_order || 1, rawArea) * 100) / 100;
+        } else if (newScheme === 'fixed') {
+            item.unit = (item.unit === 'm²' || !item.unit) ? (product?.unit || 'pcs') : item.unit;
+            if (item.unit === 'm²') item.unit = 'pcs';
+            item.length = 0;
+            item.width = 0;
+            item.area = 0;
+        } else {
+            item.unit = product?.unit || item.unit || 'pcs';
+            item.length = 0;
+            item.width = 0;
+            item.area = 0;
+        }
+        updateItemCalculation(item);
     }
 
     function removeItem(index: number) {
@@ -805,11 +846,11 @@
                 items: cart.map((item) => ({
                     product_id: item.product_id,
                     product_name: item.product_name,
-                    pricing_type: item.pricing_type,
+                    pricing_type: item.pricing_type || 'none',
                     unit: item.unit,
-                    length: item.length,
-                    width: item.width,
-                    area: item.area,
+                    length: item.pricing_type === 'dimension_sqm' ? item.length : null,
+                    width: item.pricing_type === 'dimension_sqm' ? item.width : null,
+                    area: item.pricing_type === 'dimension_sqm' ? item.area : null,
                     quantity: item.quantity,
                     unit_price: item.base_price,
                     finishing_option: item.finishing_option,
@@ -1017,10 +1058,19 @@
                                         <div class="text-xs font-bold text-foreground">
                                             {formatRupiah(p.base_price)}
                                         </div>
-                                        <div class="text-[10px] text-muted-foreground flex items-center gap-1">
+                                        <div class="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
                                             <span>/{p.unit}</span>
+                                            {#if p.pricing_type === 'dimension_sqm'}
+                                                <span class="inline-block text-[9px] font-semibold text-blue-700 bg-blue-50 dark:bg-blue-950 dark:text-blue-300 px-1 rounded border border-blue-200">
+                                                    Meteran
+                                                </span>
+                                            {:else if p.pricing_type === 'fixed'}
+                                                <span class="inline-block text-[9px] font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300 px-1 rounded border border-emerald-200">
+                                                    Per Pcs
+                                                </span>
+                                            {/if}
                                             {#if p.price_tiers && p.price_tiers.length > 0}
-                                                <span class="inline-block text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">
+                                                <span class="inline-block text-[9px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300 px-1 rounded border border-amber-200">
                                                     Grosir
                                                 </span>
                                             {/if}
@@ -1083,7 +1133,7 @@
                                     <span class="font-semibold text-xs text-foreground truncate block" title={item.product_name}>
                                         {item.product_name}
                                     </span>
-                                    <div class="flex items-center gap-1.5 mt-0.5">
+                                    <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
                                         <span class="text-[11px] {item.is_wholesale ? 'font-bold text-emerald-600' : 'text-muted-foreground'}">
                                             {formatRupiah(item.base_price)}/{item.unit}
                                         </span>
@@ -1097,6 +1147,18 @@
                                                 Grosir Aktif
                                             </span>
                                         {/if}
+
+                                        <!-- Skema Perhitungan Selector -->
+                                        <select
+                                            value={item.pricing_type || 'none'}
+                                            onchange={(e) => changeItemPricingScheme(item, (e.target as HTMLSelectElement).value)}
+                                            class="h-5 text-[10px] rounded border border-input bg-muted/40 px-1 py-0 font-medium cursor-pointer text-foreground focus:ring-1 focus:ring-primary"
+                                            title="Ubah skema perhitungan harga item keranjang ini"
+                                        >
+                                            <option value="none">Tanpa Skema (Standar)</option>
+                                            <option value="fixed">Per Pcs (Satuan Tetap)</option>
+                                            <option value="dimension_sqm">Per Meter Luas (m²)</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -1935,8 +1997,10 @@
                                 </div>
 
                                 <div class="receipt-item-bullets">
-                                    {#if item.pricing_type === 'dimension_sqm' || (Number(item.length) > 0 && Number(item.width) > 0)}
+                                    {#if item.pricing_type === 'dimension_sqm' && Number(item.length) > 0 && Number(item.width) > 0}
                                         <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} m²)` : ''}</div>
+                                    {:else if item.pricing_type === 'fixed'}
+                                        <div>- Skema: Per Pcs ({item.unit || 'pcs'})</div>
                                     {/if}
                                     {#if item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing'}
                                         <div>- {item.finishing_option}{Number(item.finishing_price) > 0 ? ` (+${formatNumber(item.finishing_price)})` : ''}</div>

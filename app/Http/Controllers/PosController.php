@@ -9,6 +9,7 @@ use App\Models\Finishing;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderPayment;
+use App\Models\PricingScheme;
 use App\Models\Product;
 use App\Models\RawMaterial;
 use App\Models\ReceiptSetting;
@@ -33,11 +34,12 @@ class PosController extends Controller
 
         $categories = Category::withCount('products')->get();
 
-        $products = Product::with(['category', 'rawMaterial', 'priceTiers'])
+        $products = Product::with(['category', 'rawMaterial', 'priceTiers', 'pricingScheme'])
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
+        $pricingSchemes = PricingScheme::where('is_active', true)->orderBy('id')->get();
         $customers = Customer::orderBy('name')->get();
         $finishings = Finishing::where('is_active', true)->orderBy('price')->orderBy('name')->get();
         $receiptSettings = ReceiptSetting::getActive();
@@ -71,6 +73,7 @@ class PosController extends Controller
             'activeShift' => $activeShift,
             'categories' => $categories,
             'products' => $products,
+            'pricingSchemes' => $pricingSchemes,
             'customers' => $customers,
             'finishings' => $finishings,
             'receiptSettings' => $receiptSettings,
@@ -286,7 +289,8 @@ class PosController extends Controller
                         // If it's linked to raw material (bahan baku), reduce raw material stock
                         if ($product->rawMaterial) {
                             $raw = $product->rawMaterial;
-                            $usedQty = ($product->pricing_type === 'dimension_sqm' && ! empty($itemData['area']))
+                            $isItemDimension = (($itemData['pricing_type'] ?? $product->pricing_type) === 'dimension_sqm' && ! empty($itemData['area']));
+                            $usedQty = $isItemDimension
                                 ? ((float) $itemData['area'] * (float) $itemData['quantity'])
                                 : (float) $itemData['quantity'];
 
