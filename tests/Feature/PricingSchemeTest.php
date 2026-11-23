@@ -6,6 +6,7 @@ use App\Models\CashierShift;
 use App\Models\Category;
 use App\Models\PricingScheme;
 use App\Models\Product;
+use App\Models\RawMaterial;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -313,5 +314,151 @@ class PricingSchemeTest extends TestCase
             'width' => null,
             'area' => null,
         ]);
+    }
+
+    public function test_system_schemes_include_dimension_sqcm_and_cannot_be_deleted(): void
+    {
+        $scheme = PricingScheme::where('code', 'dimension_sqcm')->first();
+        if (! $scheme) {
+            $scheme = PricingScheme::create([
+                'name' => 'Per Centimeter Luas (cm²)',
+                'code' => 'dimension_sqcm',
+                'calculation_type' => 'dimension_sqcm',
+                'default_unit' => 'cm²',
+                'is_active' => true,
+            ]);
+        }
+
+        $response = $this->actingAs($this->admin)
+            ->from('/pricing-schemes')
+            ->delete("/pricing-schemes/{$scheme->id}");
+
+        $response->assertSessionHas('error');
+        $this->assertDatabaseHas('pricing_schemes', [
+            'id' => $scheme->id,
+            'code' => 'dimension_sqcm',
+        ]);
+    }
+
+    public function test_can_create_product_with_dimension_sqcm_pricing_type(): void
+    {
+        $response = $this->actingAs($this->admin)
+            ->from('/products')
+            ->post('/products', [
+                'category_id' => $this->category->id,
+                'name' => 'Stiker Vinyl Cutting Custom',
+                'code' => 'STK-001',
+                'pricing_type' => 'dimension_sqcm',
+                'unit' => 'cm²',
+                'base_price' => 100,
+                'min_order' => 50,
+                'cost_price' => 40,
+                'stock' => 0,
+                'is_stock_managed' => false,
+                'is_active' => true,
+            ]);
+
+        $response->assertRedirect('/products');
+        $this->assertDatabaseHas('products', [
+            'code' => 'STK-001',
+            'pricing_type' => 'dimension_sqcm',
+            'unit' => 'cm²',
+            'base_price' => 100,
+            'min_order' => 50,
+        ]);
+    }
+
+    public function test_pos_transaction_with_dimension_sqcm_pricing_type(): void
+    {
+        $rawMaterial = RawMaterial::create([
+            'name' => 'Sticker Vinyl Sheet',
+            'code' => 'RAW-STK',
+            'unit' => 'm²',
+            'stock' => 10.0,
+            'min_stock' => 1.0,
+            'cost_price' => 20000,
+        ]);
+
+        $product = Product::create([
+            'category_id' => $this->category->id,
+            'raw_material_id' => $rawMaterial->id,
+            'name' => 'Stiker Label Toples',
+            'code' => 'STK-TOPLES',
+            'pricing_type' => 'dimension_sqcm',
+            'unit' => 'cm²',
+            'base_price' => 150, // Rp 150 per cm²
+            'min_order' => 50,
+            'cost_price' => 50,
+            'stock' => 0,
+            'is_stock_managed' => false,
+            'is_active' => true,
+        ]);
+
+        CashierShift::create([
+            'user_id' => $this->kasir->id,
+            'opened_at' => now(),
+            'starting_cash' => 100000,
+            'expected_cash' => 100000,
+            'status' => 'open',
+        ]);
+
+        // Length: 20cm, Width: 15cm => Area: 300 cm²
+        // Price per cm² = 150
+        // Finishing = 5,000
+        // Qty = 2
+        // Subtotal = (300 * 150 + 5000) * 2 = (45,000 + 5,000) * 2 = 100,000
+        $payload = [
+            'customer_name' => 'Citra',
+            'customer_phone' => '08123456789',
+            'payment_method' => 'cash',
+            'paid_amount' => 100000,
+            'subtotal' => 100000,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'grand_total' => 100000,
+            'change_amount' => 0,
+            'items' => [
+                [
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'pricing_type' => 'dimension_sqcm',
+                    'unit' => 'cm²',
+                    'length' => 20,
+                    'width' => 15,
+                    'area' => 300,
+                    'quantity' => 2,
+                    'unit_price' => 150,
+                    'finishing_option' => 'Laminasi Doff',
+                    'finishing_price' => 5000,
+                    'cost_price' => 50,
+                    'subtotal' => 100000,
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->kasir)->post('/pos', $payload);
+        $response->assertRedirect();
+
+        $this->assertDatabaseHas('orders', [
+            'grand_total' => 100000,
+            'paid_amount' => 100000,
+        ]);
+
+        $this->assertDatabaseHas('order_items', [
+            'product_id' => $product->id,
+            'pricing_type' => 'dimension_sqcm',
+            'length' => 20,
+            'width' => 15,
+            'area' => 300,
+            'quantity' => 2,
+            'unit_price' => 150,
+            'subtotal' => 100000,
+        ]);
+
+        // Raw material stock deduction: 300 cm² * 2 qty = 600 cm²
+        // Since raw material unit is m², 600 cm² / 10000 = 0.06 m²
+        // Initial stock = 10.0 - 0.06 = 9.94
+        $rawMaterial->refresh();
+        $this->assertEquals(9.94, $rawMaterial->stock);
     }
 }

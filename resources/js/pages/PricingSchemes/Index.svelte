@@ -34,7 +34,7 @@
         id: number;
         code: string;
         name: string;
-        calculation_type: 'fixed' | 'dimension_sqm';
+        calculation_type: 'fixed' | 'dimension_sqm' | 'dimension_sqcm';
         default_unit?: string | null;
         description?: string | null;
         is_active: boolean;
@@ -71,7 +71,7 @@
 
     let formName = $state('');
     let formCode = $state('');
-    let formCalcType = $state<'fixed' | 'dimension_sqm'>('fixed');
+    let formCalcType = $state<'fixed' | 'dimension_sqm' | 'dimension_sqcm'>('fixed');
     let formDefaultUnit = $state('pcs');
     let formDescription = $state('');
     let formIsActive = $state(true);
@@ -136,7 +136,7 @@
     }
 
     function deleteScheme(item: SchemeItem) {
-        if (['fixed', 'dimension_sqm'].includes(item.code)) {
+        if (['fixed', 'dimension_sqm', 'dimension_sqcm'].includes(item.code)) {
             alert(`Skema bawaan sistem "${item.name}" tidak dapat dihapus, namun Anda dapat menonaktifkan status keaktifannya.`);
             return;
         }
@@ -200,6 +200,10 @@
                             <Badge class="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-300">
                                 Per Meter Luas (m²)
                             </Badge>
+                        {:else if item.calculation_type === 'dimension_sqcm'}
+                            <Badge class="bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-300">
+                                Per Centimeter Luas (cm²)
+                            </Badge>
                         {:else}
                             <Badge class="bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border-blue-300">
                                 Per Pcs / Fixed
@@ -254,7 +258,7 @@
                                 <Edit2 class="size-3.5 mr-1" />
                                 Edit
                             </Button>
-                            {#if !['fixed', 'dimension_sqm'].includes(item.code)}
+                            {#if !['fixed', 'dimension_sqm', 'dimension_sqcm'].includes(item.code)}
                                 <Button
                                     size="sm"
                                     variant="outline"
@@ -307,9 +311,9 @@
                         bind:value={formCode}
                         placeholder="Contoh: dimension_sqm"
                         class="h-9 text-xs font-mono lowercase"
-                        disabled={editingScheme && ['fixed', 'dimension_sqm'].includes(editingScheme.code)}
+                        disabled={editingScheme && ['fixed', 'dimension_sqm', 'dimension_sqcm'].includes(editingScheme.code)}
                     />
-                    {#if editingScheme && ['fixed', 'dimension_sqm'].includes(editingScheme.code)}
+                    {#if editingScheme && ['fixed', 'dimension_sqm', 'dimension_sqcm'].includes(editingScheme.code)}
                         <span class="text-[10px] text-muted-foreground">Kode bawaan sistem dikunci</span>
                     {/if}
                 </div>
@@ -321,12 +325,14 @@
                         bind:value={formCalcType}
                         onchange={() => {
                             if (formCalcType === 'dimension_sqm') formDefaultUnit = 'm²';
+                            else if (formCalcType === 'dimension_sqcm') formDefaultUnit = 'cm²';
                             else formDefaultUnit = 'pcs';
                         }}
                         class="w-full h-9 rounded-md border border-input bg-background px-3 text-xs"
                     >
                         <option value="fixed">Per Pcs / Fixed (Harga Satuan)</option>
                         <option value="dimension_sqm">Per Meter Luas (Panjang × Lebar / m²)</option>
+                        <option value="dimension_sqcm">Per Centimeter Luas (Panjang × Lebar / cm²)</option>
                     </select>
                 </div>
             </div>

@@ -338,11 +338,12 @@ export async function buildEscPos80mm(
 
         // Detail bullets
         if (
-            item.pricing_type === 'dimension_sqm' &&
+            (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') &&
             Number(item.length) > 0 &&
             Number(item.width) > 0
         ) {
-            const areaStr = item.area ? ` (${item.area} m2)` : '';
+            const unitSuffix = item.pricing_type === 'dimension_sqcm' ? 'cm2' : 'm2';
+            const areaStr = item.area ? ` (${item.area} ${unitSuffix})` : '';
             write(`- Ukuran P: ${formatDim(item.length)} x L: ${formatDim(item.width)}${areaStr}\n`);
         } else if (item.pricing_type === 'fixed') {
             write(`- Skema: Per Pcs (${item.unit || 'pcs'})\n`);

@@ -625,8 +625,8 @@
 
                 <!-- Bullets Detail Produk (Ukuran, Bahan, Finishing, File, Deskripsi, Deadline) -->
                 <div class="receipt-item-bullets">
-                    {#if item.pricing_type === 'dimension_sqm' && Number(item.length) > 0 && Number(item.width) > 0}
-                        <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} m²)` : ''}</div>
+                    {#if (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') && Number(item.length) > 0 && Number(item.width) > 0}
+                        <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} ${item.pricing_type === 'dimension_sqcm' ? 'cm²' : 'm²'})` : ''}</div>
                     {:else if item.pricing_type === 'fixed'}
                         <div>- Skema: Per Pcs ({item.unit || 'pcs'})</div>
                     {/if}
@@ -1202,9 +1202,9 @@
                                 {/if}
                             </TableCell>
                             <TableCell class="text-xs">
-                                {#if item.pricing_type === 'dimension_sqm'}
+                                {#if item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm'}
                                     <span class="text-xs font-medium">
-                                        {formatDim(item.length)} × {formatDim(item.width)} ({item.area} m²)
+                                        {formatDim(item.length)} × {formatDim(item.width)} ({item.area} {item.pricing_type === 'dimension_sqcm' ? 'cm²' : 'm²'})
                                     </span>
                                 {:else}
                                     <span class="text-muted-foreground">
@@ -1502,8 +1502,8 @@
 
                         <!-- Bullets Detail Produk (Ukuran, Bahan, Finishing, File, Deskripsi, Deadline) -->
                         <div class="receipt-item-bullets">
-                            {#if item.pricing_type === 'dimension_sqm' && Number(item.length) > 0 && Number(item.width) > 0}
-                                <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} m²)` : ''}</div>
+                            {#if (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') && Number(item.length) > 0 && Number(item.width) > 0}
+                                <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} ${item.pricing_type === 'dimension_sqcm' ? 'cm²' : 'm²'})` : ''}</div>
                             {:else if item.pricing_type === 'fixed'}
                                 <div>- Skema: Per Pcs ({item.unit || 'pcs'})</div>
                             {/if}

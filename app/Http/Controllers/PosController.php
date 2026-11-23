@@ -289,10 +289,20 @@ class PosController extends Controller
                         // If it's linked to raw material (bahan baku), reduce raw material stock
                         if ($product->rawMaterial) {
                             $raw = $product->rawMaterial;
-                            $isItemDimension = (($itemData['pricing_type'] ?? $product->pricing_type) === 'dimension_sqm' && ! empty($itemData['area']));
-                            $usedQty = $isItemDimension
-                                ? ((float) $itemData['area'] * (float) $itemData['quantity'])
-                                : (float) $itemData['quantity'];
+                            $pricingType = $itemData['pricing_type'] ?? $product->pricing_type;
+                            $rawUnit = strtolower(trim($raw->unit ?? ''));
+
+                            if ($pricingType === 'dimension_sqm' && ! empty($itemData['area'])) {
+                                $usedQty = ((float) $itemData['area'] * (float) $itemData['quantity']);
+                            } elseif ($pricingType === 'dimension_sqcm' && ! empty($itemData['area'])) {
+                                if (in_array($rawUnit, ['m²', 'm2', 'meter', 'm', 'mtr'])) {
+                                    $usedQty = (((float) $itemData['area'] / 10000) * (float) $itemData['quantity']);
+                                } else {
+                                    $usedQty = ((float) $itemData['area'] * (float) $itemData['quantity']);
+                                }
+                            } else {
+                                $usedQty = (float) $itemData['quantity'];
+                            }
 
                             $oldRawStock = $raw->stock;
                             $newRawStock = max(0, $oldRawStock - $usedQty);

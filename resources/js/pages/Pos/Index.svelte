@@ -692,10 +692,14 @@
             return;
         }
 
-        const isDimension = product.pricing_type === 'dimension_sqm';
-        const length = isDimension ? 100 : 0;
-        const width = isDimension ? 100 : 0;
-        const rawArea = isDimension ? (length * width) / 10000 : 0;
+        const isSqm = product.pricing_type === 'dimension_sqm';
+        const isSqcm = product.pricing_type === 'dimension_sqcm';
+        const isDimension = isSqm || isSqcm;
+        const length = isDimension ? (isSqcm ? 10 : 100) : 0;
+        const width = isDimension ? (isSqcm ? 10 : 100) : 0;
+        const rawArea = isSqm
+            ? (length * width) / 10000
+            : (isSqcm ? (length * width) : 0);
         const area = isDimension ? Math.round(Math.max(product.min_order || 1, rawArea) * 100) / 100 : 0;
 
         const effective = getEffectiveUnitPrice(product, 1);
@@ -749,6 +753,11 @@
             // Area calculated with min order 1 if applicable
             const billedArea = Math.max(product?.min_order || 1, item.area);
             item.subtotal = Math.round((billedArea * item.base_price + (Number(item.finishing_price) || 0)) * qty);
+        } else if (item.pricing_type === 'dimension_sqcm') {
+            const rawArea = (Number(item.length) || 0) * (Number(item.width) || 0);
+            item.area = Math.round(rawArea * 100) / 100;
+            const billedArea = Math.max(product?.min_order || 1, item.area);
+            item.subtotal = Math.round((billedArea * item.base_price + (Number(item.finishing_price) || 0)) * qty);
         } else {
             item.length = 0;
             item.width = 0;
@@ -769,9 +778,15 @@
             item.width = Number(item.width) > 0 ? Number(item.width) : 100;
             const rawArea = (item.length * item.width) / 10000;
             item.area = Math.round(Math.max(product?.min_order || 1, rawArea) * 100) / 100;
+        } else if (newScheme === 'dimension_sqcm') {
+            item.unit = 'cm²';
+            item.length = Number(item.length) > 0 ? Number(item.length) : 10;
+            item.width = Number(item.width) > 0 ? Number(item.width) : 10;
+            const rawArea = item.length * item.width;
+            item.area = Math.round(Math.max(product?.min_order || 1, rawArea) * 100) / 100;
         } else if (newScheme === 'fixed') {
-            item.unit = (item.unit === 'm²' || !item.unit) ? (product?.unit || 'pcs') : item.unit;
-            if (item.unit === 'm²') item.unit = 'pcs';
+            item.unit = (item.unit === 'm²' || item.unit === 'cm²' || !item.unit) ? (product?.unit || 'pcs') : item.unit;
+            if (item.unit === 'm²' || item.unit === 'cm²') item.unit = 'pcs';
             item.length = 0;
             item.width = 0;
             item.area = 0;
@@ -848,9 +863,9 @@
                     product_name: item.product_name,
                     pricing_type: item.pricing_type || 'none',
                     unit: item.unit,
-                    length: item.pricing_type === 'dimension_sqm' ? item.length : null,
-                    width: item.pricing_type === 'dimension_sqm' ? item.width : null,
-                    area: item.pricing_type === 'dimension_sqm' ? item.area : null,
+                    length: (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') ? item.length : null,
+                    width: (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') ? item.width : null,
+                    area: (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') ? item.area : null,
                     quantity: item.quantity,
                     unit_price: item.base_price,
                     finishing_option: item.finishing_option,
@@ -1062,7 +1077,11 @@
                                             <span>/{p.unit}</span>
                                             {#if p.pricing_type === 'dimension_sqm'}
                                                 <span class="inline-block text-[9px] font-semibold text-blue-700 bg-blue-50 dark:bg-blue-950 dark:text-blue-300 px-1 rounded border border-blue-200">
-                                                    Meteran
+                                                    Meteran (m²)
+                                                </span>
+                                            {:else if p.pricing_type === 'dimension_sqcm'}
+                                                <span class="inline-block text-[9px] font-semibold text-purple-700 bg-purple-50 dark:bg-purple-950 dark:text-purple-300 px-1 rounded border border-purple-200">
+                                                    Per cm²
                                                 </span>
                                             {:else if p.pricing_type === 'fixed'}
                                                 <span class="inline-block text-[9px] font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300 px-1 rounded border border-emerald-200">
@@ -1158,6 +1177,7 @@
                                             <option value="none">Tanpa Skema (Standar)</option>
                                             <option value="fixed">Per Pcs (Satuan Tetap)</option>
                                             <option value="dimension_sqm">Per Meter Luas (m²)</option>
+                                            <option value="dimension_sqcm">Per Centimeter Luas (cm²)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1209,8 +1229,8 @@
                                 </div>
                             </div>
 
-                            <!-- Dimension Inputs for Meteran (Spanduk/Banner) -->
-                            {#if item.pricing_type === 'dimension_sqm'}
+                            <!-- Dimension Inputs for Meteran (m²) atau Centimeter (cm²) -->
+                            {#if item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm'}
                                 <div class="bg-muted/40 p-2 rounded-md space-y-1.5 text-xs">
                                     <div class="flex items-center gap-2">
                                         <div class="flex-1">
@@ -1222,7 +1242,7 @@
                                                 bind:value={item.length}
                                                 oninput={() => updateItemCalculation(item)}
                                                 class="w-full h-7 px-2 text-xs rounded border bg-background"
-                                                placeholder="100"
+                                                placeholder={item.pricing_type === 'dimension_sqcm' ? '10' : '100'}
                                             />
                                         </div>
                                         <span class="text-muted-foreground font-bold mt-3">×</span>
@@ -1235,13 +1255,13 @@
                                                 bind:value={item.width}
                                                 oninput={() => updateItemCalculation(item)}
                                                 class="w-full h-7 px-2 text-xs rounded border bg-background"
-                                                placeholder="100"
+                                                placeholder={item.pricing_type === 'dimension_sqcm' ? '10' : '100'}
                                             />
                                         </div>
                                         <div class="flex-1">
                                             <span class="text-[10px] text-muted-foreground block">Luas Total</span>
                                             <div class="h-7 px-2 text-xs font-semibold flex items-center bg-background rounded border">
-                                                {item.area} m²
+                                                {item.area} {item.pricing_type === 'dimension_sqcm' ? 'cm²' : 'm²'}
                                             </div>
                                         </div>
                                     </div>
@@ -1997,8 +2017,8 @@
                                 </div>
 
                                 <div class="receipt-item-bullets">
-                                    {#if item.pricing_type === 'dimension_sqm' && Number(item.length) > 0 && Number(item.width) > 0}
-                                        <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} m²)` : ''}</div>
+                                    {#if (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') && Number(item.length) > 0 && Number(item.width) > 0}
+                                        <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} ${item.pricing_type === 'dimension_sqcm' ? 'cm²' : 'm²'})` : ''}</div>
                                     {:else if item.pricing_type === 'fixed'}
                                         <div>- Skema: Per Pcs ({item.unit || 'pcs'})</div>
                                     {/if}

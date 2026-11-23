@@ -141,9 +141,20 @@ class OrderController extends Controller
 
                             if ($product->rawMaterial) {
                                 $raw = $product->rawMaterial;
-                                $restoredQty = ($product->pricing_type === 'dimension_sqm' && ! empty($item->area))
-                                    ? ((float) $item->area * (float) $item->quantity)
-                                    : (float) $item->quantity;
+                                $pricingType = $item->pricing_type ?? $product->pricing_type;
+                                $rawUnit = strtolower(trim($raw->unit ?? ''));
+
+                                if ($pricingType === 'dimension_sqm' && ! empty($item->area)) {
+                                    $restoredQty = ((float) $item->area * (float) $item->quantity);
+                                } elseif ($pricingType === 'dimension_sqcm' && ! empty($item->area)) {
+                                    if (in_array($rawUnit, ['m²', 'm2', 'meter', 'm', 'mtr'])) {
+                                        $restoredQty = (((float) $item->area / 10000) * (float) $item->quantity);
+                                    } else {
+                                        $restoredQty = ((float) $item->area * (float) $item->quantity);
+                                    }
+                                } else {
+                                    $restoredQty = (float) $item->quantity;
+                                }
 
                                 $oldRaw = $raw->stock;
                                 $newRaw = $oldRaw + $restoredQty;

@@ -44,7 +44,7 @@ class PricingSchemeController extends Controller
         $validated = $request->validate([
             'code' => 'required|string|max:50|alpha_dash|unique:pricing_schemes,code',
             'name' => 'required|string|max:255',
-            'calculation_type' => 'required|string|in:fixed,dimension_sqm',
+            'calculation_type' => 'required|string|in:fixed,dimension_sqm,dimension_sqcm',
             'default_unit' => 'nullable|string|max:50',
             'description' => 'nullable|string|max:500',
             'is_active' => 'nullable|boolean',
@@ -67,7 +67,7 @@ class PricingSchemeController extends Controller
         $validated = $request->validate([
             'code' => "required|string|max:50|alpha_dash|unique:pricing_schemes,code,{$pricingScheme->id}",
             'name' => 'required|string|max:255',
-            'calculation_type' => 'required|string|in:fixed,dimension_sqm',
+            'calculation_type' => 'required|string|in:fixed,dimension_sqm,dimension_sqcm',
             'default_unit' => 'nullable|string|max:50',
             'description' => 'nullable|string|max:500',
             'is_active' => 'nullable|boolean',
@@ -109,7 +109,7 @@ class PricingSchemeController extends Controller
             return back()->with('error', "Skema {$pricingScheme->name} tidak dapat dihapus karena sedang digunakan oleh {$productsCount} produk. Anda dapat menonaktifkan statusnya.");
         }
 
-        if (in_array($pricingScheme->code, ['fixed', 'dimension_sqm'])) {
+        if (in_array($pricingScheme->code, ['fixed', 'dimension_sqm', 'dimension_sqcm'])) {
             return back()->with('error', "Skema bawaan '{$pricingScheme->name}' tidak dapat dihapus, namun Anda dapat menonaktifkan statusnya.");
         }
 

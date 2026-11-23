@@ -386,6 +386,10 @@
                             <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px]">
                                 Per Meter Luas (m²)
                             </Badge>
+                        {:else if p.pricing_type === 'dimension_sqcm'}
+                            <Badge class="bg-purple-600 hover:bg-purple-600 text-white text-[10px]">
+                                Per Centimeter Luas (cm²)
+                            </Badge>
                         {:else if p.pricing_type === 'fixed'}
                             <Badge class="bg-blue-600 hover:bg-blue-600 text-white text-[10px]">
                                 Per Pcs ({p.unit})
@@ -499,14 +503,14 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                     <!-- Opsi 1: Nonaktif / Tanpa Skema (Default) -->
                     <button
                         type="button"
                         class="flex flex-col text-left p-2.5 rounded-md border transition-all text-xs {formPricingType === 'none' || !formPricingType ? 'border-primary bg-primary/10 ring-1 ring-primary font-medium text-foreground' : 'border-border/80 bg-background hover:bg-muted/50 text-muted-foreground'}"
                         onclick={() => {
                             formPricingType = 'none';
-                            if (!formUnit || formUnit === 'm²') formUnit = 'pcs';
+                            if (!formUnit || formUnit === 'm²' || formUnit === 'cm²') formUnit = 'pcs';
                         }}
                     >
                         <div class="flex items-center gap-1.5 font-semibold text-foreground">
@@ -529,6 +533,8 @@
                                     formUnit = scheme.default_unit;
                                 } else if (scheme.code === 'dimension_sqm') {
                                     formUnit = 'm²';
+                                } else if (scheme.code === 'dimension_sqcm') {
+                                    formUnit = 'cm²';
                                 } else if (scheme.code === 'fixed') {
                                     formUnit = 'pcs';
                                 }
@@ -539,7 +545,7 @@
                                 {scheme.name}
                             </div>
                             <span class="text-[10px] text-muted-foreground mt-1 leading-tight">
-                                {scheme.description || (scheme.code === 'dimension_sqm' ? 'Panjang × Lebar × Qty' : 'Satuan tetap per item')}
+                                {scheme.description || (scheme.code === 'dimension_sqm' ? 'Panjang × Lebar × Qty' : (scheme.code === 'dimension_sqcm' ? 'Panjang × Lebar (cm²) × Qty' : 'Satuan tetap per item'))}
                             </span>
                         </button>
                     {/each}
@@ -559,7 +565,7 @@
                             {/if}
                         </select>
                     {:else}
-                        <Input id="p_unit" bind:value={formUnit} placeholder="m², pcs, box, rim" />
+                        <Input id="p_unit" bind:value={formUnit} placeholder="m², cm², pcs, box, rim" />
                     {/if}
                 </div>
                 <div class="space-y-1">
@@ -572,7 +578,13 @@
                 </div>
                 <div class="space-y-1">
                     <Label for="p_min">
-                        {formPricingType === 'dimension_sqm' ? 'Min. Luas (m²)' : 'Min. Order'}
+                        {#if formPricingType === 'dimension_sqm'}
+                            Min. Luas (m²)
+                        {:else if formPricingType === 'dimension_sqcm'}
+                            Min. Luas (cm²)
+                        {:else}
+                            Min. Order
+                        {/if}
                     </Label>
                     <Input id="p_min" type="number" step="0.1" bind:value={formMinOrder} />
                 </div>
