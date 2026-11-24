@@ -686,14 +686,21 @@
     }
 
     // Add product to cart
+    function getSchemeCalcType(schemeCode?: string | null): string {
+        if (!schemeCode || schemeCode === 'none') return 'none';
+        const scheme = pricingSchemes.find((s) => s.code === schemeCode);
+        return scheme?.calculation_type || schemeCode;
+    }
+
     function addToCart(product: ProductItem) {
         if (!activeShift) {
             showOpenShiftModal = true;
             return;
         }
 
-        const isSqm = product.pricing_type === 'dimension_sqm';
-        const isSqcm = product.pricing_type === 'dimension_sqcm';
+        const calcType = getSchemeCalcType(product.pricing_type);
+        const isSqm = calcType === 'dimension_sqm';
+        const isSqcm = calcType === 'dimension_sqcm';
         const isDimension = isSqm || isSqcm;
         const length = isDimension ? (isSqcm ? 10 : 100) : 0;
         const width = isDimension ? (isSqcm ? 10 : 100) : 0;
@@ -747,13 +754,15 @@
             item.is_wholesale = effective.isWholesale;
         }
 
-        if (item.pricing_type === 'dimension_sqm') {
+        const calcType = getSchemeCalcType(item.pricing_type);
+
+        if (calcType === 'dimension_sqm') {
             const rawArea = ((Number(item.length) || 0) * (Number(item.width) || 0)) / 10000;
             item.area = Math.round(rawArea * 100) / 100;
             // Area calculated with min order 1 if applicable
             const billedArea = Math.max(product?.min_order || 1, item.area);
             item.subtotal = Math.round((billedArea * item.base_price + (Number(item.finishing_price) || 0)) * qty);
-        } else if (item.pricing_type === 'dimension_sqcm') {
+        } else if (calcType === 'dimension_sqcm') {
             const rawArea = (Number(item.length) || 0) * (Number(item.width) || 0);
             item.area = Math.round(rawArea * 100) / 100;
             const billedArea = Math.max(product?.min_order || 1, item.area);
@@ -771,21 +780,23 @@
     function changeItemPricingScheme(item: CartItem, newScheme: string) {
         item.pricing_type = newScheme;
         const product = products.find((p) => p.id === item.product_id);
+        const scheme = pricingSchemes.find((s) => s.code === newScheme);
+        const calcType = scheme?.calculation_type || newScheme;
 
-        if (newScheme === 'dimension_sqm') {
-            item.unit = 'm²';
+        if (calcType === 'dimension_sqm') {
+            item.unit = scheme?.default_unit || 'm²';
             item.length = Number(item.length) > 0 ? Number(item.length) : 100;
             item.width = Number(item.width) > 0 ? Number(item.width) : 100;
             const rawArea = (item.length * item.width) / 10000;
             item.area = Math.round(Math.max(product?.min_order || 1, rawArea) * 100) / 100;
-        } else if (newScheme === 'dimension_sqcm') {
-            item.unit = 'cm²';
+        } else if (calcType === 'dimension_sqcm') {
+            item.unit = scheme?.default_unit || 'cm²';
             item.length = Number(item.length) > 0 ? Number(item.length) : 10;
             item.width = Number(item.width) > 0 ? Number(item.width) : 10;
             const rawArea = item.length * item.width;
             item.area = Math.round(Math.max(product?.min_order || 1, rawArea) * 100) / 100;
-        } else if (newScheme === 'fixed') {
-            item.unit = (item.unit === 'm²' || item.unit === 'cm²' || !item.unit) ? (product?.unit || 'pcs') : item.unit;
+        } else if (calcType === 'fixed') {
+            item.unit = scheme?.default_unit || (product?.unit || 'pcs');
             if (item.unit === 'm²' || item.unit === 'cm²') item.unit = 'pcs';
             item.length = 0;
             item.width = 0;
@@ -863,9 +874,9 @@
                     product_name: item.product_name,
                     pricing_type: item.pricing_type || 'none',
                     unit: item.unit,
-                    length: (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') ? item.length : null,
-                    width: (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') ? item.width : null,
-                    area: (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') ? item.area : null,
+                    length: (getSchemeCalcType(item.pricing_type) === 'dimension_sqm' || getSchemeCalcType(item.pricing_type) === 'dimension_sqcm') ? item.length : null,
+                    width: (getSchemeCalcType(item.pricing_type) === 'dimension_sqm' || getSchemeCalcType(item.pricing_type) === 'dimension_sqcm') ? item.width : null,
+                    area: (getSchemeCalcType(item.pricing_type) === 'dimension_sqm' || getSchemeCalcType(item.pricing_type) === 'dimension_sqcm') ? item.area : null,
                     quantity: item.quantity,
                     unit_price: item.base_price,
                     finishing_option: item.finishing_option,
@@ -1075,18 +1086,26 @@
                                         </div>
                                         <div class="text-[10px] text-muted-foreground flex items-center gap-1 flex-wrap">
                                             <span>/{p.unit}</span>
-                                            {#if p.pricing_type === 'dimension_sqm'}
-                                                <span class="inline-block text-[9px] font-semibold text-blue-700 bg-blue-50 dark:bg-blue-950 dark:text-blue-300 px-1 rounded border border-blue-200">
-                                                    Meteran (m²)
-                                                </span>
-                                            {:else if p.pricing_type === 'dimension_sqcm'}
-                                                <span class="inline-block text-[9px] font-semibold text-purple-700 bg-purple-50 dark:bg-purple-950 dark:text-purple-300 px-1 rounded border border-purple-200">
-                                                    Per cm²
-                                                </span>
-                                            {:else if p.pricing_type === 'fixed'}
-                                                <span class="inline-block text-[9px] font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300 px-1 rounded border border-emerald-200">
-                                                    Per Pcs
-                                                </span>
+                                            {#if p.pricing_type && p.pricing_type !== 'none'}
+                                                {@const scheme = pricingSchemes.find((s) => s.code === p.pricing_type)}
+                                                {@const calcType = scheme?.calculation_type || p.pricing_type}
+                                                {#if calcType === 'dimension_sqm'}
+                                                    <span class="inline-block text-[9px] font-semibold text-blue-700 bg-blue-50 dark:bg-blue-950 dark:text-blue-300 px-1 rounded border border-blue-200">
+                                                        {scheme?.name || 'Meteran (m²)'}
+                                                    </span>
+                                                {:else if calcType === 'dimension_sqcm'}
+                                                    <span class="inline-block text-[9px] font-semibold text-purple-700 bg-purple-50 dark:bg-purple-950 dark:text-purple-300 px-1 rounded border border-purple-200">
+                                                        {scheme?.name || 'Per cm²'}
+                                                    </span>
+                                                {:else if calcType === 'fixed'}
+                                                    <span class="inline-block text-[9px] font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300 px-1 rounded border border-emerald-200">
+                                                        {scheme?.name || 'Per Pcs'}
+                                                    </span>
+                                                {:else}
+                                                    <span class="inline-block text-[9px] font-semibold text-slate-700 bg-slate-50 dark:bg-slate-950 dark:text-slate-300 px-1 rounded border border-slate-200">
+                                                        {scheme?.name || p.pricing_type}
+                                                    </span>
+                                                {/if}
                                             {/if}
                                             {#if p.price_tiers && p.price_tiers.length > 0}
                                                 <span class="inline-block text-[9px] font-bold text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300 px-1 rounded border border-amber-200">
@@ -1175,9 +1194,15 @@
                                             title="Ubah skema perhitungan harga item keranjang ini"
                                         >
                                             <option value="none">Tanpa Skema (Standar)</option>
-                                            <option value="fixed">Per Pcs (Satuan Tetap)</option>
-                                            <option value="dimension_sqm">Per Meter Luas (m²)</option>
-                                            <option value="dimension_sqcm">Per Centimeter Luas (cm²)</option>
+                                            {#if pricingSchemes && pricingSchemes.length > 0}
+                                                {#each pricingSchemes.filter((s) => s.is_active || s.code === item.pricing_type) as s}
+                                                    <option value={s.code}>{s.name} ({s.default_unit || (s.calculation_type === 'dimension_sqm' ? 'm²' : s.calculation_type === 'dimension_sqcm' ? 'cm²' : 'pcs')})</option>
+                                                {/each}
+                                            {:else}
+                                                <option value="fixed">Per Pcs (Satuan Tetap)</option>
+                                                <option value="dimension_sqm">Per Meter Luas (m²)</option>
+                                                <option value="dimension_sqcm">Per Centimeter Luas (cm²)</option>
+                                            {/if}
                                         </select>
                                     </div>
                                 </div>
@@ -1230,7 +1255,7 @@
                             </div>
 
                             <!-- Dimension Inputs for Meteran (m²) atau Centimeter (cm²) -->
-                            {#if item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm'}
+                            {#if getSchemeCalcType(item.pricing_type) === 'dimension_sqm' || getSchemeCalcType(item.pricing_type) === 'dimension_sqcm'}
                                 <div class="bg-muted/40 p-2 rounded-md space-y-1.5 text-xs">
                                     <div class="flex items-center gap-2">
                                         <div class="flex-1">
@@ -1242,7 +1267,7 @@
                                                 bind:value={item.length}
                                                 oninput={() => updateItemCalculation(item)}
                                                 class="w-full h-7 px-2 text-xs rounded border bg-background"
-                                                placeholder={item.pricing_type === 'dimension_sqcm' ? '10' : '100'}
+                                                placeholder={getSchemeCalcType(item.pricing_type) === 'dimension_sqcm' ? '10' : '100'}
                                             />
                                         </div>
                                         <span class="text-muted-foreground font-bold mt-3">×</span>
@@ -1255,13 +1280,13 @@
                                                 bind:value={item.width}
                                                 oninput={() => updateItemCalculation(item)}
                                                 class="w-full h-7 px-2 text-xs rounded border bg-background"
-                                                placeholder={item.pricing_type === 'dimension_sqcm' ? '10' : '100'}
+                                                placeholder={getSchemeCalcType(item.pricing_type) === 'dimension_sqcm' ? '10' : '100'}
                                             />
                                         </div>
                                         <div class="flex-1">
                                             <span class="text-[10px] text-muted-foreground block">Luas Total</span>
                                             <div class="h-7 px-2 text-xs font-semibold flex items-center bg-background rounded border">
-                                                {item.area} {item.pricing_type === 'dimension_sqcm' ? 'cm²' : 'm²'}
+                                                {item.area} {getSchemeCalcType(item.pricing_type) === 'dimension_sqcm' ? 'cm²' : 'm²'}
                                             </div>
                                         </div>
                                     </div>
@@ -1849,6 +1874,10 @@
                                         <Badge variant="outline" class="bg-purple-50 text-purple-700 border-purple-200 text-[10px]">
                                             Siap Ambil
                                         </Badge>
+                                    {:else if order.order_status === 'finishing'}
+                                        <Badge variant="outline" class="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px]">
+                                            Finishing
+                                        </Badge>
                                     {:else if order.order_status === 'processing'}
                                         <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">
                                             Proses Cetak
@@ -2017,10 +2046,10 @@
                                 </div>
 
                                 <div class="receipt-item-bullets">
-                                    {#if (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') && Number(item.length) > 0 && Number(item.width) > 0}
-                                        <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} ${item.pricing_type === 'dimension_sqcm' ? 'cm²' : 'm²'})` : ''}</div>
-                                    {:else if item.pricing_type === 'fixed'}
-                                        <div>- Skema: Per Pcs ({item.unit || 'pcs'})</div>
+                                    {#if (getSchemeCalcType(item.pricing_type) === 'dimension_sqm' || getSchemeCalcType(item.pricing_type) === 'dimension_sqcm') && Number(item.length) > 0 && Number(item.width) > 0}
+                                        <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} ${getSchemeCalcType(item.pricing_type) === 'dimension_sqcm' ? 'cm²' : 'm²'})` : ''}</div>
+                                    {:else if getSchemeCalcType(item.pricing_type) === 'fixed'}
+                                        <div>- Skema: {pricingSchemes.find((s) => s.code === item.pricing_type)?.name || 'Per Pcs'} ({item.unit || 'pcs'})</div>
                                     {/if}
                                     {#if item.finishing_option && item.finishing_option !== 'Standar' && item.finishing_option !== 'Tanpa Finishing'}
                                         <div>- {item.finishing_option}{Number(item.finishing_price) > 0 ? ` (+${formatNumber(item.finishing_price)})` : ''}</div>

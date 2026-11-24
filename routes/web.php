@@ -7,6 +7,7 @@ use App\Http\Controllers\FinishingController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\PricingSchemeController;
+use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RawMaterialController;
 use App\Http\Controllers\ReceiptSettingController;
@@ -41,6 +42,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/orders/{order}/terms', [OrderController::class, 'storeTerm'])->name('orders.terms.store');
     Route::delete('/orders/{order}/terms/{payment}', [OrderController::class, 'deleteTerm'])->name('orders.terms.destroy');
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
+
+    // 3b. Antrean & Pipeline Produksi Cetak (Operator & Admin)
+    Route::get('/production', [ProductionController::class, 'index'])->name('production.index');
+    Route::patch('/production/{order}/status', [ProductionController::class, 'updateStatus'])->name('production.status');
 
     // 4. Produk
     Route::post('/products/bulk-stock', [ProductController::class, 'bulkStock'])->name('products.bulk-stock');
@@ -77,6 +82,7 @@ Route::middleware(['auth'])->group(function () {
 
     // 10. Laporan Stok (Tambah / Kurang)
     Route::get('/stock-reports', [StockReportController::class, 'index'])->name('stock-reports.index');
+    Route::get('/stock-reports/export-csv', [StockReportController::class, 'exportCsv'])->name('stock-reports.export-csv');
     Route::post('/stock-reports/adjust', [StockReportController::class, 'adjust'])->name('stock-reports.adjust');
     Route::post('/stock-reports/bulk-adjust', [StockReportController::class, 'bulkAdjust'])->name('stock-reports.bulk-adjust');
 

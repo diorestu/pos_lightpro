@@ -126,7 +126,7 @@ class ShiftController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
             'password' => 'required|string|min:6',
-            'role' => 'required|string|in:admin,kasir,manager,desainer',
+            'role' => 'required|string|in:admin,kasir,manager,desainer,operator',
             'phone' => 'nullable|string|max:50',
         ], [
             'name.required' => 'Nama lengkap karyawan wajib diisi.',
@@ -158,7 +158,7 @@ class ShiftController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:6',
-            'role' => 'required|string|in:admin,kasir,manager,desainer',
+            'role' => 'required|string|in:admin,kasir,manager,desainer,operator',
             'phone' => 'nullable|string|max:50',
             'is_active' => 'required|boolean',
         ], [

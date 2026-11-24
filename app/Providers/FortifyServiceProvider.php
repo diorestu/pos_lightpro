@@ -29,6 +29,10 @@ class FortifyServiceProvider extends ServiceProvider
                         return redirect()->route('pos.index');
                     }
 
+                    if ($request->user() && $request->user()->role === 'operator') {
+                        return redirect()->route('production.index');
+                    }
+
                     return redirect()->intended(config('fortify.home'));
                 }
             };

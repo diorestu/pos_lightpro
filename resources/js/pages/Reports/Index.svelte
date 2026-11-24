@@ -135,7 +135,7 @@
             </Button>
             <Button size="sm" class="bg-primary text-xs font-semibold" onclick={exportCsv}>
                 <Download class="size-3.5 mr-1.5" />
-                Export CSV
+                Export CSV / Excel
             </Button>
         </div>
     </div>

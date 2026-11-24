@@ -20,6 +20,10 @@ class DashboardController extends Controller
             return redirect()->route('pos.index');
         }
 
+        if ($request->user() && $request->user()->role === 'operator') {
+            return redirect()->route('production.index');
+        }
+
         $today = Carbon::today();
         $startOfWeek = Carbon::now()->startOfWeek();
         $startOfMonth = Carbon::now()->startOfMonth();

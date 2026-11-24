@@ -122,7 +122,7 @@ class PosController extends Controller
             'paid_amount' => 'required|numeric|min:0',
             'change_amount' => 'nullable|numeric|min:0',
             'payment_method' => 'required|string|in:cash,transfer,qris,tempo,split,pending',
-            'order_status' => 'nullable|string|in:pending,processing,ready,completed',
+            'order_status' => 'nullable|string|in:pending,processing,finishing,ready,completed',
             'due_date' => 'nullable|date',
             'notes' => 'nullable|string',
             'is_split_payment' => 'nullable|boolean',
@@ -290,11 +290,13 @@ class PosController extends Controller
                         if ($product->rawMaterial) {
                             $raw = $product->rawMaterial;
                             $pricingType = $itemData['pricing_type'] ?? $product->pricing_type;
+                            $scheme = \App\Models\PricingScheme::where('code', $pricingType)->first();
+                            $calcType = $scheme ? $scheme->calculation_type : $pricingType;
                             $rawUnit = strtolower(trim($raw->unit ?? ''));
 
-                            if ($pricingType === 'dimension_sqm' && ! empty($itemData['area'])) {
+                            if ($calcType === 'dimension_sqm' && ! empty($itemData['area'])) {
                                 $usedQty = ((float) $itemData['area'] * (float) $itemData['quantity']);
-                            } elseif ($pricingType === 'dimension_sqcm' && ! empty($itemData['area'])) {
+                            } elseif ($calcType === 'dimension_sqcm' && ! empty($itemData['area'])) {
                                 if (in_array($rawUnit, ['m²', 'm2', 'meter', 'm', 'mtr'])) {
                                     $usedQty = (((float) $itemData['area'] / 10000) * (float) $itemData['quantity']);
                                 } else {

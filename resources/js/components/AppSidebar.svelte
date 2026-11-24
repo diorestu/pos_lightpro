@@ -5,6 +5,7 @@
     import Boxes from '@lucide/svelte/icons/boxes';
     import Calculator from '@lucide/svelte/icons/calculator';
     import Clock from '@lucide/svelte/icons/clock';
+    import Kanban from '@lucide/svelte/icons/kanban';
     import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
     import Package from '@lucide/svelte/icons/package';
     import Printer from '@lucide/svelte/icons/printer';
@@ -39,6 +40,7 @@
     const url = currentUrlState();
     const user = $derived(page.props.auth?.user);
     const isKasir = $derived(user?.role === 'kasir');
+    const isOperator = $derived(user?.role === 'operator');
 
     const menuGroups = $derived(
         isKasir
@@ -50,12 +52,23 @@
                       ],
                   },
               ]
+            : isOperator
+            ? [
+                  {
+                      title: 'Produksi Cetak',
+                      items: [
+                          { title: 'Antrean Produksi', href: '/production', icon: Kanban },
+                          { title: 'Daftar Pesanan', href: '/orders', icon: Receipt },
+                      ],
+                  },
+              ]
             : [
                   {
-                      title: 'Transaksi',
+                      title: 'Transaksi & Produksi',
                       items: [
                           { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
                           { title: 'Kasir (POS)', href: '/pos', icon: ShoppingCart },
+                          { title: 'Antrean Produksi', href: '/production', icon: Kanban },
                           { title: 'Riwayat Penjualan', href: '/orders', icon: Receipt },
                       ],
                   },

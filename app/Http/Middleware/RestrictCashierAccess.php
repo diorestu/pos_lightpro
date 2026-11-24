@@ -43,6 +43,27 @@ class RestrictCashierAccess
             }
         }
 
+        if ($user && $user->role === 'operator') {
+            $allowedRoutes = [
+                'production.index',
+                'production.status',
+                'orders.index',
+                'orders.show',
+                'orders.status',
+                'logout',
+            ];
+
+            $routeName = $request->route()?->getName();
+
+            if (! in_array($routeName, $allowedRoutes)) {
+                if ($request->expectsJson()) {
+                    abort(403, 'Akses dibatasi: Akun operator hanya dapat mengakses antrean produksi cetak.');
+                }
+
+                return redirect()->route('production.index')->with('error', 'Akses dibatasi: Akun operator hanya dapat mengakses antrean produksi cetak.');
+            }
+        }
+
         return $next($request);
     }
 }

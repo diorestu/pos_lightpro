@@ -19,6 +19,7 @@
     import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
     import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
     import Boxes from '@lucide/svelte/icons/boxes';
+    import Download from '@lucide/svelte/icons/download';
     import Filter from '@lucide/svelte/icons/filter';
     import Plus from '@lucide/svelte/icons/plus';
     import Search from '@lucide/svelte/icons/search';
@@ -148,6 +149,17 @@
             }
         );
     }
+
+    function exportCsv() {
+        const params = new URLSearchParams();
+        if (itemTypeFilter) params.append('item_type', itemTypeFilter);
+        if (typeFilter) params.append('type', typeFilter);
+        if (search) params.append('search', search);
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+
+        window.location.href = `/stock-reports/export-csv?${params.toString()}`;
+    }
 </script>
 
 <AppHead title="Laporan Mutasi Stok (Tambah / Kurang)" />
@@ -165,7 +177,15 @@
             </p>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <Button
+                variant="outline"
+                class="font-semibold whitespace-nowrap inline-flex items-center text-xs shadow-2xs border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                onclick={exportCsv}
+            >
+                <Download class="size-4 mr-1.5" />
+                Export CSV / Excel
+            </Button>
             <Button
                 variant="outline"
                 class="font-semibold whitespace-nowrap inline-flex items-center border-primary/30 text-primary hover:bg-primary/10 shadow-2xs"

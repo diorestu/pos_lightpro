@@ -98,12 +98,13 @@ class ReportController extends Controller
             ->get();
 
         $headers = [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"laporan_penjualan_{$from->format('Ymd')}_{$to->format('Ymd')}.csv\"",
         ];
 
         return response()->stream(function () use ($orders) {
             $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($handle, ['No Invoice', 'Tanggal', 'Kasir', 'Pelanggan', 'Metode Bayar', 'Status Bayar', 'Status Pesanan', 'Subtotal', 'Diskon', 'Total']);
 
             foreach ($orders as $order) {

@@ -29,6 +29,7 @@
     import Plus from '@lucide/svelte/icons/plus';
     import Printer from '@lucide/svelte/icons/printer';
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+    import Scissors from '@lucide/svelte/icons/scissors';
     import Split from '@lucide/svelte/icons/split';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import Usb from '@lucide/svelte/icons/usb';
@@ -625,8 +626,8 @@
 
                 <!-- Bullets Detail Produk (Ukuran, Bahan, Finishing, File, Deskripsi, Deadline) -->
                 <div class="receipt-item-bullets">
-                    {#if (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') && Number(item.length) > 0 && Number(item.width) > 0}
-                        <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} ${item.pricing_type === 'dimension_sqcm' ? 'cm²' : 'm²'})` : ''}</div>
+                    {#if Number(item.length) > 0 && Number(item.width) > 0}
+                        <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} ${(item.pricing_type === 'dimension_sqcm' || item.unit === 'cm²') ? 'cm²' : 'm²'})` : ''}</div>
                     {:else if item.pricing_type === 'fixed'}
                         <div>- Skema: Per Pcs ({item.unit || 'pcs'})</div>
                     {/if}
@@ -747,6 +748,8 @@
                         <Badge class="bg-emerald-600 text-white">Selesai</Badge>
                     {:else if order.order_status === 'processing'}
                         <Badge class="bg-blue-600 text-white">Sedang Dicetak</Badge>
+                    {:else if order.order_status === 'finishing'}
+                        <Badge class="bg-indigo-600 text-white">Finishing</Badge>
                     {:else if order.order_status === 'ready'}
                         <Badge class="bg-purple-600 text-white">Siap Diambil</Badge>
                     {:else if order.order_status === 'pending'}
@@ -837,7 +840,7 @@
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     <Button
                         size="sm"
                         variant={order.order_status === 'pending' ? 'default' : 'outline'}
@@ -845,7 +848,7 @@
                         onclick={() => updateStatus('pending')}
                     >
                         <Clock class="size-3.5 mr-1.5" />
-                        1. Antrian Desain/File
+                        1. Antrian File
                     </Button>
                     <Button
                         size="sm"
@@ -854,7 +857,16 @@
                         onclick={() => updateStatus('processing')}
                     >
                         <Printer class="size-3.5 mr-1.5" />
-                        2. Sedang Dicetak Mesin
+                        2. Dicetak Mesin
+                    </Button>
+                    <Button
+                        size="sm"
+                        variant={order.order_status === 'finishing' ? 'default' : 'outline'}
+                        class="text-xs justify-start"
+                        onclick={() => updateStatus('finishing')}
+                    >
+                        <Scissors class="size-3.5 mr-1.5" />
+                        3. Finishing
                     </Button>
                     <Button
                         size="sm"
@@ -863,7 +875,7 @@
                         onclick={() => updateStatus('ready')}
                     >
                         <CheckCircle class="size-3.5 mr-1.5" />
-                        3. Siap Diambil Pelanggan
+                        4. Siap Diambil
                     </Button>
                     <Button
                         size="sm"
@@ -872,7 +884,7 @@
                         onclick={() => updateStatus('completed')}
                     >
                         <CheckCircle class="size-3.5 mr-1.5" />
-                        4. Selesai / Diserahkan
+                        5. Selesai
                     </Button>
                 </div>
             </CardContent>
@@ -1202,9 +1214,9 @@
                                 {/if}
                             </TableCell>
                             <TableCell class="text-xs">
-                                {#if item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm'}
+                                {#if Number(item.length) > 0 && Number(item.width) > 0}
                                     <span class="text-xs font-medium">
-                                        {formatDim(item.length)} × {formatDim(item.width)} ({item.area} {item.pricing_type === 'dimension_sqcm' ? 'cm²' : 'm²'})
+                                        {formatDim(item.length)} × {formatDim(item.width)} ({item.area} {(item.pricing_type === 'dimension_sqcm' || item.unit === 'cm²') ? 'cm²' : 'm²'})
                                     </span>
                                 {:else}
                                     <span class="text-muted-foreground">
@@ -1502,8 +1514,8 @@
 
                         <!-- Bullets Detail Produk (Ukuran, Bahan, Finishing, File, Deskripsi, Deadline) -->
                         <div class="receipt-item-bullets">
-                            {#if (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') && Number(item.length) > 0 && Number(item.width) > 0}
-                                <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} ${item.pricing_type === 'dimension_sqcm' ? 'cm²' : 'm²'})` : ''}</div>
+                            {#if Number(item.length) > 0 && Number(item.width) > 0}
+                                <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} ${(item.pricing_type === 'dimension_sqcm' || item.unit === 'cm²') ? 'cm²' : 'm²'})` : ''}</div>
                             {:else if item.pricing_type === 'fixed'}
                                 <div>- Skema: Per Pcs ({item.unit || 'pcs'})</div>
                             {/if}

@@ -115,7 +115,7 @@
     let newUserName = $state('');
     let newUserEmail = $state('');
     let newUserPassword = $state('');
-    let newUserRole = $state<'admin' | 'kasir' | 'manager' | 'desainer'>('kasir');
+    let newUserRole = $state<'admin' | 'kasir' | 'manager' | 'desainer' | 'operator'>('kasir');
     let newUserPhone = $state('');
     let isAddingUser = $state(false);
     let userErrors = $state<Record<string, string>>({});
@@ -194,7 +194,7 @@
     let editName = $state('');
     let editEmail = $state('');
     let editPassword = $state('');
-    let editRole = $state<'admin' | 'kasir' | 'manager' | 'desainer'>('kasir');
+    let editRole = $state<'admin' | 'kasir' | 'manager' | 'desainer' | 'operator'>('kasir');
     let editPhone = $state('');
     let editIsActive = $state(true);
     let isEditingUser = $state(false);
@@ -430,8 +430,10 @@
                                     <Badge class="bg-purple-600 hover:bg-purple-600 text-white text-[10px]">Manager</Badge>
                                 {:else if u.role === 'kasir'}
                                     <Badge class="bg-emerald-600 hover:bg-emerald-600 text-white text-[10px]">Kasir / POS</Badge>
+                                {:else if u.role === 'operator'}
+                                    <Badge class="bg-cyan-600 hover:bg-cyan-600 text-white text-[10px]">Operator Cetak</Badge>
                                 {:else}
-                                    <Badge variant="outline" class="text-[10px]">Desainer / Operator</Badge>
+                                    <Badge variant="outline" class="text-[10px]">Desainer Grafis</Badge>
                                 {/if}
                             </TableCell>
                             <TableCell class="text-xs text-muted-foreground">
@@ -441,8 +443,10 @@
                                     Laporan Keuangan, Shift, & Audit Stok
                                 {:else if u.role === 'kasir'}
                                     POS Kasir, Pelanggan, & Riwayat Nota
+                                {:else if u.role === 'operator'}
+                                    Pipeline & Antrean Produksi Cetak
                                 {:else}
-                                    Antrian Cetak & Status Produksi
+                                    Desain & Setting File Cetak
                                 {/if}
                             </TableCell>
                             <TableCell class="text-xs">
@@ -729,8 +733,9 @@
                     <Label for="u_role">Peran / Role *</Label>
                     <select id="u_role" bind:value={newUserRole} class="w-full h-9 rounded-md border border-input bg-background px-2.5 pr-8">
                         <option value="kasir">Kasir (POS & Transaksi)</option>
+                        <option value="operator">Operator Produksi Cetak</option>
+                        <option value="desainer">Desainer Grafis</option>
                         <option value="manager">Manager (Laporan & Audit)</option>
-                        <option value="desainer">Operator / Desainer</option>
                         <option value="admin">Administrator Penuh</option>
                     </select>
                     {#if userErrors.role}
@@ -815,8 +820,9 @@
                     <Label for="eu_role">Peran / Role *</Label>
                     <select id="eu_role" bind:value={editRole} class="w-full h-9 rounded-md border border-input bg-background px-2.5 pr-8">
                         <option value="kasir">Kasir (POS & Transaksi)</option>
+                        <option value="operator">Operator Produksi Cetak</option>
+                        <option value="desainer">Desainer Grafis</option>
                         <option value="manager">Manager (Laporan & Audit)</option>
-                        <option value="desainer">Operator / Desainer</option>
                         <option value="admin">Administrator Penuh</option>
                     </select>
                     {#if editUserErrors.role}

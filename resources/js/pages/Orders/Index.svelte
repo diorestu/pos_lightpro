@@ -563,6 +563,7 @@
                     <option value="">Semua Status Cetak</option>
                     <option value="pending">Antrian (Pending)</option>
                     <option value="processing">Sedang Dicetak</option>
+                    <option value="finishing">Dalam Finishing</option>
                     <option value="ready">Siap Diambil</option>
                     <option value="completed">Selesai</option>
                     <option value="cancelled">Dibatalkan</option>
@@ -659,6 +660,8 @@
                                     <Badge variant="outline" class="bg-emerald-50 text-emerald-700 border-emerald-200">Selesai</Badge>
                                 {:else if order.order_status === 'processing'}
                                     <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-200">Proses Cetak</Badge>
+                                {:else if order.order_status === 'finishing'}
+                                    <Badge variant="outline" class="bg-indigo-50 text-indigo-700 border-indigo-200">Finishing</Badge>
                                 {:else if order.order_status === 'ready'}
                                     <Badge variant="outline" class="bg-purple-50 text-purple-700 border-purple-200">Siap Ambil</Badge>
                                 {:else if order.order_status === 'pending'}
@@ -980,8 +983,8 @@
                                     </div>
 
                                     <div class="receipt-item-bullets">
-                                        {#if (item.pricing_type === 'dimension_sqm' || item.pricing_type === 'dimension_sqcm') && Number(item.length) > 0 && Number(item.width) > 0}
-                                            <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} ${item.pricing_type === 'dimension_sqcm' ? 'cm²' : 'm²'})` : ''}</div>
+                                        {#if Number(item.length) > 0 && Number(item.width) > 0}
+                                            <div>- Ukuran P: {formatDim(item.length)} x L: {formatDim(item.width)} {item.area ? `(${item.area} ${(item.pricing_type === 'dimension_sqcm' || item.unit === 'cm²') ? 'cm²' : 'm²'})` : ''}</div>
                                         {:else if item.pricing_type === 'fixed'}
                                             <div>- Skema: Per Pcs ({item.unit || 'pcs'})</div>
                                         {/if}

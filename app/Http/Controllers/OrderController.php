@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderPayment;
 use App\Models\OrderReturn;
+use App\Models\PricingScheme;
 use App\Models\Product;
 use App\Models\RawMaterial;
 use App\Models\ReceiptSetting;
@@ -142,11 +143,13 @@ class OrderController extends Controller
                             if ($product->rawMaterial) {
                                 $raw = $product->rawMaterial;
                                 $pricingType = $item->pricing_type ?? $product->pricing_type;
+                                $scheme = \App\Models\PricingScheme::where('code', $pricingType)->first();
+                                $calcType = $scheme ? $scheme->calculation_type : $pricingType;
                                 $rawUnit = strtolower(trim($raw->unit ?? ''));
 
-                                if ($pricingType === 'dimension_sqm' && ! empty($item->area)) {
+                                if ($calcType === 'dimension_sqm' && ! empty($item->area)) {
                                     $restoredQty = ((float) $item->area * (float) $item->quantity);
-                                } elseif ($pricingType === 'dimension_sqcm' && ! empty($item->area)) {
+                                } elseif ($calcType === 'dimension_sqcm' && ! empty($item->area)) {
                                     if (in_array($rawUnit, ['m²', 'm2', 'meter', 'm', 'mtr'])) {
                                         $restoredQty = (((float) $item->area / 10000) * (float) $item->quantity);
                                     } else {
@@ -391,7 +394,7 @@ class OrderController extends Controller
     public function updateStatus(Request $request, Order $order): RedirectResponse
     {
         $validated = $request->validate([
-            'order_status' => 'required|string|in:pending,processing,ready,completed,cancelled',
+            'order_status' => 'required|string|in:pending,processing,finishing,ready,completed,cancelled',
         ]);
 
         $order->update(['order_status' => $validated['order_status']]);

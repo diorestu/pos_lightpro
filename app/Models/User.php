@@ -61,6 +61,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return in_array($this->role, ['admin', 'manager', 'kasir']);
     }
 
+    public function isOperator(): bool
+    {
+        return in_array($this->role, ['admin', 'manager', 'operator']);
+    }
+
     public function shifts(): HasMany
     {
         return $this->hasMany(CashierShift::class);
